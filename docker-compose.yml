@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: pamflow_mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: clone_optera
+      MYSQL_USER: pamflow_user
+      MYSQL_PASSWORD: pamflow_password
+    ports:
+      - "3306:3306"
+    volumes:
+      - pamflow_db_data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+
+volumes:
+  pamflow_db_data:
