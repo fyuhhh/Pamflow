@@ -24,13 +24,26 @@ const getDeptTasks = async (req, res) => {
   const { company_id, departemen_tujuan } = req.query;
   try {
     let query = `
-      SELECT dt.*, dt.created_at as last_update_at, d_asal.dept_id as dept_id_asal
+      SELECT dt.*, dt.created_at as last_update_at, d_asal.dept_id as dept_id_asal,
+             t.progres as agent_progres, t.catatan_material, t.waktu_catatan_material,
+             t.catatan_pengerjaan, t.waktu_catatan_pengerjaan, t.waktu_material_dicek
       FROM department_tasks dt
       LEFT JOIN departments d_asal ON d_asal.name = dt.departemen_asal AND d_asal.company_id = dt.company_id
+      LEFT JOIN (
+        SELECT t1.dept_task_id, t1.progres, t1.catatan_material, t1.waktu_catatan_material,
+               t1.catatan_pengerjaan, t1.waktu_catatan_pengerjaan, t1.waktu_material_dicek
+        FROM tasks t1
+        JOIN (
+          SELECT dept_task_id, MAX(created_at) as max_created
+          FROM tasks
+          WHERE dept_task_id IS NOT NULL
+          GROUP BY dept_task_id
+        ) t2 ON t1.dept_task_id = t2.dept_task_id AND t1.created_at = t2.max_created
+      ) t ON t.dept_task_id = dt.id
     `;
     let params = [];
     let conditions = [];
-    
+
     if (company_id) {
       conditions.push('dt.company_id = ?');
       params.push(company_id);
@@ -44,7 +57,7 @@ const getDeptTasks = async (req, res) => {
     if (conditions.length > 0) {
       query += ' WHERE ' + conditions.join(' AND ');
     }
-    
+
     query += ' ORDER BY dt.created_at DESC';
     const [rows] = await db.query(query, params);
     res.json(rows.map(formatDeptTaskDates));
@@ -98,10 +111,10 @@ const createDeptTask = async (req, res) => {
       ]
     );
     // Real-time Sync
-    socketService.emitToCompany(company_id, 'dept-task-created', { 
-      id: result.insertId, 
+    socketService.emitToCompany(company_id, 'dept-task-created', {
+      id: result.insertId,
       nama_wo,
-      departemen_asal 
+      departemen_asal
     });
 
     // Notify target department users via Push
@@ -110,7 +123,7 @@ const createDeptTask = async (req, res) => {
         'SELECT id FROM users WHERE company_id = ? AND department = ? AND status = "Aktif"',
         [company_id, departemen_tujuan]
       );
-      
+
       const targetUserIds = targetUsers.map(u => u.id);
       if (targetUserIds.length > 0) {
         await notifyUsers(db, targetUserIds, {
@@ -205,16 +218,19 @@ const claimAndStartDeptTask = async (req, res) => {
 
     // 3. Create Agent Task
     // Map department_tasks fields to tasks fields
+    const isAuditTask = dt.checklist_session_id != null;
+    const initialProgress = isAuditTask ? 'Menunggu Material' : 'Berlangsung';
+
     const [result] = await db.query(
       `INSERT INTO tasks (
         perusahaan, company_id, departemen, nama_tugas, jenis_tugas, urgensi, 
         deskripsi, lokasi, detail_alamat, tanggal_mulai, tanggal_selesai,
-        tugas_departemen, dept_task_id, agen_id, progres, status, waktu_dimulai
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+        tugas_departemen, dept_task_id, checklist_session_id, agen_id, progres, status, waktu_dimulai
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
       [
         dt.perusahaan, dt.company_id, dt.departemen_tujuan, dt.nama_wo, dt.jenis_tugas || 'wo', dt.urgensi,
         dt.deskripsi, dt.lokasi, dt.detail_alamat, dt.tanggal_mulai, dt.tanggal_selesai,
-        false, id, JSON.stringify([agent_id]), 'Berlangsung', 'Aktif'
+        false, id, dt.checklist_session_id, JSON.stringify([agent_id]), initialProgress, 'Aktif'
       ]
     );
 
@@ -223,16 +239,16 @@ const claimAndStartDeptTask = async (req, res) => {
     // 4. Record in history
     await db.query(
       'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai) VALUES (?, ?, ?, NOW())',
-      [newTaskId, agent_name || 'Agen', 'Berlangsung']
+      [newTaskId, agent_name || 'Agen', initialProgress]
     );
 
     // 5. Real-time Sync
     socketService.emitToCompany(dt.company_id, 'dept-task-updated', { id, status: 'Berlangsung' });
     socketService.emitToCompany(dt.company_id, 'task-created', { id: newTaskId, nama_tugas: dt.nama_wo });
 
-    res.status(200).json({ 
-      message: 'Task claimed and started successfully', 
-      taskId: newTaskId 
+    res.status(200).json({
+      message: 'Task claimed and started successfully',
+      taskId: newTaskId
     });
   } catch (err) {
     console.error('Claim & Start dept task error:', err.message);
@@ -557,7 +573,7 @@ const monitorWO = async (req, res) => {
       );
       task.history = hist;
       if (typeof task.agen_id === 'string') {
-        try { task.agen_id = JSON.parse(task.agen_id); } catch (e) {}
+        try { task.agen_id = JSON.parse(task.agen_id); } catch (e) { }
       }
     }
 

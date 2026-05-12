@@ -2,7 +2,7 @@ import React, { useRef } from 'react';
 import { Camera, X, Check, CheckCircle2, XCircle } from 'lucide-react';
 import { compressImage } from '../utils/imageOptimizer';
 
-const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, notes, onNotesChange }) => {
+const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, notes, onNotesChange, photoUrls, onPhotoChange }) => {
   const fileInputRef = useRef(null);
   const reportType = field.type || field.bentuk_laporan;
   const fieldLabel = field.name || field.nama_detail;
@@ -150,7 +150,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
   };
 
   return (
-    <div className={`p-6 bg-white border border-[#F1F1F4] rounded-2xl shadow-sm transition-all ${status === 'rusak' ? 'border-[#F1416C]/30 bg-[#FFF5F8]/30' : ''}`}>
+    <div className={`p-4 md:p-6 bg-white border border-[#F1F1F4] rounded-2xl shadow-sm transition-all ${status === 'rusak' ? 'border-[#F1416C]/30 bg-[#FFF5F8]/30' : ''}`}>
       <div className="flex flex-col md:flex-row md:items-start gap-6">
         {/* Input Side */}
         <div className="flex-1 space-y-3">
@@ -161,13 +161,72 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
           </div>
           {renderInput()}
           {status === 'rusak' && (
-            <input
-              type="text"
-              value={notes || ''}
-              onChange={(e) => onNotesChange(e.target.value)}
-              placeholder="Catatan kerusakan..."
-              className="w-full px-3 py-2 bg-white border border-[#F1416C]/30 rounded-lg text-[12px] focus:border-[#F1416C] outline-none"
-            />
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={notes || ''}
+                  onChange={(e) => onNotesChange(e.target.value)}
+                  placeholder="Catatan kerusakan..."
+                  className="flex-1 px-4 py-3 bg-white border border-[#F1416C]/30 rounded-xl text-[13px] focus:border-[#F1416C] outline-none transition-colors"
+                />
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={async (e) => {
+                      const files = Array.from(e.target.files);
+                      if (files.length > 0 && onPhotoChange) {
+                        try {
+                          const currentUrls = photoUrls || [];
+                          const compressedPromises = files.map(file => compressImage(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.6 }));
+                          const compressedBlobs = await Promise.all(compressedPromises);
+                          
+                          const newUrls = await Promise.all(compressedBlobs.map(blob => new Promise(resolve => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(blob);
+                            reader.onloadend = () => resolve(reader.result);
+                          })));
+                          
+                          onPhotoChange([...currentUrls, ...newUrls].slice(0, 5)); // max 5 photos
+                        } catch (err) {
+                          console.error('Photo error:', err);
+                        }
+                      }
+                    }}
+                    className="hidden"
+                    id={`rusak-photo-${field.id || fieldLabel}`}
+                  />
+                  <label
+                    htmlFor={`rusak-photo-${field.id || fieldLabel}`}
+                    className="flex items-center justify-center w-[46px] h-[46px] rounded-xl bg-white border border-[#F1416C]/30 text-[#F1416C] hover:bg-[#FFF5F8] cursor-pointer transition-colors shadow-sm"
+                    title="Lampirkan foto kerusakan (max 5)"
+                  >
+                    <Camera size={20} />
+                  </label>
+                </div>
+              </div>
+              {photoUrls && photoUrls.length > 0 && (
+                <div className="flex flex-wrap gap-2 mt-1">
+                  {photoUrls.map((url, idx) => (
+                    <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#F1416C]/20 bg-white shadow-sm">
+                      <img src={url} className="w-full h-full object-cover" alt={`Foto kerusakan ${idx + 1}`} />
+                      <button 
+                        type="button" 
+                        onClick={() => {
+                          const newUrls = photoUrls.filter((_, i) => i !== idx);
+                          onPhotoChange(newUrls);
+                        }} 
+                        className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-lg hover:bg-black/80 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
 

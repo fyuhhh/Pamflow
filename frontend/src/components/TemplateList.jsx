@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Search, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, FileText, ExternalLink, Filter, RefreshCw, X } from 'lucide-react';
+import { Search, Plus, Edit2, Trash2, ChevronLeft, ChevronRight, ChevronDown, FileText, ExternalLink, Filter, RefreshCw, X, ClipboardPaste } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 
@@ -17,13 +17,29 @@ const TemplateList = () => {
     departemen: []
   });
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isImportOpen, setIsImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
   const [tempFilters, setTempFilters] = useState({ departemen: [] });
   const [availableDepartments, setAvailableDepartments] = useState([]);
+  const [companies, setCompanies] = useState([]);
 
   useEffect(() => {
     fetchTemplates();
     fetchDepartments();
+    fetchCompanies();
   }, []);
+
+  const fetchCompanies = async () => {
+    try {
+      const response = await authFetch('/api/companies');
+      if (response.ok) {
+        const data = await response.json();
+        setCompanies(data);
+      }
+    } catch (err) {
+      console.error('Error fetching companies:', err);
+    }
+  };
 
   const fetchTemplates = async () => {
     try {
@@ -164,13 +180,22 @@ const TemplateList = () => {
               </div>
             </div>
 
-            <button
-              onClick={() => navigate('/pengaturan/template-tugas/create')}
-              className="flex items-center gap-2 bg-[#0095E8] hover:bg-[#0084CC] text-white px-5 py-2.5 rounded-lg text-[13px] font-bold transition-colors shadow-sm"
-            >
-              <Plus size={18} />
-              Buat Template
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setIsImportOpen(true)}
+                className="flex items-center gap-2 bg-white border border-[#0095E8] text-[#0095E8] hover:bg-blue-50 px-5 py-2.5 rounded-lg text-[13px] font-bold transition-colors shadow-sm"
+              >
+                <ClipboardPaste size={18} />
+                Import dari Text
+              </button>
+              <button
+                onClick={() => navigate('/pengaturan/template-tugas/create')}
+                className="flex items-center gap-2 bg-[#0095E8] hover:bg-[#0084CC] text-white px-5 py-2.5 rounded-lg text-[13px] font-bold transition-colors shadow-sm"
+              >
+                <Plus size={18} />
+                Buat Template
+              </button>
+            </div>
           </div>
         </div>
 
@@ -297,6 +322,141 @@ const TemplateList = () => {
       <div className="mt-4 text-[11px] text-[#A1A5B7] px-1 font-medium italic">
         Powered By AIT- 2026 ©
       </div>
+
+      {/* Import Modal */}
+      {isImportOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsImportOpen(false)} />
+          <div className="relative bg-white rounded-2xl w-full max-w-[700px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-4 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]">
+              <div className="flex items-center gap-2">
+                <ClipboardPaste size={18} className="text-[#0095E8]" />
+                <h3 className="text-base font-bold text-[#181C32]">Import Template dari Text</h3>
+              </div>
+              <button onClick={() => setIsImportOpen(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+                <X size={20} className="text-[#7E8299]" />
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              <div className="bg-[#F1FAFF] p-4 rounded-lg border border-[#D6EEFB] space-y-2">
+                <p className="text-[12px] text-[#0095E8] font-bold">Instruksi:</p>
+                <p className="text-[11px] text-[#0095E8] leading-relaxed">
+                  Tempelkan teks template yang ingin di-import. Pastikan teks mengikuti format:<br/>
+                  <span className="font-mono bg-blue-100/50 px-1">Nama template: [Nama]</span><br/>
+                  <span className="font-mono bg-blue-100/50 px-1">Detail Tugas [Nomor]: [Nama Detail]</span>, dst.
+                </p>
+              </div>
+              
+              <textarea
+                value={importText}
+                onChange={(e) => setImportText(e.target.value)}
+                placeholder="Tempelkan teks template di sini..."
+                className="w-full h-[350px] px-4 py-3 rounded-lg border border-[#E4E6EF] text-[13px] outline-none focus:border-[#0095E8] resize-none font-mono"
+              />
+            </div>
+
+            <div className="px-6 py-4 bg-[#F9F9F9] border-t border-[#F1F1F4] flex items-center justify-end gap-3">
+              <button
+                onClick={() => setIsImportOpen(false)}
+                className="px-6 py-2.5 border border-[#E4E6EF] bg-white text-[#7E8299] text-[13px] font-bold rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Batal
+              </button>
+              <button
+                onClick={() => {
+                  if (!importText.trim()) return;
+                  
+                  // Parsing logic
+                  const lines = importText.split('\n').map(l => l.trim()).filter(l => l);
+                  let parsedData = {
+                    name: '',
+                    company_id: '',
+                    department_id: '',
+                    jenis_template: 'checklist',
+                    details: []
+                  };
+
+                  let currentDetail = null;
+                  let companyName = '';
+                  let deptName = '';
+
+                  for (let i = 0; i < lines.length; i++) {
+                    const line = lines[i];
+                    
+                    if (line.toLowerCase() === 'perusahaan') {
+                      companyName = lines[++i];
+                    } else if (line.toLowerCase() === 'departemen') {
+                      deptName = lines[++i];
+                    } else if (line.toLowerCase() === 'nama template') {
+                      parsedData.name = lines[++i];
+                    } else if (line.toLowerCase().startsWith('detail tugas')) {
+                      if (currentDetail) parsedData.details.push(currentDetail);
+                      currentDetail = {
+                        id: Date.now() + parsedData.details.length,
+                        nama_detail: '',
+                        bentuk_laporan: 'Text Field',
+                        deskripsi: '',
+                        wajib_diisi: true,
+                        options: ['Opsi 1'],
+                        isExpanded: true
+                      };
+                    } else if (line.toLowerCase() === 'nama detail tugas' && currentDetail) {
+                      currentDetail.nama_detail = lines[++i];
+                    } else if (line.toLowerCase() === 'bentuk laporan' && currentDetail) {
+                      const type = lines[++i];
+                      currentDetail.bentuk_laporan = type;
+                      
+                      // If Multiple Choice, look for options until "Deskripsi" or another tag
+                      if (type.toLowerCase() === 'multiple choice') {
+                        let options = [];
+                        let nextIdx = i + 1;
+                        while (nextIdx < lines.length) {
+                          const nextLine = lines[nextIdx];
+                          const nextLineLower = nextLine.toLowerCase();
+                          // Stop if we hit a known field tag
+                          if (nextLineLower === 'deskripsi' || 
+                              nextLineLower === 'ketentuan pengisian' || 
+                              nextLineLower.startsWith('detail tugas')) {
+                            break;
+                          }
+                          options.push(nextLine);
+                          nextIdx++;
+                        }
+                        if (options.length > 0) {
+                          currentDetail.options = options;
+                          i = nextIdx - 1; // Move pointer to last option
+                        }
+                      }
+                    } else if (line.toLowerCase() === 'deskripsi' && currentDetail) {
+                      currentDetail.deskripsi = lines[++i];
+                    } else if (line.toLowerCase() === 'ketentuan pengisian' && currentDetail) {
+                      // Force all to be mandatory regardless of text
+                      currentDetail.wajib_diisi = true;
+                      i++; // Skip the next line (the value)
+                    }
+                  }
+                  if (currentDetail) parsedData.details.push(currentDetail);
+
+                  // Find company and dept IDs
+                  const matchedCompany = companies.find(c => c.name.toLowerCase() === (companyName || '').toLowerCase());
+                  if (matchedCompany) {
+                    parsedData.company_id = matchedCompany.id;
+                    // Logic to find dept would happen in Form component after company is selected
+                    // But we can pass the name and let the Form component handle it
+                    parsedData.target_dept_name = deptName;
+                  }
+
+                  navigate('/pengaturan/template-tugas/create', { state: { prefilled: parsedData } });
+                }}
+                className="px-6 py-2.5 bg-[#0095E8] text-white text-[13px] font-bold rounded-lg hover:bg-[#0084CC] transition-colors shadow-sm shadow-blue-200"
+              >
+                Generate & Buat Template
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter Modal */}
       {isFilterOpen && (

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Filter, Download, Plus, Trash2, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronDown, RefreshCw, X, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
+import { Search, Filter, Download, Plus, Trash2, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronDown, RefreshCw, X, Calendar, AlertCircle, CheckCircle, Clock, Info } from 'lucide-react';
 import CustomDateRangePicker from './CustomDateRangePicker';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
@@ -187,6 +187,7 @@ const TerkirimList = () => {
       case 'Diterima': return 'bg-[#F8E3FF] text-[#7239EA]';
       case 'Menunggu Pengerjaan': return 'bg-[#FFF8DD] text-[#FFC700]';
       case 'Berlangsung': return 'bg-[#FFF8DD] text-[#FFC700]';
+      case 'Menunggu Material': return 'bg-[#FFF8DD] text-[#FFC700]';
       case 'Selesai': return 'bg-[#E8FFF3] text-[#50CD89]';
       case 'Ditolak': return 'bg-[#FFF5F8] text-[#F1416C]';
       default: return 'bg-[#F1FAFF] text-[#0095E8]';
@@ -422,9 +423,64 @@ const TerkirimList = () => {
                       </span>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`px-2.5 py-1 rounded text-[11px] font-bold ${getStatusBadge(task.status)}`}>
-                        {task.status || 'Baru'}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2.5 py-1 rounded text-[11px] font-bold ${getStatusBadge(task.agent_progres === 'Menunggu Material' ? 'Menunggu Material' : (task.status || 'Baru'))}`}>
+                          {task.agent_progres === 'Menunggu Material' ? 'Menunggu Material' : 
+                           (task.agent_progres === 'Berlangsung' && task.catatan_pengerjaan && !task.waktu_material_dicek) ? 'Berlangsung (Catatan)' :
+                           (task.status || 'Baru')}
+                        </span>
+                        {(task.catatan_material || task.catatan_pengerjaan) && task.agent_progres !== 'Menunggu Approval' && (
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              confirm(
+                                'Rincian Progres Tugas',
+                                <div className="text-left space-y-6">
+                                  {task.catatan_pengerjaan && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                                        <Clock size={12} />
+                                        Catatan Pengerjaan
+                                      </div>
+                                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                                        <p className="text-[13px] text-blue-800 leading-relaxed font-medium">
+                                          {task.catatan_pengerjaan}
+                                        </p>
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 pl-1">
+                                        Dilaporkan pada: {formatDate(task.waktu_catatan_pengerjaan)}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {task.catatan_material && (
+                                    <div className="space-y-2">
+                                      <div className="flex items-center gap-2 text-[11px] font-bold text-amber-600 uppercase tracking-wider">
+                                        <Info size={12} />
+                                        Catatan Material
+                                      </div>
+                                      <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                        <p className="text-[13px] text-amber-800 leading-relaxed font-medium">
+                                          {task.catatan_material}
+                                        </p>
+                                      </div>
+                                      <div className="text-[10px] text-slate-400 pl-1">
+                                        Dilaporkan pada: {formatDate(task.waktu_catatan_material)}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>,
+                                () => {},
+                                { confirmText: 'Tutup', showCancel: false }
+                              );
+                            }}
+                            className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors shadow-sm border border-blue-100"
+                            title="Lihat Rincian Progres"
+                          >
+                            <Info size={14} className="animate-pulse" />
+                          </button>
+                        )}
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-[12px] text-[#7E8299]">{task.departemen_asal || '-'}</td>
                     <td className="px-6 py-5 text-[12px] text-[#7E8299] font-medium">{task.departemen_tujuan || '-'}</td>

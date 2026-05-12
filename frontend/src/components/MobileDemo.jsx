@@ -10,6 +10,9 @@ import MobileDeptTaskList from './MobileDeptTaskList';
 import MobileDeptTaskDetail from './MobileDeptTaskDetail';
 import MobileApprovalList from './MobileApprovalList';
 import MobileApprovalDetail from './MobileApprovalDetail';
+import ChecklistHarian from './ChecklistHarian';
+import MobileMonitorWO from './MobileMonitorWO';
+import BuatTugasDepartemen from './BuatTugasDepartemen';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import { Smartphone, Monitor } from 'lucide-react';
@@ -25,6 +28,8 @@ const MobileDemo = ({ onLogout }) => {
   const pathOrder = [
     '/demo/mobile',
     '/demo/mobile/tasks',
+    '/demo/mobile/checklist',
+    '/demo/mobile/checklist/buat-wo',
     '/demo/mobile/profile'
   ];
 
@@ -79,6 +84,13 @@ const MobileDemo = ({ onLogout }) => {
     switch (location.pathname) {
       case '/demo/mobile/tasks':
         return <MobileTasks />;
+      case '/demo/mobile/checklist':
+      case '/demo/mobile/checklist-riwayat':
+        return <ChecklistHarian />;
+      case '/demo/mobile/monitor-wo':
+        return <MobileMonitorWO />;
+      case '/demo/mobile/checklist/buat-wo':
+        return <BuatTugasDepartemen taskType="wo" />;
       case '/demo/mobile/notifications':
         return <MobileNotifications />;
 

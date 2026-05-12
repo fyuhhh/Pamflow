@@ -1,4 +1,6 @@
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft, Search, Filter, ChevronRight, Info } from 'lucide-react';
 import API_URL from '../config';
 
 const MobileDeptTaskList = () => {

@@ -12,7 +12,7 @@ const MobileTaskForm = () => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const deptTaskId = queryParams.get('dept_task_id');
-  
+
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isReviewing, setIsReviewing] = useState(false);
@@ -36,7 +36,7 @@ const MobileTaskForm = () => {
       const response = await authFetch(`/api/department-tasks/${deptTaskId}`);
       if (response.ok) {
         const deptTask = await response.json();
-        
+
         // Mock task object
         const newTask = {
           id: 'new',
@@ -46,7 +46,7 @@ const MobileTaskForm = () => {
           urgensi: deptTask.urgensi,
           tanggal_mulai: deptTask.tanggal_mulai,
           tanggal_selesai: deptTask.tanggal_selesai,
-          details: [] 
+          details: []
         };
 
         // If has template, fetch template details
@@ -83,7 +83,7 @@ const MobileTaskForm = () => {
         }
 
         setTask(newTask);
-        
+
         // Initialize form data
         const details = typeof newTask.details === 'string' ? JSON.parse(newTask.details) : newTask.details;
         const initialData = {};
@@ -112,12 +112,12 @@ const MobileTaskForm = () => {
       if (response.ok) {
         const data = await response.json();
         setTask(data);
-        
+
         // Check if there's already submitted data to pre-fill
         if (data.submission_data) {
           try {
-            const savedData = typeof data.submission_data === 'string' 
-              ? JSON.parse(data.submission_data) 
+            const savedData = typeof data.submission_data === 'string'
+              ? JSON.parse(data.submission_data)
               : data.submission_data;
             setFormData(savedData);
           } catch (e) {
@@ -164,7 +164,7 @@ const MobileTaskForm = () => {
         const compressedImages = await Promise.all(
           files.map(file => compressImage(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.6 }))
         );
-        
+
         // Convert Blobs to data URLs for preview (since current logic uses strings)
         const dataUrls = await Promise.all(
           compressedImages.map(blob => new Promise(resolve => {
@@ -173,7 +173,7 @@ const MobileTaskForm = () => {
             reader.onloadend = () => resolve(reader.result);
           }))
         );
-        
+
         if (isMultiple) {
           setFormData(prev => ({
             ...prev,
@@ -231,9 +231,9 @@ const MobileTaskForm = () => {
 
         // Mark dept task as Selesai
         await authFetch(`/api/department-tasks/${deptTaskId}`, {
-          method: 'DELETE', 
+          method: 'DELETE',
         });
-        
+
         // Actually, let's keep it clean and just transition it if we had a PATCH status.
         // Since we only have DELETE and Accept (which sets Menunggu Pengerjaan), 
         // and user didn't specify a "Finish" endpoint for dept tasks, 
@@ -243,18 +243,18 @@ const MobileTaskForm = () => {
       // 2. Submit the reporting data
       const response = await authFetch(`/api/tasks/${finalTaskId}/submit`, {
         method: 'PATCH',
-        body: JSON.stringify({ 
-          submission_data: formData, 
-          nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen' 
+        body: JSON.stringify({
+          submission_data: formData,
+          nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen'
         })
       });
 
       if (response.ok) {
         success('Berhasil', 'Laporan berhasil dikirim');
         setTimeout(() => {
-          navigate(`/demo/mobile/task/${finalTaskId}`, { 
+          navigate(`/demo/mobile/task/${finalTaskId}`, {
             state: { formSubmitted: true },
-            replace: true 
+            replace: true
           });
         }, 1500);
       } else {
@@ -262,22 +262,22 @@ const MobileTaskForm = () => {
       }
     } catch (error) {
       console.error('Error submitting form:', error);
-      
+
       // Offline Fallback
       if (!navigator.onLine) {
-        await saveOfflineData('SUBMIT_TASK', { 
-          id: finalTaskId, 
-          payload: { 
-            submission_data: formData, 
-            nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen' 
-          } 
+        await saveOfflineData('SUBMIT_TASK', {
+          id: finalTaskId,
+          payload: {
+            submission_data: formData,
+            nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen'
+          }
         });
-        
+
         success('Berhasil', 'Tersimpan (Mode Offline)');
         setTimeout(() => {
-          navigate(`/demo/mobile/task/${finalTaskId}`, { 
+          navigate(`/demo/mobile/task/${finalTaskId}`, {
             state: { formSubmitted: true },
-            replace: true 
+            replace: true
           });
         }, 1500);
         return;
@@ -301,28 +301,28 @@ const MobileTaskForm = () => {
               <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFC700" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
             </div>
           </div>
-          
+
           <h3 className="text-xl font-medium text-[#181C32] mb-3">
             Kirim Laporan
           </h3>
           <p className="text-[14px] leading-relaxed text-[#7E8299] mb-8">
             Apakah Anda yakin ingin mengirim laporan tugas ini? Pastikan data yang diisi sudah benar karena data tidak dapat diubah setelah dikirim.
           </p>
-          
+
           <div className="flex gap-4">
-            <button 
-              type="button" 
+            <button
+              type="button"
               onClick={() => {
                 setShowConfirm(false);
                 handleSubmit();
-              }} 
+              }}
               className="flex-1 py-3 bg-[#0095E8] rounded-xl text-[14px] font-bold text-white hover:bg-[#0084CC] transition-colors active:scale-95"
             >
               Lanjut
             </button>
-            <button 
-              type="button" 
-              onClick={() => setShowConfirm(false)} 
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
               className="flex-1 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold text-[#005499] hover:bg-gray-50 transition-colors active:scale-95"
             >
               Cek Kembali
@@ -358,14 +358,14 @@ const MobileTaskForm = () => {
     return (
       <div className="bg-white font-sans flex flex-col relative pb-32">
         <header className="sticky top-0 bg-white z-40 px-6 py-4 flex items-center justify-between border-b border-slate-50"
-                style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
+          style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
           <div className="flex items-center gap-4">
             <button onClick={() => setIsReviewing(false)} className="p-1 -ml-1">
               <ArrowLeft size={24} className="text-slate-800" />
             </button>
             <h1 className="text-lg font-bold text-slate-800">Review</h1>
           </div>
-          <button 
+          <button
             onClick={() => setIsReviewing(false)}
             className="flex items-center gap-2 text-[#006097] font-bold text-[14px] hover:bg-slate-50 px-3 py-1.5 rounded-lg transition-colors"
           >
@@ -376,13 +376,13 @@ const MobileTaskForm = () => {
 
         <div className="flex-1 px-6 pt-8 overflow-y-auto no-scrollbar">
           <p className="text-[17px] text-slate-800 mb-10 font-medium">Silakan isi form di bawah ini</p>
-          
+
           <div className="space-y-10">
             {details.map((field, index) => {
               const fieldKey = field.id || index;
               const value = formData[fieldKey];
               const isImage = field.bentuk_laporan === 'Image' || field.bentuk_laporan === 'Multiple Images';
-              
+
               return (
                 <div key={fieldKey} className="space-y-2">
                   <p className="text-[14px] font-bold text-slate-400">
@@ -429,11 +429,11 @@ const MobileTaskForm = () => {
         </div>
 
         {/* Bottom Sticky Action Bar - Fixed Bottom (Common Mobile Pattern) */}
-        <div 
+        <div
           className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-50 px-6 py-4 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
           style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
         >
-          <button 
+          <button
             onClick={() => setShowConfirm(true)}
             disabled={isSubmitting}
             className="w-full bg-[#004A71] text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-[0.98] transition-all disabled:opacity-50"
@@ -450,7 +450,7 @@ const MobileTaskForm = () => {
     <div className="bg-white font-sans flex flex-col relative pb-32">
       {/* Header */}
       <header className="sticky top-0 bg-white z-40 px-6 py-4 flex items-center gap-4 border-b border-slate-50"
-              style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
+        style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
         <button onClick={() => navigate(-1)} className="p-1 -ml-1">
           <ArrowLeft size={24} className="text-slate-800" />
         </button>
@@ -507,15 +507,15 @@ const MobileTaskForm = () => {
                         onChange={(e) => handleFileChange(fieldKey, e, false)}
                         className="hidden"
                       />
-                      
+
                       {formData[fieldKey] ? (
                         <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-md">
-                          <img 
-                            src={formData[fieldKey]} 
-                            alt="Preview" 
+                          <img
+                            src={formData[fieldKey]}
+                            alt="Preview"
                             className="w-full h-full object-cover"
                           />
-                          <button 
+                          <button
                             type="button"
                             onClick={() => handleInputChange(fieldKey, '')}
                             className="absolute top-2 right-2 w-8 h-8 bg-black/50 text-white rounded-full flex items-center justify-center backdrop-blur-sm"
@@ -524,7 +524,7 @@ const MobileTaskForm = () => {
                           </button>
                         </div>
                       ) : (
-                        <div 
+                        <div
                           onClick={() => triggerCamera(fieldKey)}
                           className="w-full py-10 border border-slate-100 rounded-2xl flex flex-col items-center justify-center gap-3 bg-white active:bg-slate-50 transition-colors cursor-pointer shadow-sm border-dashed"
                         >
@@ -549,13 +549,13 @@ const MobileTaskForm = () => {
                         onChange={(e) => handleFileChange(fieldKey, e, true)}
                         className="hidden"
                       />
-                      
+
                       {/* Image Grid */}
                       <div className="grid grid-cols-2 gap-3">
                         {Array.isArray(formData[fieldKey]) && formData[fieldKey].map((img, idx) => (
                           <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm">
                             <img src={img} className="w-full h-full object-cover" alt={`Preview ${idx + 1}`} />
-                            <button 
+                            <button
                               type="button"
                               onClick={() => {
                                 const newImages = [...formData[fieldKey]];
@@ -568,9 +568,9 @@ const MobileTaskForm = () => {
                             </button>
                           </div>
                         ))}
-                        
+
                         {(!Array.isArray(formData[fieldKey]) || formData[fieldKey].length < 5) && (
-                          <div 
+                          <div
                             onClick={() => triggerCamera(fieldKey)}
                             className="aspect-square border-2 border-dashed border-slate-200 rounded-xl flex flex-col items-center justify-center gap-2 bg-slate-50 active:bg-slate-100 transition-colors cursor-pointer"
                           >
@@ -583,18 +583,17 @@ const MobileTaskForm = () => {
                     </div>
                   )}
 
-                   {reportType === 'Multiple Choice' && (
+                  {reportType === 'Multiple Choice' && (
                     <div className="space-y-3">
                       {(field.options || []).map((opt, i) => {
-                        const isSelected = Array.isArray(formData[fieldKey]) 
+                        const isSelected = Array.isArray(formData[fieldKey])
                           ? formData[fieldKey].includes(opt)
                           : formData[fieldKey] === opt;
-                          
+
                         return (
                           <label key={i} className="flex items-center gap-3 p-1 cursor-pointer group">
-                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
-                              isSelected ? 'border-[#0095E8] bg-[#0095E8]' : 'border-slate-300'
-                            }`}>
+                            <div className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${isSelected ? 'border-[#0095E8] bg-[#0095E8]' : 'border-slate-300'
+                              }`}>
                               <input
                                 type="checkbox"
                                 checked={isSelected}
@@ -635,7 +634,7 @@ const MobileTaskForm = () => {
                           ))}
                         </select>
                         <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
-                          <svg width="18" height="18" className="text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+                          <svg width="18" height="18" className="text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                         </div>
                       </div>
                       <p className="text-[12px] text-slate-400 ml-1">{fieldDesc}</p>
@@ -662,11 +661,11 @@ const MobileTaskForm = () => {
       </div>
 
       {/* Bottom Sticky Action Bar - Fixed Bottom (Common Mobile Pattern) */}
-      <div 
+      <div
         className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-50 px-6 py-4 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
         style={{ paddingBottom: 'calc(12px + env(safe-area-inset-bottom))' }}
       >
-        <button 
+        <button
           onClick={() => setIsReviewing(true)}
           className="w-full bg-[#004A71] text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-[0.98] transition-all"
         >

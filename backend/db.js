@@ -24,14 +24,14 @@ async function initializeDB(retries = 5, delay = 5000) {
         connectTimeout: 30000
       });
 
-    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``);
-    await connection.end();
+      await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbConfig.database}\``);
+      await connection.end();
 
-    // Now connect with database
-    const pool = mysql.createPool(dbConfig);
-    
-    // 1. Companies
-    await pool.query(`
+      // Now connect with database
+      const pool = mysql.createPool(dbConfig);
+
+      // 1. Companies
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS companies (
         id INT AUTO_INCREMENT PRIMARY KEY,
         orgId VARCHAR(100) NOT NULL DEFAULT 'PAM',
@@ -46,16 +46,16 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Add orgId to companies
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM companies LIKE 'orgId'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE companies ADD COLUMN orgId VARCHAR(100) NOT NULL DEFAULT 'PAM' AFTER id");
-      }
-    } catch (e) {}
+      // Migration: Add orgId to companies
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM companies LIKE 'orgId'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE companies ADD COLUMN orgId VARCHAR(100) NOT NULL DEFAULT 'PAM' AFTER id");
+        }
+      } catch (e) { }
 
-    // 2. Organizations
-    await pool.query(`
+      // 2. Organizations
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS organizations (
         id INT AUTO_INCREMENT PRIMARY KEY,
         orgId VARCHAR(100) NOT NULL UNIQUE,
@@ -68,26 +68,26 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Seed PAM Org
-    const [orgs] = await pool.query('SELECT * FROM organizations WHERE orgId = ?', ['PAM']);
-    if (orgs.length === 0) {
-      await pool.query(
-        'INSERT INTO organizations (orgId, name, picName, picEmail, totalQuota) VALUES (?, ?, ?, ?, ?)',
-        ['PAM', 'PAM', 'Affan', 'affan.ridha@pam-group.com', 100]
-      );
-    }
+      // Seed PAM Org
+      const [orgs] = await pool.query('SELECT * FROM organizations WHERE orgId = ?', ['PAM']);
+      if (orgs.length === 0) {
+        await pool.query(
+          'INSERT INTO organizations (orgId, name, picName, picEmail, totalQuota) VALUES (?, ?, ?, ?, ?)',
+          ['PAM', 'PAM', 'Affan', 'affan.ridha@pam-group.com', 100]
+        );
+      }
 
-    // Seed PAM Company
-    const [comps] = await pool.query('SELECT * FROM companies WHERE companyId = ?', ['PAM']);
-    if (comps.length === 0) {
-      await pool.query(
-        'INSERT INTO companies (companyId, orgId, name, type, timezone, address, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        ['PAM', 'PAM', 'Ewalk Pentacity Mall', 'internal', 'UTC+07:00', 'Not Set', '6285200000000', 'Aktif']
-      );
-    }
+      // Seed PAM Company
+      const [comps] = await pool.query('SELECT * FROM companies WHERE companyId = ?', ['PAM']);
+      if (comps.length === 0) {
+        await pool.query(
+          'INSERT INTO companies (companyId, orgId, name, type, timezone, address, phone, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+          ['PAM', 'PAM', 'Ewalk Pentacity Mall', 'internal', 'UTC+07:00', 'Not Set', '6285200000000', 'Aktif']
+        );
+      }
 
-    // 3. Departments
-    await pool.query(`
+      // 3. Departments
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS departments (
         id INT AUTO_INCREMENT PRIMARY KEY,
         name VARCHAR(255) NOT NULL,
@@ -100,21 +100,21 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Seed PAM Depts
-    const [depts] = await pool.query('SELECT * FROM departments WHERE company_id = (SELECT id FROM companies WHERE companyId = ?)', ['PAM']);
-    if (depts.length === 0) {
-      const [pamRows] = await pool.query('SELECT id FROM companies WHERE companyId = ?', ['PAM']);
-      if (pamRows.length > 0) {
-        const pamId = pamRows[0].id;
-        const list = ['IT', 'HR & GA', 'OPERASIONAL', 'BUILDING MAINTENANCE'];
-        for (const n of list) {
-          await pool.query('INSERT INTO departments (name, dept_id, company_id) VALUES (?, ?, ?)', [n, n.substring(0,3), pamId]);
+      // Seed PAM Depts
+      const [depts] = await pool.query('SELECT * FROM departments WHERE company_id = (SELECT id FROM companies WHERE companyId = ?)', ['PAM']);
+      if (depts.length === 0) {
+        const [pamRows] = await pool.query('SELECT id FROM companies WHERE companyId = ?', ['PAM']);
+        if (pamRows.length > 0) {
+          const pamId = pamRows[0].id;
+          const list = ['IT', 'HR & GA', 'OPERASIONAL', 'BUILDING MAINTENANCE'];
+          for (const n of list) {
+            await pool.query('INSERT INTO departments (name, dept_id, company_id) VALUES (?, ?, ?)', [n, n.substring(0, 3), pamId]);
+          }
         }
       }
-    }
 
-    // 4. Users
-    await pool.query(`
+      // 4. Users
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS users (
         id INT AUTO_INCREMENT PRIMARY KEY,
         orgId VARCHAR(255) NOT NULL DEFAULT 'PAM',
@@ -135,52 +135,52 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Add pin to users
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM users LIKE 'pin'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE users ADD COLUMN pin VARCHAR(255) DEFAULT '123456' AFTER userType");
-        await pool.query("UPDATE users SET pin = '123456' WHERE userType = 'agen' AND (pin IS NULL OR pin = '')");
+      // Migration: Add pin to users
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM users LIKE 'pin'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE users ADD COLUMN pin VARCHAR(255) DEFAULT '123456' AFTER userType");
+          await pool.query("UPDATE users SET pin = '123456' WHERE userType = 'agen' AND (pin IS NULL OR pin = '')");
+        }
+      } catch (e) { }
+
+      // Migration: Add username to users
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM users LIKE 'username'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE users ADD COLUMN username VARCHAR(255) AFTER email");
+          // Update existing users: lower(firstName+lastName)
+          await pool.query("UPDATE users SET username = LOWER(CONCAT(REPLACE(firstName, ' ', ''), REPLACE(lastName, ' ', ''))) WHERE username IS NULL");
+          // Ensure username is unique if possible or at least set
+          await pool.query("UPDATE users SET username = CONCAT(username, id) WHERE id IN (SELECT id FROM (SELECT username, id FROM users GROUP BY username HAVING COUNT(*) > 1) as t)");
+        }
+
+        // Make email/password nullable for distinct auth
+        await pool.query("ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL");
+        await pool.query("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL");
+
+        // Add unique index to username if not exists
+        const [indexes] = await pool.query("SHOW INDEX FROM users WHERE Key_name = 'idx_username'");
+        if (indexes.length === 0) {
+          await pool.query("ALTER TABLE users ADD UNIQUE INDEX idx_username (username)");
+        }
+      } catch (e) { }
+
+      // Sanitizers
+      await pool.query("UPDATE companies SET orgId = 'PAM' WHERE orgId IS NULL OR orgId = ''");
+      await pool.query("UPDATE users SET orgId = 'PAM' WHERE orgId IS NULL OR orgId = ''");
+
+      // Seed initial user
+      const [users] = await pool.query('SELECT * FROM users WHERE email = ?', ['adil@gmail.com']);
+      if (users.length === 0) {
+        await pool.query(
+          'INSERT INTO users (orgId, email, password, firstName, role, department) VALUES (?, ?, ?, ?, ?, ?)',
+          ['PAM', 'adil@gmail.com', 'adil', 'Adil', 'Super Admin', 'IT']
+        );
       }
-    } catch (e) {}
 
-    // Migration: Add username to users
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM users LIKE 'username'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE users ADD COLUMN username VARCHAR(255) AFTER email");
-        // Update existing users: lower(firstName+lastName)
-        await pool.query("UPDATE users SET username = LOWER(CONCAT(REPLACE(firstName, ' ', ''), REPLACE(lastName, ' ', ''))) WHERE username IS NULL");
-        // Ensure username is unique if possible or at least set
-        await pool.query("UPDATE users SET username = CONCAT(username, id) WHERE id IN (SELECT id FROM (SELECT username, id FROM users GROUP BY username HAVING COUNT(*) > 1) as t)");
-      }
-      
-      // Make email/password nullable for distinct auth
-      await pool.query("ALTER TABLE users MODIFY COLUMN email VARCHAR(255) NULL");
-      await pool.query("ALTER TABLE users MODIFY COLUMN password VARCHAR(255) NULL");
-      
-      // Add unique index to username if not exists
-      const [indexes] = await pool.query("SHOW INDEX FROM users WHERE Key_name = 'idx_username'");
-      if (indexes.length === 0) {
-        await pool.query("ALTER TABLE users ADD UNIQUE INDEX idx_username (username)");
-      }
-    } catch (e) {}
-
-    // Sanitizers
-    await pool.query("UPDATE companies SET orgId = 'PAM' WHERE orgId IS NULL OR orgId = ''");
-    await pool.query("UPDATE users SET orgId = 'PAM' WHERE orgId IS NULL OR orgId = ''");
-
-    // Seed initial user
-    const [users] = await pool.query('SELECT * FROM users WHERE email = ?', ['adil@gmail.com']);
-    if (users.length === 0) {
-      await pool.query(
-        'INSERT INTO users (orgId, email, password, firstName, role, department) VALUES (?, ?, ?, ?, ?, ?)',
-        ['PAM', 'adil@gmail.com', 'adil', 'Adil', 'Super Admin', 'IT']
-      );
-    }
-
-    // 4b. Password Reset Requests
-    await pool.query(`
+      // 4b. Password Reset Requests
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS atur_ulang_pw (
         id INT AUTO_INCREMENT PRIMARY KEY,
         orgId VARCHAR(255) NOT NULL,
@@ -191,8 +191,8 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // 5. Tasks
-    await pool.query(`
+      // 5. Tasks
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
         perusahaan VARCHAR(255),
@@ -240,53 +240,70 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Add recurrence columns to tasks
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'next_recurrence_date'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE tasks ADD COLUMN next_recurrence_date DATE DEFAULT NULL AFTER created_at");
-        await pool.query("ALTER TABLE tasks ADD COLUMN recurrence_count INT DEFAULT 0 AFTER next_recurrence_date");
-      }
-    } catch (e) {}
+      // Migration: Add recurrence columns to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'next_recurrence_date'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN next_recurrence_date DATE DEFAULT NULL AFTER created_at");
+          await pool.query("ALTER TABLE tasks ADD COLUMN recurrence_count INT DEFAULT 0 AFTER next_recurrence_date");
+        }
+      } catch (e) { }
 
-    // Migration: Add dept_task_id to tasks
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'dept_task_id'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE tasks ADD COLUMN dept_task_id INT DEFAULT NULL AFTER tugas_departemen");
-      }
-    } catch (e) {}
+      // Migration: Add dept_task_id to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'dept_task_id'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN dept_task_id INT DEFAULT NULL AFTER tugas_departemen");
+        }
+      } catch (e) { }
 
-    // Migration: Add jenis_tugas to tasks
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'jenis_tugas'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE tasks ADD COLUMN jenis_tugas VARCHAR(50) DEFAULT 'checklist' AFTER nama_tugas");
-      }
-    } catch (e) {}
+      // Migration: Add checklist_session_id to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'checklist_session_id'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN checklist_session_id INT DEFAULT NULL AFTER dept_task_id");
+        }
+      } catch (e) { console.error('Migration error checklist_session_id:', e); }
 
-    // Migration: Add approval_status to tasks
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'approval_status'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE tasks ADD COLUMN approval_status VARCHAR(50) DEFAULT 'Pending' AFTER admin_pemeriksa_id");
-      }
-    } catch (e) {}
+      // Migration: Add catatan_material to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'catatan_material'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN catatan_material TEXT DEFAULT NULL AFTER checklist_session_id");
+          await pool.query("ALTER TABLE tasks ADD COLUMN waktu_catatan_material TIMESTAMP NULL DEFAULT NULL AFTER catatan_material");
+        }
+      } catch (e) { }
 
-    // Migration: Add GPS columns to tasks
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'start_latitude'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE tasks ADD COLUMN start_latitude DECIMAL(10, 8) DEFAULT NULL");
-        await pool.query("ALTER TABLE tasks ADD COLUMN start_longitude DECIMAL(11, 8) DEFAULT NULL");
-        await pool.query("ALTER TABLE tasks ADD COLUMN finish_latitude DECIMAL(10, 8) DEFAULT NULL");
-        await pool.query("ALTER TABLE tasks ADD COLUMN finish_longitude DECIMAL(11, 8) DEFAULT NULL");
-      }
-    } catch (e) {}
+      // Migration: Add jenis_tugas to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'jenis_tugas'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN jenis_tugas VARCHAR(50) DEFAULT 'checklist' AFTER nama_tugas");
+        }
+      } catch (e) { }
+
+      // Migration: Add approval_status to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'approval_status'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN approval_status VARCHAR(50) DEFAULT 'Pending' AFTER admin_pemeriksa_id");
+        }
+      } catch (e) { }
+
+      // Migration: Add GPS columns to tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM tasks LIKE 'start_latitude'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE tasks ADD COLUMN start_latitude DECIMAL(10, 8) DEFAULT NULL");
+          await pool.query("ALTER TABLE tasks ADD COLUMN start_longitude DECIMAL(11, 8) DEFAULT NULL");
+          await pool.query("ALTER TABLE tasks ADD COLUMN finish_latitude DECIMAL(10, 8) DEFAULT NULL");
+          await pool.query("ALTER TABLE tasks ADD COLUMN finish_longitude DECIMAL(11, 8) DEFAULT NULL");
+        }
+      } catch (e) { }
 
 
-    // 6. Department Tasks
-    await pool.query(`
+      // 6. Department Tasks
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS department_tasks (
         id INT AUTO_INCREMENT PRIMARY KEY,
         perusahaan VARCHAR(255),
@@ -311,16 +328,16 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Add jenis_tugas to department_tasks
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM department_tasks LIKE 'jenis_tugas'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE department_tasks ADD COLUMN jenis_tugas VARCHAR(50) DEFAULT 'wo' AFTER template_id");
-      }
-    } catch (e) {}
+      // Migration: Add jenis_tugas to department_tasks
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM department_tasks LIKE 'jenis_tugas'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE department_tasks ADD COLUMN jenis_tugas VARCHAR(50) DEFAULT 'wo' AFTER template_id");
+        }
+      } catch (e) { }
 
-    // 8. Task History Log (Agent side)
-    await pool.query(`
+      // 8. Task History Log (Agent side)
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS task_history (
         id INT AUTO_INCREMENT PRIMARY KEY,
         task_id INT,
@@ -334,8 +351,8 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // 8c. Push Subscriptions
-    await pool.query(`
+      // 8c. Push Subscriptions
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS push_subscriptions (
         id INT AUTO_INCREMENT PRIMARY KEY,
         user_id INT NOT NULL,
@@ -348,8 +365,8 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // 8b. General Audit Logs (Admin & System side)
-    await pool.query(`
+      // 8b. General Audit Logs (Admin & System side)
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS audit_logs (
         id INT AUTO_INCREMENT PRIMARY KEY,
         entity_type VARCHAR(50) NOT NULL,
@@ -373,34 +390,34 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Add detailed device/session columns to audit_logs (per-column)
-    const auditMigrations = [
-      { col: 'user_agent',   sql: "ALTER TABLE audit_logs ADD COLUMN user_agent TEXT AFTER ip_address" },
-      { col: 'device_brand', sql: "ALTER TABLE audit_logs ADD COLUMN device_brand VARCHAR(100) AFTER user_agent" },
-      { col: 'device_name',  sql: "ALTER TABLE audit_logs ADD COLUMN device_name VARCHAR(100) AFTER device_brand" },
-      { col: 'browser',      sql: "ALTER TABLE audit_logs ADD COLUMN browser VARCHAR(100) AFTER device_name" },
-      { col: 'os',           sql: "ALTER TABLE audit_logs ADD COLUMN os VARCHAR(100) AFTER browser" },
-      { col: 'page_url',     sql: "ALTER TABLE audit_logs ADD COLUMN page_url VARCHAR(512) AFTER os" },
-      { col: 'session_id',   sql: "ALTER TABLE audit_logs ADD COLUMN session_id VARCHAR(128) AFTER page_url" },
-      { col: 'action_label', sql: "ALTER TABLE audit_logs ADD COLUMN action_label VARCHAR(255) AFTER action" },
-    ];
-    for (const m of auditMigrations) {
+      // Migration: Add detailed device/session columns to audit_logs (per-column)
+      const auditMigrations = [
+        { col: 'user_agent', sql: "ALTER TABLE audit_logs ADD COLUMN user_agent TEXT AFTER ip_address" },
+        { col: 'device_brand', sql: "ALTER TABLE audit_logs ADD COLUMN device_brand VARCHAR(100) AFTER user_agent" },
+        { col: 'device_name', sql: "ALTER TABLE audit_logs ADD COLUMN device_name VARCHAR(100) AFTER device_brand" },
+        { col: 'browser', sql: "ALTER TABLE audit_logs ADD COLUMN browser VARCHAR(100) AFTER device_name" },
+        { col: 'os', sql: "ALTER TABLE audit_logs ADD COLUMN os VARCHAR(100) AFTER browser" },
+        { col: 'page_url', sql: "ALTER TABLE audit_logs ADD COLUMN page_url VARCHAR(512) AFTER os" },
+        { col: 'session_id', sql: "ALTER TABLE audit_logs ADD COLUMN session_id VARCHAR(128) AFTER page_url" },
+        { col: 'action_label', sql: "ALTER TABLE audit_logs ADD COLUMN action_label VARCHAR(255) AFTER action" },
+      ];
+      for (const m of auditMigrations) {
+        try {
+          const [cols] = await pool.query(`SHOW COLUMNS FROM audit_logs LIKE '${m.col}'`);
+          if (cols.length === 0) {
+            await pool.query(m.sql);
+            console.log(`[DB] audit_logs: Added column '${m.col}'.`);
+          }
+        } catch (e) { console.warn(`[DB] audit_logs migration '${m.col}' skipped:`, e.message); }
+      }
+      // Allow entity_id to be NULL for navigation/auth logs
       try {
-        const [cols] = await pool.query(`SHOW COLUMNS FROM audit_logs LIKE '${m.col}'`);
-        if (cols.length === 0) {
-          await pool.query(m.sql);
-          console.log(`[DB] audit_logs: Added column '${m.col}'.`);
-        }
-      } catch(e) { console.warn(`[DB] audit_logs migration '${m.col}' skipped:`, e.message); }
-    }
-    // Allow entity_id to be NULL for navigation/auth logs
-    try {
-      await pool.query("ALTER TABLE audit_logs MODIFY COLUMN entity_id INT NULL");
-    } catch(e) {}
+        await pool.query("ALTER TABLE audit_logs MODIFY COLUMN entity_id INT NULL");
+      } catch (e) { }
 
 
-    // 9. Roles & Permissions
-    await pool.query(`
+      // 9. Roles & Permissions
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS roles (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_id INT,
@@ -412,8 +429,8 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // 10. Task Templates
-    await pool.query(`
+      // 10. Task Templates
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS task_templates (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_id INT,
@@ -424,16 +441,16 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Add jenis_template to task_templates
-    try {
-      const [cols] = await pool.query("SHOW COLUMNS FROM task_templates LIKE 'jenis_template'");
-      if (cols.length === 0) {
-        await pool.query("ALTER TABLE task_templates ADD COLUMN jenis_template VARCHAR(50) DEFAULT 'checklist' AFTER department_id");
-      }
-    } catch (e) {}
+      // Migration: Add jenis_template to task_templates
+      try {
+        const [cols] = await pool.query("SHOW COLUMNS FROM task_templates LIKE 'jenis_template'");
+        if (cols.length === 0) {
+          await pool.query("ALTER TABLE task_templates ADD COLUMN jenis_template VARCHAR(50) DEFAULT 'checklist' AFTER department_id");
+        }
+      } catch (e) { }
 
-    // 10.5 Password Reset Requests
-    await pool.query(`
+      // 10.5 Password Reset Requests
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS atur_ulang_pw (
         id INT AUTO_INCREMENT PRIMARY KEY,
         orgId VARCHAR(255),
@@ -444,125 +461,125 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-    // Migration: Update users role_id from role name if null
-    try {
-      await pool.query(`
+      // Migration: Update users role_id from role name if null
+      try {
+        await pool.query(`
         UPDATE users u 
         JOIN roles r ON u.role = r.name 
         SET u.role_id = r.id 
         WHERE u.role_id IS NULL OR u.role_id = 0
       `);
-      console.log('User roles successfully migrated (linked by name)');
-    } catch (e) {
-      console.warn('User role migration failed:', e.message);
-    }
-
-    // Optimize for large payloads (Images)
-    try {
-      await pool.query('SET GLOBAL max_allowed_packet = 16777216');
-      console.log('Successfully set GLOBAL max_allowed_packet to 16MB');
-    } catch (e) {
-      console.warn('Could not set GLOBAL max_allowed_packet. Ensure DB user has SUPER privileges or set manually in config.');
-    }
-    
-    try {
-      await pool.query('SET SESSION max_allowed_packet = 16777216');
-      console.log('Successfully set SESSION max_allowed_packet to 16MB');
-    } catch (e) {
-      console.warn('Could not set SESSION max_allowed_packet. In some MySQL versions, this is read-only at session level.');
-    }
-
-    // 11. Bcrypt Auto-Migration for Plaintext Passwords & PINs
-    try {
-      // Emergency Fix for truncated PIN hashes
-      await pool.query("ALTER TABLE users MODIFY COLUMN pin VARCHAR(255)");
-      const [corruptedUsers] = await pool.query("SELECT id FROM users WHERE CHAR_LENGTH(pin) = 10 AND pin LIKE '$2b$%'");
-      if (corruptedUsers.length > 0) {
-        const defaultHashedPin = await bcrypt.hash('123456', 10);
-        for (const user of corruptedUsers) {
-          await pool.query("UPDATE users SET pin = ? WHERE id = ?", [defaultHashedPin, user.id]);
-        }
-        console.log(`Emergency fixed ${corruptedUsers.length} truncated PINs (Reset to '123456').`);
+        console.log('User roles successfully migrated (linked by name)');
+      } catch (e) {
+        console.warn('User role migration failed:', e.message);
       }
 
-      const [users] = await pool.query('SELECT id, password, pin FROM users');
-      let migratedCount = 0;
-      
-      for (const user of users) {
-        let updated = false;
-        let updateQuery = 'UPDATE users SET ';
-        let updateParams = [];
-        
-        // Check password
-        if (user.password && !user.password.startsWith('$2b$')) {
-          const hashedPassword = await bcrypt.hash(user.password, 10);
-          updateQuery += 'password = ?, ';
-          updateParams.push(hashedPassword);
-          updated = true;
-        }
-        
-        // Check pin
-        if (user.pin && !user.pin.startsWith('$2b$')) {
-          const hashedPin = await bcrypt.hash(user.pin, 10);
-          updateQuery += 'pin = ? ';
-          updateParams.push(hashedPin);
-          updated = true;
-        }
-        
-        if (updated) {
-          if (updateQuery.endsWith(', ')) {
-            updateQuery = updateQuery.slice(0, -2); // remove trailing comma
-          }
-          updateQuery += ' WHERE id = ?';
-          updateParams.push(user.id);
-          await pool.query(updateQuery, updateParams);
-          migratedCount++;
-        }
-      }
-      if (migratedCount > 0) {
-        console.log(`Successfully migrated ${migratedCount} user passwords/PINs to bcrypt.`);
-      }
-    } catch (e) {
-      console.warn('Bcrypt auto-migration failed:', e.message);
-    }
-
-    // 12. Performance Optimization (Database Indexing)
-    const addIndexIfNotExists = async (table, columnName, indexName) => {
+      // Optimize for large payloads (Images)
       try {
-        const [indexes] = await pool.query(`SHOW INDEX FROM ${table} WHERE Key_name = ?`, [indexName]);
-        if (indexes.length === 0) {
-          await pool.query(`ALTER TABLE ${table} ADD INDEX ${indexName} (${columnName})`);
-          console.log(`Index ${indexName} added to ${table}`);
+        await pool.query('SET GLOBAL max_allowed_packet = 16777216');
+        console.log('Successfully set GLOBAL max_allowed_packet to 16MB');
+      } catch (e) {
+        console.warn('Could not set GLOBAL max_allowed_packet. Ensure DB user has SUPER privileges or set manually in config.');
+      }
+
+      try {
+        await pool.query('SET SESSION max_allowed_packet = 16777216');
+        console.log('Successfully set SESSION max_allowed_packet to 16MB');
+      } catch (e) {
+        console.warn('Could not set SESSION max_allowed_packet. In some MySQL versions, this is read-only at session level.');
+      }
+
+      // 11. Bcrypt Auto-Migration for Plaintext Passwords & PINs
+      try {
+        // Emergency Fix for truncated PIN hashes
+        await pool.query("ALTER TABLE users MODIFY COLUMN pin VARCHAR(255)");
+        const [corruptedUsers] = await pool.query("SELECT id FROM users WHERE CHAR_LENGTH(pin) = 10 AND pin LIKE '$2b$%'");
+        if (corruptedUsers.length > 0) {
+          const defaultHashedPin = await bcrypt.hash('123456', 10);
+          for (const user of corruptedUsers) {
+            await pool.query("UPDATE users SET pin = ? WHERE id = ?", [defaultHashedPin, user.id]);
+          }
+          console.log(`Emergency fixed ${corruptedUsers.length} truncated PINs (Reset to '123456').`);
+        }
+
+        const [users] = await pool.query('SELECT id, password, pin FROM users');
+        let migratedCount = 0;
+
+        for (const user of users) {
+          let updated = false;
+          let updateQuery = 'UPDATE users SET ';
+          let updateParams = [];
+
+          // Check password
+          if (user.password && !user.password.startsWith('$2b$')) {
+            const hashedPassword = await bcrypt.hash(user.password, 10);
+            updateQuery += 'password = ?, ';
+            updateParams.push(hashedPassword);
+            updated = true;
+          }
+
+          // Check pin
+          if (user.pin && !user.pin.startsWith('$2b$')) {
+            const hashedPin = await bcrypt.hash(user.pin, 10);
+            updateQuery += 'pin = ? ';
+            updateParams.push(hashedPin);
+            updated = true;
+          }
+
+          if (updated) {
+            if (updateQuery.endsWith(', ')) {
+              updateQuery = updateQuery.slice(0, -2); // remove trailing comma
+            }
+            updateQuery += ' WHERE id = ?';
+            updateParams.push(user.id);
+            await pool.query(updateQuery, updateParams);
+            migratedCount++;
+          }
+        }
+        if (migratedCount > 0) {
+          console.log(`Successfully migrated ${migratedCount} user passwords/PINs to bcrypt.`);
         }
       } catch (e) {
-        console.warn(`Could not create index ${indexName} on ${table}:`, e.message);
+        console.warn('Bcrypt auto-migration failed:', e.message);
       }
-    };
 
-    await addIndexIfNotExists('tasks', 'company_id', 'idx_tasks_company');
-    await addIndexIfNotExists('tasks', 'status', 'idx_tasks_status');
-    await addIndexIfNotExists('tasks', 'progres', 'idx_tasks_progres');
-    await addIndexIfNotExists('tasks', 'created_at', 'idx_tasks_created_at');
-    
-    await addIndexIfNotExists('department_tasks', 'company_id', 'idx_dept_tasks_company');
-    await addIndexIfNotExists('department_tasks', 'status', 'idx_dept_tasks_status');
-    await addIndexIfNotExists('department_tasks', 'created_at', 'idx_dept_tasks_created_at');
-    
-    await addIndexIfNotExists('users', 'company_id', 'idx_users_company');
-    await addIndexIfNotExists('users', 'department', 'idx_users_department');
+      // 12. Performance Optimization (Database Indexing)
+      const addIndexIfNotExists = async (table, columnName, indexName) => {
+        try {
+          const [indexes] = await pool.query(`SHOW INDEX FROM ${table} WHERE Key_name = ?`, [indexName]);
+          if (indexes.length === 0) {
+            await pool.query(`ALTER TABLE ${table} ADD INDEX ${indexName} (${columnName})`);
+            console.log(`Index ${indexName} added to ${table}`);
+          }
+        } catch (e) {
+          console.warn(`Could not create index ${indexName} on ${table}:`, e.message);
+        }
+      };
 
-    console.log('Database initialized successfully.');
-    return pool;
-  } catch (err) {
-    console.error(`Database initialization failed (${retries} retries left):`, err.message);
-    retries -= 1;
-    if (retries === 0) {
-      console.error('All retries failed. Exiting...');
-      process.exit(1);
+      await addIndexIfNotExists('tasks', 'company_id', 'idx_tasks_company');
+      await addIndexIfNotExists('tasks', 'status', 'idx_tasks_status');
+      await addIndexIfNotExists('tasks', 'progres', 'idx_tasks_progres');
+      await addIndexIfNotExists('tasks', 'created_at', 'idx_tasks_created_at');
+
+      await addIndexIfNotExists('department_tasks', 'company_id', 'idx_dept_tasks_company');
+      await addIndexIfNotExists('department_tasks', 'status', 'idx_dept_tasks_status');
+      await addIndexIfNotExists('department_tasks', 'created_at', 'idx_dept_tasks_created_at');
+
+      await addIndexIfNotExists('users', 'company_id', 'idx_users_company');
+      await addIndexIfNotExists('users', 'department', 'idx_users_department');
+
+      console.log('Database initialized successfully.');
+      return pool;
+    } catch (err) {
+      console.error(`Database initialization failed (${retries} retries left):`, err.message);
+      retries -= 1;
+      if (retries === 0) {
+        console.error('All retries failed. Exiting...');
+        process.exit(1);
+      }
+      console.log(`Waiting ${delay / 1000} seconds before retrying...`);
+      await new Promise(res => setTimeout(res, delay));
     }
-    console.log(`Waiting ${delay / 1000} seconds before retrying...`);
-    await new Promise(res => setTimeout(res, delay));
-  }
   }
 }
 

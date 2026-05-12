@@ -6,7 +6,7 @@ const getAllTasks = async (filters) => {
   let query = 'SELECT * FROM tasks';
   let params = [];
   let conditions = [];
-  
+
   if (company_id) {
     conditions.push('company_id = ?');
     params.push(company_id);
@@ -29,11 +29,11 @@ const getAllTasks = async (filters) => {
       params.push(agentIdStr, agentIdNum);
     }
   }
-  
+
   if (conditions.length > 0) {
     query += ' WHERE ' + conditions.join(' AND ');
   }
-  
+
   query += ' ORDER BY created_at DESC';
   const [rows] = await db.query(query, params);
   return rows;
@@ -110,7 +110,7 @@ const createTask = async (taskData) => {
     deskripsi, lokasi, detail_alamat, aturan_waktu, tanggal_mulai, waktu_mulai,
     tanggal_selesai, waktu_selesai, pengulangan, jenis_pengulangan, waktu_berakhir,
     tanggal_pengulangan_berakhir, kali_pengulangan, tugas_departemen, dept_task_id,
-    agen_id, verifikasi_kehadiran, maksimum_radius, selfie, persetujuan, admin_pemeriksa_id, 
+    agen_id, verifikasi_kehadiran, maksimum_radius, selfie, persetujuan, admin_pemeriksa_id,
     details, status, jenis_tugas
   } = taskData;
 
@@ -123,21 +123,23 @@ const createTask = async (taskData) => {
       deskripsi, lokasi, detail_alamat, aturan_waktu, tanggal_mulai, waktu_mulai,
       tanggal_selesai, waktu_selesai, pengulangan, jenis_pengulangan, waktu_berakhir,
       tanggal_pengulangan_berakhir, kali_pengulangan, tugas_departemen, dept_task_id,
+      checklist_session_id,
       agen_id, verifikasi_kehadiran, maksimum_radius, selfie, butuh_persetujuan, admin_pemeriksa_id, approval_status,
       details, progres, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       perusahaan, company_id, departemen, nama_tugas, jenis_tugas || 'checklist', urgensi, nomor_perintah_kerja,
-      deskripsi, lokasi, detail_alamat, aturan_waktu, 
-      tanggal_mulai || null, waktu_mulai || null, 
-      tanggal_selesai || null, waktu_selesai || null, 
+      deskripsi, lokasi, detail_alamat, aturan_waktu,
+      tanggal_mulai || null, waktu_mulai || null,
+      tanggal_selesai || null, waktu_selesai || null,
       pengulangan || false, jenis_pengulangan || null, waktu_berakhir || null,
       tanggal_pengulangan_berakhir || null, kali_pengulangan || null,
       tugas_departemen || false,
       dept_task_id || null,
-      JSON.stringify(agen_id || []), verifikasi_kehadiran || false, 
+      taskData.checklist_session_id || null,
+      JSON.stringify(agen_id || []), verifikasi_kehadiran || false,
       maksimum_radius || null, selfie || null,
-      persetujuan === 'Ya', admin_pemeriksa_id || null, 
+      persetujuan === 'Ya', admin_pemeriksa_id || null,
       persetujuan === 'Ya' ? 'Pending' : 'Approved',
       JSON.stringify(details || []),
       (status || 'Draft') === 'Draft' ? null : 'Terbuka',
@@ -189,7 +191,7 @@ const updateTask = async (id, taskData) => {
     deskripsi, lokasi, detail_alamat, aturan_waktu, tanggal_mulai, waktu_mulai,
     tanggal_selesai, waktu_selesai, pengulangan, jenis_pengulangan, waktu_berakhir,
     tanggal_pengulangan_berakhir, kali_pengulangan, tugas_departemen,
-    agen_id, verifikasi_kehadiran, maksimum_radius, selfie, persetujuan, admin_pemeriksa_id, 
+    agen_id, verifikasi_kehadiran, maksimum_radius, selfie, persetujuan, admin_pemeriksa_id,
     details, status
   } = taskData;
 
@@ -217,14 +219,14 @@ const updateTask = async (id, taskData) => {
     WHERE id=?`,
     [
       perusahaan, company_id, departemen, nama_tugas, jenisNow, urgensi, nomor_perintah_kerja,
-      deskripsi, lokasi, detail_alamat, aturan_waktu, 
-      tanggal_mulai || null, waktu_mulai || null, 
-      tanggal_selesai || null, waktu_selesai || null, 
+      deskripsi, lokasi, detail_alamat, aturan_waktu,
+      tanggal_mulai || null, waktu_mulai || null,
+      tanggal_selesai || null, waktu_selesai || null,
       pengulangan || false, jenis_pengulangan || null, waktu_berakhir || null,
       tanggal_pengulangan_berakhir || null, kali_pengulangan || null,
-      tugas_departemen || false, 
-      JSON.stringify(agen_id || []), verifikasi_kehadiran || false, 
-      maksimum_radius || null, selfie || null, 
+      tugas_departemen || false,
+      JSON.stringify(agen_id || []), verifikasi_kehadiran || false,
+      maksimum_radius || null, selfie || null,
       persetujuan === 'Ya', admin_pemeriksa_id || null,
       persetujuan === 'Ya' ? 'Pending' : 'Approved',
       JSON.stringify(details || []), status, id
@@ -256,14 +258,19 @@ const updateTaskApproval = async (id, approval_status) => {
 };
 
 const startTask = async (id, { nama_agen, agent_id, latitude, longitude }) => {
+  // Check if this is an audit task
+  const [taskRows] = await db.query('SELECT checklist_session_id, dept_task_id FROM tasks WHERE id = ?', [id]);
+  const isAuditTask = taskRows[0]?.checklist_session_id != null;
+  const initialProgress = 'Berlangsung';
+
   let query = 'UPDATE tasks SET progres = ?, waktu_dimulai = CURRENT_TIMESTAMP';
-  let params = ['Berlangsung'];
+  let params = [initialProgress];
 
   if (agent_id) {
     query += ', agen_id = ?';
     params.push(JSON.stringify([agent_id]));
   }
-  
+
   if (latitude && longitude) {
     query += ', start_latitude = ?, start_longitude = ?';
     params.push(latitude, longitude);
@@ -275,7 +282,6 @@ const startTask = async (id, { nama_agen, agent_id, latitude, longitude }) => {
   await db.query(query, params);
 
   // Synchronize with originating department task if linked
-  const [taskRows] = await db.query('SELECT dept_task_id FROM tasks WHERE id = ?', [id]);
   if (taskRows[0]?.dept_task_id) {
     await db.query('UPDATE department_tasks SET status = ? WHERE id = ?', ['Berlangsung', taskRows[0].dept_task_id]);
   }
@@ -283,19 +289,82 @@ const startTask = async (id, { nama_agen, agent_id, latitude, longitude }) => {
   // Record in history
   await db.query(
     'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
-    [id, nama_agen || 'Sistem', 'Berlangsung']
+    [id, nama_agen || 'Sistem', initialProgress]
   );
-  
+
   const [rows] = await db.query('SELECT waktu_dimulai FROM tasks WHERE id = ?', [id]);
   return rows[0]?.waktu_dimulai;
 };
+
+const proceedToMaterialCheck = async (id, { nama_agen, agent_id, catatan_pengerjaan }) => {
+  let query = 'UPDATE tasks SET progres = ?';
+  let params = ['Menunggu Material'];
+
+  if (catatan_pengerjaan) {
+    query += ', catatan_pengerjaan = ?, waktu_catatan_pengerjaan = CURRENT_TIMESTAMP';
+    params.push(catatan_pengerjaan);
+  }
+
+  query += ' WHERE id = ?';
+  params.push(id);
+
+  await db.query(query, params);
+
+  // Record in history
+  await db.query(
+    'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+    [id, nama_agen || 'Sistem', 'Menunggu Material']
+  );
+
+  return true;
+};
+
+const updatePengerjaanNote = async (id, { catatan_pengerjaan }) => {
+  await db.query(
+    'UPDATE tasks SET catatan_pengerjaan = ?, waktu_catatan_pengerjaan = CURRENT_TIMESTAMP WHERE id = ?',
+    [catatan_pengerjaan, id]
+  );
+  return true;
+};
+
+const materialCheckTask = async (id, { nama_agen, agent_id, catatan_material }) => {
+  let query = 'UPDATE tasks SET waktu_material_dicek = CURRENT_TIMESTAMP';
+  let params = [];
+
+  if (catatan_material) {
+    query += ', catatan_material = ?, waktu_catatan_material = CURRENT_TIMESTAMP';
+    params.push(catatan_material);
+  }
+
+  query += ' WHERE id = ?';
+  params.push(id);
+
+  await db.query(query, params);
+
+  // Record in history
+  await db.query(
+    'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai) VALUES (?, ?, ?, CURRENT_TIMESTAMP)',
+    [id, nama_agen || 'Sistem', 'Berlangsung']
+  );
+
+  return true;
+};
+
+const updateMaterialNote = async (id, { catatan_material }) => {
+  await db.query(
+    'UPDATE tasks SET catatan_material = ?, waktu_catatan_material = CURRENT_TIMESTAMP WHERE id = ?',
+    [catatan_material, id]
+  );
+  return true;
+};
+
 
 const submitTask = async (id, { submission_data, nama_agen, agent_id }) => {
   await db.query(
     'UPDATE tasks SET submission_data = ?, waktu_dikirim = CURRENT_TIMESTAMP WHERE id = ?',
     [JSON.stringify(submission_data), id]
   );
-  
+
   if (nama_agen) {
     const [historyRows] = await db.query(
       'UPDATE task_history SET waktu_selesai = CURRENT_TIMESTAMP, submission_data = ? WHERE task_id = ? AND nama_agen = ? AND progres = ? AND waktu_selesai IS NULL',
@@ -393,9 +462,13 @@ module.exports = {
   updateTask,
   updateTaskApproval,
   startTask,
+  materialCheckTask,
   submitTask,
   finishTask,
   getTaskHistory,
   updateTaskStatus,
-  deleteTask
+  deleteTask,
+  updateMaterialNote,
+  proceedToMaterialCheck,
+  updatePengerjaanNote
 };

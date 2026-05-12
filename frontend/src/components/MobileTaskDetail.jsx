@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Phone, MoreHorizontal, ChevronDown, ChevronUp, Clock, MapPin, CheckCircle2, Check } from 'lucide-react';
+import { ArrowLeft, Phone, MoreHorizontal, ChevronDown, ChevronUp, Clock, MapPin, CheckCircle2, Check, HelpCircle, Info } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { saveOfflineData } from '../services/offlineDB';
@@ -14,15 +14,25 @@ const MobileTaskDetail = () => {
   const [showBanner, setShowBanner] = useState(false);
   const [bannerText, setBannerText] = useState("Tugas telah dimulai");
   const [showConfirm, setShowConfirm] = useState(false);
+  const [showSubConfirm, setShowSubConfirm] = useState(false);
   const [confirmConfig, setConfirmConfig] = useState({ title: '', message: '', onConfirm: () => {} });
   const [showApprovalModal, setShowApprovalModal] = useState(false);
   const [approvalAction, setApprovalAction] = useState(''); // 'approve' or 'reject'
   const [approvalNotes, setApprovalNotes] = useState('');
+  const [catatanMaterial, setCatatanMaterial] = useState('');
+  const [catatanPengerjaan, setCatatanPengerjaan] = useState('');
+  const [loadingAction, setLoadingAction] = useState(false);
   const user = JSON.parse(localStorage.getItem('user') || 'null');
+
+  const showError = (title, message) => {
+    alert(`${title}: ${message}`);
+  };
 
   useEffect(() => {
     fetchTaskDetails();
-    
+  }, [taskId]);
+
+  useEffect(() => {
     // Check if we came from form submission
     if (location.state?.formSubmitted) {
       setBannerText("Form Telah Diisi");
@@ -31,19 +41,58 @@ const MobileTaskDetail = () => {
       // Clean up state
       window.history.replaceState({}, document.title);
     }
-  }, [taskId, location.state]);
+  }, [location.state]);
 
   const fetchTaskDetails = async () => {
     try {
-      const response = await authFetch(`/api/tasks/${taskId}`);
-      if (response.ok) {
-        const data = await response.json();
-        setTask(data);
+      setLoading(true);
+      const [taskRes, historyRes] = await Promise.all([
+        authFetch(`/api/tasks/${taskId}`),
+        authFetch(`/api/tasks/${taskId}/history`)
+      ]);
+
+      if (taskRes.ok) {
+        const taskData = await taskRes.json();
+        let historyData = [];
+        if (historyRes.ok) {
+          historyData = await historyRes.json();
+        }
+        setTask({ ...taskData, history: historyData });
       }
-    } catch (error) {
-      console.error('Error fetching task details:', error);
+    } catch (err) {
+      console.error('Fetch task details error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleUpdateNoteOnly = async () => {
+    try {
+      setLoadingAction(true);
+      const response = await authFetch(`/api/tasks/${taskId}/material-note`, {
+        method: 'PATCH',
+        body: JSON.stringify({ 
+          catatan_material: catatanMaterial,
+          nama_agen: user.firstName || user.username,
+          agent_id: user.id
+        })
+      });
+
+      if (response.ok) {
+        setBannerText('Catatan material berhasil dikirim!');
+        setShowBanner(true);
+        setTimeout(() => setShowBanner(false), 3000);
+        setShowConfirm(false);
+        // Do NOT set isMaterialChecked to true here
+      } else {
+        const errorData = await response.json();
+        showError('Gagal', errorData.message || 'Gagal mengirim catatan.');
+      }
+    } catch (err) {
+      console.error('Update note error:', err);
+      showError('Gagal', 'Terjadi kesalahan saat mengirim catatan.');
+    } finally {
+      setLoadingAction(false);
     }
   };
 
@@ -122,6 +171,98 @@ const MobileTaskDetail = () => {
         }, 1500);
       }
     }
+  };
+
+  const handleMaterialChecked = async () => {
+    try {
+      setBannerText("Menyimpan status material...");
+      setShowBanner(true);
+
+      const response = await authFetch(`/api/tasks/${taskId}/material-checked`, {
+        method: 'PATCH',
+        body: JSON.stringify({ 
+          nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen',
+          agent_id: user?.id,
+          catatan_material: catatanMaterial
+        })
+      });
+
+      if (response.ok) {
+        // Update local state and fetch fresh history
+        setTask(prev => ({ 
+          ...prev, 
+          progres: 'Berlangsung'
+        }));
+        await fetchTaskDetails(); // Refresh to get the new history timestamp
+        setBannerText("Pengecekan material selesai");
+        setShowBanner(true);
+        setTimeout(() => setShowBanner(false), 5000);
+      }
+    } catch (error) {
+      console.error('Error in material checked:', error);
+      // Offline Fallback could be added here if necessary
+    }
+    setShowConfirm(false);
+    setCatatanMaterial('');
+  };
+
+  const handleProceedToMaterialCheck = async () => {
+    try {
+      setBannerText("Menyimpan progres pengerjaan...");
+      setShowBanner(true);
+
+      const response = await authFetch(`/api/tasks/${taskId}/proceed-to-material-check`, {
+        method: 'PATCH',
+        body: JSON.stringify({ 
+          nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen',
+          agent_id: user?.id,
+          catatan_pengerjaan: catatanPengerjaan
+        })
+      });
+
+      if (response.ok) {
+        // Update local state and fetch fresh history
+        setTask(prev => ({ 
+          ...prev, 
+          progres: 'Menunggu Material'
+        }));
+        await fetchTaskDetails();
+        setBannerText("Proses pengerjaan selesai, lanjut cek material");
+        setShowBanner(true);
+        setTimeout(() => setShowBanner(false), 5000);
+      }
+    } catch (error) {
+      console.error('Error in proceed to material check:', error);
+    }
+    setShowConfirm(false);
+    setShowSubConfirm(false);
+    setCatatanPengerjaan('');
+  };
+
+  const handleUpdatePengerjaanNote = async () => {
+    try {
+      setBannerText("Mengirim catatan pengerjaan...");
+      setShowBanner(true);
+
+      const response = await authFetch(`/api/tasks/${taskId}/pengerjaan-note`, {
+        method: 'PATCH',
+        body: JSON.stringify({ 
+          nama_agen: user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() : 'Agen',
+          agent_id: user?.id,
+          catatan_pengerjaan: catatanPengerjaan
+        })
+      });
+
+      if (response.ok) {
+        await fetchTaskDetails();
+        setBannerText("Catatan pengerjaan terkirim");
+        setShowBanner(true);
+        setTimeout(() => setShowBanner(false), 3000);
+      }
+    } catch (error) {
+      console.error('Error updating pengerjaan note:', error);
+    }
+    setShowConfirm(false);
   };
 
   const handleFinishTask = async () => {
@@ -326,30 +467,133 @@ const MobileTaskDetail = () => {
           <h3 className="text-xl font-medium text-[#181C32] mb-3">
             {confirmConfig.title}
           </h3>
-          <p className="text-[14px] leading-relaxed text-[#7E8299] mb-8">
+          <p className={`text-[14px] leading-relaxed text-[#7E8299] ${confirmConfig.title === 'Selesai Cek Material' ? 'mb-4' : 'mb-8'}`}>
             {confirmConfig.message}
           </p>
+
+          {confirmConfig.title === 'Lanjut ke Pengecekan Material' && (
+            <div className="mb-6">
+              <label className="block text-[13px] font-bold text-[#3F4254] mb-2">Catatan Pengerjaan (Opsional)</label>
+              <textarea
+                value={catatanPengerjaan}
+                onChange={(e) => setCatatanPengerjaan(e.target.value)}
+                placeholder="Masukkan catatan pengerjaan jika ada..."
+                className="w-full px-4 py-3 border border-[#F1F1F4] rounded-xl text-[13px] text-[#3F4254] focus:outline-none focus:border-[#0095E8] resize-none"
+                rows={3}
+              />
+            </div>
+          )}
+
+          {confirmConfig.title === 'Selesai Cek Material' && (
+            <div className="mb-6">
+              <label className="block text-[13px] font-bold text-[#3F4254] mb-2">Catatan Material (Opsional)</label>
+              <textarea
+                value={catatanMaterial}
+                onChange={(e) => setCatatanMaterial(e.target.value)}
+                placeholder="Masukkan catatan jika ada material yang kurang/rusak..."
+                className="w-full px-4 py-3 border border-[#F1F1F4] rounded-xl text-[13px] text-[#3F4254] focus:outline-none focus:border-[#0095E8] resize-none"
+                rows={3}
+              />
+            </div>
+          )}
           
           <div className="flex gap-4">
-            <button 
-              type="button" 
-              onClick={() => {
-                setShowConfirm(false);
-                confirmConfig.onConfirm();
-              }} 
-              className="flex-1 py-3 bg-[#0095E8] rounded-xl text-[14px] font-bold text-white hover:bg-[#0084CC] transition-colors active:scale-95"
-            >
-              Lanjut
-            </button>
-            <button 
-              type="button" 
-              onClick={() => setShowConfirm(false)} 
-              className="flex-1 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold text-[#005499] hover:bg-gray-50 transition-colors active:scale-95"
-            >
-              Cek Kembali
-            </button>
+            {confirmConfig.title === 'Lanjut ke Pengecekan Material' ? (
+              <>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setShowSubConfirm(true);
+                  }} 
+                  className="flex-1 py-3 bg-[#0095E8] rounded-xl text-[14px] font-bold text-white hover:bg-[#0084CC] transition-colors active:scale-95"
+                >
+                  Lanjut
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleUpdatePengerjaanNote} 
+                  className="flex-1 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold text-[#005499] hover:bg-gray-50 transition-colors active:scale-95"
+                >
+                  Kirim Catatan
+                </button>
+              </>
+            ) : confirmConfig.title === 'Selesai Cek Material' ? (
+              <>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setShowSubConfirm(true);
+                  }} 
+                  className="flex-1 py-3 bg-[#0095E8] rounded-xl text-[14px] font-bold text-white hover:bg-[#0084CC] transition-colors active:scale-95"
+                >
+                  Lanjut
+                </button>
+                <button 
+                  type="button" 
+                  onClick={handleUpdateNoteOnly} 
+                  className="flex-1 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold text-[#005499] hover:bg-gray-50 transition-colors active:scale-95"
+                >
+                  Kirim Catatan
+                </button>
+              </>
+            ) : (
+              <>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    confirmConfig.onConfirm();
+                  }} 
+                  className="flex-1 py-3 bg-[#0095E8] rounded-xl text-[14px] font-bold text-white hover:bg-[#0084CC] transition-colors active:scale-95"
+                >
+                  Lanjut
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setShowConfirm(false);
+                  }} 
+                  className="flex-1 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold text-[#005499] hover:bg-gray-50 transition-colors active:scale-95"
+                >
+                  Cek Kembali
+                </button>
+              </>
+            )}
           </div>
         </div>
+
+        {/* Sub Confirmation Modal */}
+        {showSubConfirm && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fade-in">
+            <div className="bg-white rounded-2xl p-8 max-w-[85%] w-full shadow-2xl animate-scale-in">
+              <div className="w-16 h-16 rounded-full bg-[#E1F5FE] flex items-center justify-center mb-6 mx-auto">
+                <HelpCircle size={32} className="text-[#0095E8]" />
+              </div>
+              <h3 className="text-xl font-bold text-[#181C32] text-center mb-4">Konfirmasi Lanjut</h3>
+              <p className="text-[14px] leading-relaxed text-[#7E8299] text-center mb-8">
+                {confirmConfig.title === 'Lanjut ke Pengecekan Material' 
+                  ? 'Apakah Anda yakin ingin lanjut ke proses pengecekan material?'
+                  : 'Apakah Anda yakin sudah selesai mengecek material dan ingin melanjutkan ke tahap Isi Form Tugas?'}
+              </p>
+              <div className="flex gap-3">
+                <button 
+                  onClick={() => {
+                    setShowSubConfirm(false);
+                    confirmConfig.onConfirm();
+                  }}
+                  className="flex-1 py-3.5 bg-[#0095E8] text-white rounded-xl font-bold text-[14px] shadow-lg shadow-blue-200 active:scale-95 transition-all"
+                >
+                  Ya, Lanjut
+                </button>
+                <button 
+                  onClick={() => setShowSubConfirm(false)}
+                  className="flex-1 py-3.5 bg-slate-100 text-slate-600 rounded-xl font-bold text-[14px] active:scale-95 transition-all"
+                >
+                  Batal
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   };
@@ -371,12 +615,32 @@ const MobileTaskDetail = () => {
     );
   }
 
-  const isStarted = task.progres === 'Berlangsung' || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Ditolak';
+  const isAuditTask = task.checklist_session_id != null;
+  const hasStarted = task.waktu_dimulai != null;
+  
+  // New: Stage identification for Audit Tasks
+  const hasReachedMaterialCheck = task.waktu_material_dicek != null || task.history?.some(h => h.progres === 'Menunggu Material');
+  const isWorking = isAuditTask && task.progres === 'Berlangsung' && !hasReachedMaterialCheck;
+  const isWaitingMaterial = task.progres === 'Menunggu Material' && !task.waktu_material_dicek;
+  const isFillingForm = (isAuditTask ? (hasReachedMaterialCheck || task.waktu_material_dicek) : hasStarted) && (task.progres === 'Berlangsung' || (isAuditTask && task.progres === 'Menunggu Material' && task.waktu_material_dicek));
+  
+  const isStarted = isWaitingMaterial || task.progres === 'Berlangsung' || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Ditolak' || (isAuditTask && task.progres === 'Menunggu Material' && task.waktu_material_dicek);
+  const isMaterialChecked = (isAuditTask ? (task.waktu_material_dicek != null) : false) || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Ditolak';
+  
   const isFinished = task.progres === 'Selesai';
   const isWaitingApproval = task.progres === 'Menunggu Approval';
   const isRejected = task.progres === 'Ditolak';
   const isFormFilled = !!task.waktu_dikirim;
   const canApprove = user?.can_approve === 1 || user?.can_approve === true;
+
+  const getHistoryTime = (progresState) => {
+    if (!task.history) return null;
+    const item = [...task.history].reverse().find(h => h.progres === progresState);
+    return item ? item.waktu_mulai : null;
+  };
+
+  const timeMulai = isAuditTask ? getHistoryTime('Menunggu Material') || task.waktu_dimulai : task.waktu_dimulai;
+  const timeMaterialChecked = isAuditTask ? (task.waktu_material_dicek || getHistoryTime('Berlangsung')) : null;
 
   const formatScheduleDate = (dateString, timeString) => {
     if (!dateString) return '-';
@@ -444,10 +708,10 @@ const MobileTaskDetail = () => {
             isFinished ? 'bg-[#E8F5E9] text-[#2E7D32]' :
             isWaitingApproval ? 'bg-[#FFF8E1] text-[#FF8F00]' :
             isRejected ? 'bg-[#FFF5F8] text-[#F1416C]' :
-            task.progres === 'Berlangsung' ? 'bg-[#FFF8E1] text-[#FF8F00]' :
+            (task.progres === 'Berlangsung' || task.progres === 'Menunggu Material') ? 'bg-[#FFF8E1] text-[#FF8F00]' :
             'bg-[#E0F7FA] text-[#0095E8]'
           }`}>
-            {task.progres || 'Terbuka'}
+            {task.progres === 'Menunggu Material' ? 'Cek Material' : (task.progres || 'Terbuka')}
           </span>
           <span className={`text-[10px] font-bold px-4 py-1.5 rounded-lg uppercase ${
             task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C]' : 
@@ -528,10 +792,66 @@ const MobileTaskDetail = () => {
             <div className="pb-8">
               <h3 className={`text-[15px] font-bold mb-1 ${isStarted ? 'text-slate-800' : 'text-slate-800'}`}>Mulai Tugas</h3>
               <p className="text-[12px] text-slate-400 leading-relaxed font-medium">
-                {task.waktu_dimulai ? formatActualTime(task.waktu_dimulai) : 'Tekan tombol "Mulai Tugas" untuk memulai tugas.'}
+                {timeMulai ? formatActualTime(timeMulai) : 'Tekan tombol "Mulai Tugas" untuk memulai tugas.'}
               </p>
             </div>
           </div>
+
+          {/* Step 1.2: Pengerjaan (Hanya untuk Audit Task) */}
+          {isAuditTask && (
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                {hasReachedMaterialCheck ? (
+                  <div className="w-6 h-6 rounded-full bg-[#1B3B6F] flex items-center justify-center z-10 border-4 border-white shadow-sm -ml-0.5">
+                    <Check size={14} strokeWidth={3} className="text-white" />
+                  </div>
+                ) : (
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 border-4 border-white shadow-sm -ml-0.5 ${isStarted ? 'border-slate-200 bg-white' : 'bg-slate-200'}`}>
+                    {!isStarted && <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />}
+                  </div>
+                )}
+                <div className={`w-[2px] h-16 -mt-1 -mb-1 ${hasReachedMaterialCheck ? 'bg-[#1B3B6F]' : 'bg-slate-100'}`} />
+              </div>
+              <div className="pb-8">
+                <h3 className={`text-[15px] font-bold ${isStarted ? 'text-slate-800' : 'text-slate-400'}`}>Pengerjaan</h3>
+                {hasReachedMaterialCheck ? (
+                  <p className="text-[12px] text-slate-400 font-medium mt-1">
+                    Pengerjaan selesai pada {formatActualTime(getHistoryTime('Menunggu Material'))}
+                  </p>
+                ) : (
+                  isStarted && <p className="text-[12px] text-slate-400 font-medium mt-1">Status: Berlangsung</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Step 1.5: Pengecekan Material (Hanya untuk Audit Task) */}
+          {isAuditTask && (
+            <div className="flex gap-4">
+              <div className="flex flex-col items-center">
+                {isMaterialChecked ? (
+                  <div className="w-6 h-6 rounded-full bg-[#1B3B6F] flex items-center justify-center z-10 border-4 border-white shadow-sm -ml-0.5">
+                    <Check size={14} strokeWidth={3} className="text-white" />
+                  </div>
+                ) : (
+                  <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 border-4 border-white shadow-sm -ml-0.5 ${isStarted ? 'border-slate-200 bg-white' : 'bg-slate-200'}`}>
+                    {!isStarted && <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />}
+                  </div>
+                )}
+                <div className={`w-[2px] h-16 -mt-1 -mb-1 ${isMaterialChecked ? 'bg-[#1B3B6F]' : 'bg-slate-100'}`} />
+              </div>
+              <div className="pb-8">
+                <h3 className={`text-[15px] font-bold ${isStarted ? 'text-slate-800' : 'text-slate-400'}`}>Pengecekan Material</h3>
+                {isMaterialChecked ? (
+                  <p className="text-[12px] text-slate-400 font-medium mt-1">
+                    Material telah dicek pada {formatActualTime(timeMaterialChecked)}
+                  </p>
+                ) : (
+                  isStarted && <p className="text-[12px] text-slate-400 font-medium mt-1">Tekan "Selesai Cek Material" jika sudah siap.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Step 2: Isi form tugas */}
           <div className="flex gap-4">
@@ -541,14 +861,14 @@ const MobileTaskDetail = () => {
                   <Check size={14} strokeWidth={3} className="text-white" />
                 </div>
               ) : (
-                <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 border-4 border-white shadow-sm -ml-0.5 ${isStarted ? 'border-slate-200 bg-white' : 'bg-slate-200'}`}>
-                  {!isStarted && <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />}
+                <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 border-4 border-white shadow-sm -ml-0.5 ${(isAuditTask ? isMaterialChecked : isStarted) ? 'border-slate-200 bg-white' : 'bg-slate-200'}`}>
+                  {!(isAuditTask ? isMaterialChecked : isStarted) && <div className="w-1.5 h-1.5 rounded-full bg-slate-200" />}
                 </div>
               )}
               <div className={`w-[2px] h-16 -mt-1 -mb-1 ${isFormFilled ? 'bg-[#1B3B6F]' : 'bg-slate-100'}`} />
             </div>
             <div className="pb-8">
-              <h3 className={`text-[15px] font-bold ${isStarted ? 'text-slate-800' : 'text-slate-400'}`}>Isi form tugas</h3>
+              <h3 className={`text-[15px] font-bold ${(isAuditTask ? isMaterialChecked : isStarted) ? 'text-slate-800' : 'text-slate-400'}`}>Isi form tugas</h3>
               {isFormFilled ? (
                 <div className="space-y-1">
                   <p className="text-[12px] text-slate-400 font-medium mt-1">
@@ -562,7 +882,7 @@ const MobileTaskDetail = () => {
                   </button>
                 </div>
               ) : (
-                isStarted && <p className="text-[12px] text-slate-400 font-medium mt-1">Silakan isi form tugas</p>
+                (isAuditTask ? isMaterialChecked : isStarted) && <p className="text-[12px] text-slate-400 font-medium mt-1">Silakan isi form tugas</p>
               )}
             </div>
           </div>
@@ -610,7 +930,21 @@ const MobileTaskDetail = () => {
                     onConfirm: handleFinishTask
                   });
                   setShowConfirm(true);
-                } else if (isStarted) {
+                } else if (isWorking) {
+                  setConfirmConfig({
+                    title: 'Lanjut ke Pengecekan Material',
+                    message: 'Apakah Anda yakin ingin melanjutkan ke proses pengecekan material?',
+                    onConfirm: handleProceedToMaterialCheck
+                  });
+                  setShowConfirm(true);
+                } else if (isAuditTask && isStarted && !isMaterialChecked) {
+                  setConfirmConfig({
+                    title: 'Selesai Cek Material',
+                    message: 'Apakah Anda sudah selesai melakukan pengecekan material?',
+                    onConfirm: handleMaterialChecked
+                  });
+                  setShowConfirm(true);
+                } else if (isAuditTask ? isMaterialChecked : isStarted) {
                   navigate(`/demo/mobile/task/${taskId}/form`);
                 } else {
                   setConfirmConfig({
@@ -623,7 +957,15 @@ const MobileTaskDetail = () => {
               }}
               className="flex-1 bg-[#004A71] text-white font-bold py-3.5 rounded-xl shadow-lg active:scale-[0.98] transition-all"
             >
-              {isFormFilled ? 'Selesaikan Tugas' : isStarted ? 'Isi Form Tugas' : 'Mulai Tugas'}
+              {isFormFilled 
+                ? 'Selesaikan Tugas' 
+                : isWorking
+                  ? 'Lanjut'
+                  : (isAuditTask && isStarted && !isMaterialChecked)
+                    ? 'Cek Material'
+                    : (isAuditTask ? isMaterialChecked : isStarted) 
+                      ? 'Isi Form Tugas' 
+                      : 'Mulai Tugas'}
             </button>
           )}
 

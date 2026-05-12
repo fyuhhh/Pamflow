@@ -110,7 +110,7 @@ const MobileHome = () => {
           terbuka++;
           if (isLateNow) terbukaLambat++;
           else terbukaTepat++;
-        } else if (task.progres === 'Berlangsung') {
+        } else if (task.progres === 'Berlangsung' || task.progres === 'Menunggu Material') {
           berlangsung++;
           if (isLateNow) berlangsungLambat++;
           else berlangsungTepat++;
@@ -152,8 +152,52 @@ const MobileHome = () => {
   }, [showHelpModal]);
 
   useEffect(() => {
-    fetchDeptTasks();
+    if (user?.department) {
+      fetchAllData();
+    }
   }, [user?.department]);
+
+  const fetchAllData = async () => {
+    try {
+      setLoadingTasks(true);
+      setLoadingRequests(true);
+      setLoadingToday(true);
+
+      const dept = user?.department || '';
+      
+      const [deptTasksRes, deptReqRes, todayTasksRes] = await Promise.all([
+        authFetch(`/api/tasks?departemen=${encodeURIComponent(dept)}&company_id=${user.company_id}`),
+        authFetch(`/api/department-tasks?departemen_tujuan=${encodeURIComponent(dept)}&company_id=${user.company_id}`),
+        authFetch(`/api/tasks?agent_id=${user.id}&departemen=${encodeURIComponent(dept)}&company_id=${user.company_id}`)
+      ]);
+
+      if (deptTasksRes.ok) {
+        const data = await deptTasksRes.json();
+        setDeptTasks(data.filter(t => t.progres === 'Terbuka' || !t.progres));
+      }
+
+      if (deptReqRes.ok) {
+        const data = await deptReqRes.json();
+        setDeptRequests(data.filter(d => d.status === 'Baru' || d.status === 'Menunggu Pengerjaan'));
+      }
+
+      if (todayTasksRes.ok) {
+        const data = await todayTasksRes.json();
+        const ongoing = data.filter(t => t.progres === 'Berlangsung' || t.progres === 'Menunggu Material');
+        ongoing.sort((a, b) => new Date(a.tanggal_selesai) - new Date(b.tanggal_selesai));
+        setTodayTasks(ongoing);
+      }
+
+      // Also fetch stats
+      fetchTaskStats();
+    } catch (error) {
+      console.error('Error fetching all mobile home data:', error);
+    } finally {
+      setLoadingTasks(false);
+      setLoadingRequests(false);
+      setLoadingToday(false);
+    }
+  };
 
   const getUrgencyScore = (item) => {
     if (item.progres === 'Selesai' || item.status === 'Selesai') return 100;
@@ -170,45 +214,6 @@ const MobileHome = () => {
   const sortedDeptTasks = [...deptTasks].sort((a, b) => getUrgencyScore(a) - getUrgencyScore(b));
   const sortedTodayTasks = [...todayTasks].sort((a, b) => getUrgencyScore(a) - getUrgencyScore(b));
 
-  const fetchDeptTasks = async () => {
-    try {
-      const dept = user?.department || '';
-      const response = await authFetch(`/api/tasks?departemen=${encodeURIComponent(dept)}&company_id=${user.company_id}`);
-      if (response.ok) {
-        const data = await response.json();
-        const openTasks = data.filter(t => t.progres === 'Terbuka' || !t.progres);
-        setDeptTasks(openTasks);
-      }
-    } catch (error) {
-      console.error('Error fetching department tasks:', error);
-    } finally {
-      setLoadingTasks(false);
-    }
-  };
-
-  const fetchDeptRequests = async () => {
-    try {
-      const dept = user?.department || '';
-      const response = await authFetch(`/api/department-tasks?departemen_tujuan=${encodeURIComponent(dept)}&company_id=${user.company_id}`);
-      if (response.ok) {
-        const data = await response.json();
-        const filtered = data.filter(d => d.status === 'Baru' || d.status === 'Menunggu Pengerjaan');
-        setDeptRequests(filtered);
-      }
-    } catch (error) {
-      console.error('Error fetching department requests:', error);
-    } finally {
-      setLoadingRequests(false);
-    }
-  };
-
-  useEffect(() => {
-    if (user?.department) {
-      fetchDeptRequests();
-      fetchTodayTasks();
-    }
-  }, [user?.department]);
-
   const fetchTodayTasks = async () => {
     try {
       setLoadingToday(true);
@@ -218,7 +223,7 @@ const MobileHome = () => {
       );
       if (response.ok) {
         const data = await response.json();
-        const ongoing = data.filter(t => t.progres === 'Berlangsung');
+        const ongoing = data.filter(t => t.progres === 'Berlangsung' || t.progres === 'Menunggu Material');
         ongoing.sort((a, b) => new Date(a.tanggal_selesai) - new Date(b.tanggal_selesai));
         setTodayTasks(ongoing);
       }
@@ -366,6 +371,40 @@ const MobileHome = () => {
           </motion.div>
         </motion.section>
 
+        {/* Akses Cepat - Premium Section */}
+        <motion.section variants={itemVariants} className="px-6 mb-8">
+          <div className="flex items-center gap-2 mb-4">
+            <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Akses Cepat</h3>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <motion.div 
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/demo/mobile/checklist')}
+              className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden group cursor-pointer"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#0095E8]/5 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500" />
+              <div className="w-12 h-12 bg-blue-50 text-[#0095E8] rounded-2xl flex items-center justify-center mb-6 shadow-sm group-active:bg-[#0095E8] group-active:text-white transition-colors">
+                <FileText size={24} />
+              </div>
+              <h4 className="text-[15px] font-black text-slate-800 leading-tight">Mulai Audit</h4>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Checklist Harian</p>
+            </motion.div>
+
+            <motion.div 
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate('/demo/mobile/monitor-wo')}
+              className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden group cursor-pointer"
+            >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-[#F1416C]/5 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500" />
+              <div className="w-12 h-12 bg-red-50 text-[#F1416C] rounded-2xl flex items-center justify-center mb-6 shadow-sm group-active:bg-[#F1416C] group-active:text-white transition-colors">
+                <AlertCircle size={24} />
+              </div>
+              <h4 className="text-[15px] font-black text-slate-800 leading-tight">Monitor WO</h4>
+              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Status Perbaikan</p>
+            </motion.div>
+          </div>
+        </motion.section>
+
         {/* Permintaan Departemen */}
         <motion.section variants={itemVariants} className="px-6 mb-8">
           <div className="flex items-center justify-between mb-4">
@@ -464,11 +503,11 @@ const MobileHome = () => {
                 >
                   <div className="flex flex-wrap gap-2 mb-4">
                     <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase ${
-                      task.progres === 'Berlangsung' ? 'bg-[#FFF8DD] text-[#FFC700]' : 
+                      (task.progres === 'Berlangsung' || task.progres === 'Menunggu Material') ? 'bg-[#FFF8DD] text-[#FFC700]' : 
                       task.progres === 'Selesai' ? 'bg-[#E8FFF3] text-[#50CD89]' :
                       'bg-[#F1FAFF] text-[#0095E8]'
                     }`}>
-                      {task.progres || 'Terbuka'}
+                      {task.progres === 'Menunggu Material' ? 'Cek Material' : (task.progres || 'Terbuka')}
                     </span>
                     <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase ${
                       task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C]' : 
@@ -530,7 +569,9 @@ const MobileHome = () => {
                     className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] cursor-pointer"
                   >
                     <div className="flex flex-wrap">
-                      <span className="bg-[#FFF8DD] text-[#FFC700] text-[10px] font-black px-4 py-2 uppercase">Berlangsung</span>
+                      <span className="bg-[#FFF8DD] text-[#FFC700] text-[10px] font-black px-4 py-2 uppercase">
+                        {task.progres === 'Menunggu Material' ? 'Cek Material' : 'Berlangsung'}
+                      </span>
                       <span className={`text-white text-[10px] font-black px-4 py-2 uppercase ${
                         task.urgensi === 'Kritis' ? 'bg-[#F1416C]' : 
                         task.urgensi === 'Tinggi' ? 'bg-[#1E88E5]' : 'bg-[#283593]'

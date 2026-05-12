@@ -90,7 +90,7 @@ const MobileTasks = () => {
       switch (activeTab) {
         case 'Terjadwal': matchesTab = progres === 'Terbuka' && tMulai > today; break;
         case 'Terbuka': matchesTab = progres === 'Terbuka' && (!tMulai || tMulai <= today); break;
-        case 'Berlangsung': matchesTab = progres === 'Berlangsung'; break;
+        case 'Berlangsung': matchesTab = progres === 'Berlangsung' || progres === 'Menunggu Material'; break;
         case 'Menunggu Persetujuan': matchesTab = progres === 'Selesai' && task.butuh_persetujuan === 1 && task.approval_status !== 'Approved' && status !== 'Ditolak'; break;
         case 'Ditolak': matchesTab = status === 'Ditolak' || task.approval_status === 'Rejected'; break;
         case 'Selesai': matchesTab = progres === 'Selesai' && (task.butuh_persetujuan === 0 || task.approval_status === 'Approved' || status === 'Selesai'); break;
@@ -286,8 +286,9 @@ const MobileTasks = () => {
                           } else {
                             label = 'Selesai'; colorClass = 'bg-[#E8FFF3] text-[#50CD89] border-[#50CD89]/20';
                           }
-                        } else if (progres === 'Berlangsung') {
-                          label = 'Proses'; colorClass = 'bg-[#FFF8DD] text-[#FFC700] border-[#FFC700]/20';
+                        } else if (progres === 'Berlangsung' || progres === 'Menunggu Material') {
+                          label = progres === 'Menunggu Material' ? 'Cek Material' : 'Proses'; 
+                          colorClass = 'bg-[#FFF8DD] text-[#FFC700] border-[#FFC700]/20';
                         } else if (progres === 'Terbuka') {
                           if (tMulai && tMulai > today) {
                             label = 'Jadwal'; colorClass = 'bg-slate-100 text-slate-500 border-slate-200';

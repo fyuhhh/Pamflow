@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Home, ClipboardList, UserCircle, ShieldCheck } from 'lucide-react';
+import { Home, ClipboardList, UserCircle, ShieldCheck, ClipboardCheck } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 
@@ -44,12 +44,13 @@ const MobileAppLayout = ({ children }) => {
   const navItems = [
     { icon: Home, label: 'Beranda', path: '/demo/mobile' },
     { icon: ClipboardList, label: 'Tugas', path: '/demo/mobile/tasks' },
+    { icon: ClipboardCheck, label: 'Checklist', path: '/demo/mobile/checklist' },
     ...(canApprove ? [{ icon: ShieldCheck, label: 'Approval', path: '/demo/mobile/approvals' }] : []),
     { icon: UserCircle, label: 'Profil', path: '/demo/mobile/profile' },
   ];
 
   // Only show bottom nav on main tab pages — hide everywhere else
-  const mainPaths = ['/demo/mobile', '/demo/mobile/tasks', '/demo/mobile/profile', '/demo/mobile/approvals'];
+  const mainPaths = ['/demo/mobile', '/demo/mobile/tasks', '/demo/mobile/profile', '/demo/mobile/approvals', '/demo/mobile/checklist', '/demo/mobile/checklist-riwayat'];
   const showNav = mainPaths.includes(location.pathname);
 
   return (
@@ -91,16 +92,19 @@ const MobileAppLayout = ({ children }) => {
             display: 'flex',
             justifyContent: 'space-around',
             alignItems: 'center',
-            backgroundColor: 'white',
+            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backdropFilter: 'blur(10px)',
             borderTop: '1px solid #f1f5f9',
-            paddingTop: '8px',
-            paddingBottom: '6px',
+            paddingTop: '4px',
+            paddingBottom: '2px',
             flexShrink: 0,
+            boxShadow: '0 -4px 20px rgba(0,0,0,0.03)',
+            zIndex: 50,
           }}
         >
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = location.pathname === item.path;
+            const active = location.pathname === item.path || (item.path === '/demo/mobile/checklist' && location.pathname === '/demo/mobile/checklist-riwayat');
             return (
               <button
                 key={item.label}
@@ -114,41 +118,50 @@ const MobileAppLayout = ({ children }) => {
                   border: 'none',
                   cursor: 'pointer',
                   color: active ? '#0095E8' : '#94a3b8',
-                  padding: '0 16px',
+                  padding: '0 12px',
                   WebkitTapHighlightColor: 'transparent',
+                  transition: 'all 0.2s ease',
+                  transform: active ? 'translateY(-2px)' : 'none',
                 }}
               >
                 <div style={{
-                  padding: '3px',
-                  borderRadius: '8px',
+                  padding: '2px',
+                  borderRadius: '12px',
                   backgroundColor: active ? '#E3F2FD' : 'transparent',
                   position: 'relative',
+                  transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}>
-                  <Icon size={22} strokeWidth={active ? 2.5 : 2} />
+                  <Icon size={24} strokeWidth={active ? 2.5 : 2} />
                   {item.path === '/demo/mobile/approvals' && pendingCount > 0 && (
                     <span style={{
                       position: 'absolute',
-                      top: '-4px',
-                      right: '-6px',
+                      top: '-6px',
+                      right: '-8px',
                       backgroundColor: '#F1416C',
                       color: 'white',
-                      fontSize: '9px',
-                      fontWeight: 700,
-                      minWidth: '16px',
-                      height: '16px',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      minWidth: '18px',
+                      height: '18px',
                       borderRadius: '999px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       padding: '0 4px',
-                      lineHeight: '16px',
-                      boxShadow: '0 0 4px rgba(241,65,108,0.4)',
+                      lineHeight: '18px',
+                      boxShadow: '0 0 8px rgba(241,65,108,0.4)',
+                      border: '2px solid white',
                     }}>
                       {pendingCount}
                     </span>
                   )}
                 </div>
-                <span style={{ fontSize: '10px', fontWeight: 500 }}>{item.label}</span>
+                <span style={{ 
+                  fontSize: '10px', 
+                  fontWeight: active ? 800 : 600,
+                  transition: 'all 0.2s ease',
+                  letterSpacing: '0.01em'
+                }}>{item.label}</span>
               </button>
             );
           })}

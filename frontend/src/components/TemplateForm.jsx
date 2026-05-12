@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
-import { ChevronDown, ChevronUp, ChevronLeft, Trash2, Plus, Copy, GripVertical, Save, X, Info, AlertTriangle } from 'lucide-react';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { ChevronDown, ChevronUp, ChevronLeft, Trash2, Plus, Copy, GripVertical, Save, X, Info, AlertTriangle, CheckCircle2 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import SearchableSelect from './SearchableSelect';
@@ -8,6 +8,7 @@ import SearchableSelect from './SearchableSelect';
 const TemplateForm = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const location = useLocation();
   const { success, error: showError } = useModal();
   const isEditMode = !!id;
   
@@ -42,8 +43,15 @@ const TemplateForm = () => {
     fetchCompanies();
     if (isEditMode) {
       fetchTemplate();
+    } else if (location.state?.prefilled) {
+      const pre = location.state.prefilled;
+      setFormData(prev => ({
+        ...prev,
+        ...pre,
+        details: pre.details || prev.details
+      }));
     }
-  }, [id]);
+  }, [id, location.state]);
 
   useEffect(() => {
     if (formData.company_id) {
@@ -75,6 +83,14 @@ const TemplateForm = () => {
       if (response.ok) {
         const data = await response.json();
         setDepartments(data);
+        
+        // Handle prefilled department name if exists
+        if (location.state?.prefilled?.target_dept_name && !formData.department_id) {
+          const matched = data.find(d => d.name.toLowerCase() === location.state.prefilled.target_dept_name.toLowerCase());
+          if (matched) {
+            setFormData(prev => ({ ...prev, department_id: matched.id }));
+          }
+        }
       }
     } catch (err) {
       console.error('Error fetching departments:', err);
@@ -276,6 +292,13 @@ const TemplateForm = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const setAllRequired = (val) => {
+    setFormData({
+      ...formData,
+      details: formData.details.map(detail => ({ ...detail, wajib_diisi: val }))
+    });
   };
 
   const labelClass = "text-[13px] font-semibold text-[#3F4254]";
@@ -514,7 +537,14 @@ const TemplateForm = () => {
           </div>
 
           {/* Bottom Add Button */}
-          <div className="flex justify-end pt-8">
+          <div className="flex justify-end pt-8 gap-4">
+            <button 
+              type="button" 
+              onClick={() => setAllRequired(true)}
+              className="flex items-center gap-2 text-[#50CD89] text-[13px] font-bold hover:underline"
+            >
+              <CheckCircle2 size={18} /> Set Semua Wajib
+            </button>
             <button 
               type="button" 
               onClick={addDetail}

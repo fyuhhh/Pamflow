@@ -6,6 +6,13 @@ import { useModal } from '../context/ModalContext';
 import { authFetch } from '../services/api';
 import API_URL from '../config';
 
+const safeArr = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+  return [];
+};
+
 const DiterimaDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -23,6 +30,7 @@ const DiterimaDetail = () => {
   const [finalSaving, setFinalSaving] = useState(false);
   const [checkedItemIds, setCheckedItemIds] = useState([]);
   const [partialNotes, setPartialNotes] = useState('');
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   useEffect(() => {
     fetchTask();
@@ -447,11 +455,15 @@ const DiterimaDetail = () => {
                   {item.original_notes && (
                     <p className="text-[11px] text-[#A1A5B7] mt-0.5">Catatan: {item.original_notes}</p>
                   )}
-                  {item.original_photo && (
-                    <div className="mt-2 w-24 h-16 rounded-lg overflow-hidden border border-[#E4E6EF]">
-                      <img src={item.original_photo} className="w-full h-full object-cover" alt="Original" />
+                  {(() => { const _photos = safeArr(item.original_photos).length > 0 ? safeArr(item.original_photos) : (item.original_photo ? [item.original_photo] : []); return _photos.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {_photos.map((photo, pIdx) => (
+                        <div key={pIdx} className="w-24 h-16 rounded-lg overflow-hidden border border-[#E4E6EF]">
+                          <img src={photo} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" alt={`Original ${pIdx + 1}`} onClick={() => setZoomedImage(photo)} />
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  ); })()}
                   {item.status === 'fixed' && (
                     <p className="text-[11px] text-[#50CD89] mt-0.5">
                       ✓ Diperbaiki oleh {item.fixed_by_name || '-'}
@@ -589,6 +601,21 @@ const DiterimaDetail = () => {
                 Ya, {modalType === 'accept' ? 'Terima' : 'Tolak'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setZoomedImage(null)}>
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <img src={zoomedImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
+            <button 
+              className="absolute -top-4 -right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-lg hover:bg-gray-200"
+              onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}
+            >
+              ×
+            </button>
           </div>
         </div>
       )}

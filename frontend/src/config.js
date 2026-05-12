@@ -24,13 +24,19 @@ const getApiUrl = () => {
     return envUrl;
   }
 
-  // In Vite dev/preview mode, the proxy handles routing — use relative paths
-  if (import.meta.env.DEV || import.meta.env.MODE === 'development') {
+  // If we are accessing the app through a proxy (like Vite dev/preview server)
+  // or a reverse proxy (Nginx), use relative paths to let the proxy handle it.
+  // We assume we're behind a proxy if the current port isn't the backend port.
+  if (window.location.port && window.location.port !== String(BACKEND_PORT)) {
     return '';
   }
 
-  // Production build without proxy: dynamically resolve from current hostname
-  // This works regardless of which IP/hostname the user accesses the app from
+  // In Vite dev mode, always use relative paths
+  if (import.meta.env.DEV) {
+    return '';
+  }
+
+  // Fallback: resolve from current hostname
   const protocol = window.location.protocol;
   const hostname = window.location.hostname;
   return `${protocol}//${hostname}:${BACKEND_PORT}`;

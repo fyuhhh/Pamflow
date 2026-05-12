@@ -5,6 +5,13 @@ import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import API_URL from '../config';
 
+const safeArr = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+  return [];
+};
+
 const TerkirimDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -18,6 +25,7 @@ const TerkirimDetail = () => {
   const [selectedProblemIds, setSelectedProblemIds] = useState([]);
   const [reopenSaving, setReopenSaving] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   useEffect(() => {
     fetchTask();
@@ -295,11 +303,15 @@ const TerkirimDetail = () => {
                   {item.original_notes && (
                     <p className="text-[10px] text-[#A1A5B7] mt-0.5 italic">Catatan: {item.original_notes}</p>
                   )}
-                  {item.original_photo && (
-                    <div className="mt-1.5 w-20 h-14 rounded border border-[#E4E6EF] overflow-hidden">
-                      <img src={item.original_photo} className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity" alt="Original" />
+                  {(() => { const _photos = safeArr(item.original_photos).length > 0 ? safeArr(item.original_photos) : (item.original_photo ? [item.original_photo] : []); return _photos.length > 0 && (
+                    <div className="mt-1.5 flex flex-wrap gap-2">
+                      {_photos.map((photo, pIdx) => (
+                        <div key={pIdx} className="w-20 h-14 rounded border border-[#E4E6EF] overflow-hidden">
+                          <img src={photo} className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity cursor-pointer" alt={`Original ${pIdx + 1}`} onClick={() => setZoomedImage(photo)} />
+                        </div>
+                      ))}
                     </div>
-                  )}
+                  ); })()}
                 </div>
                 {item.status === 'fixed' && item.fixed_by_name && (
                   <span className="text-[10px] text-[#50CD89] whitespace-nowrap">oleh {item.fixed_by_name}</span>
@@ -408,6 +420,21 @@ const TerkirimDetail = () => {
                 {reopenSaving ? 'Mengirim...' : 'Kirim WO Ulang'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Lightbox Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setZoomedImage(null)}>
+          <div className="relative max-w-[90vw] max-h-[90vh]">
+            <img src={zoomedImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
+            <button 
+              className="absolute -top-4 -right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-lg hover:bg-gray-200"
+              onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}
+            >
+              ×
+            </button>
           </div>
         </div>
       )}

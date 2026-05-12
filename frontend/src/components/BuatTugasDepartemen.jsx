@@ -1,16 +1,27 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Info, MapPin, ChevronDown, CheckCircle, X, FileText, Image, AlertTriangle, Send } from 'lucide-react';
+import { Info, MapPin, ChevronDown, CheckCircle, ChevronRight, X, FileText, Image, AlertTriangle, Send } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import CustomDatePicker from './CustomDatePicker';
 import SearchableSelect from './SearchableSelect';
+
+// Helper: always return a proper array
+const safeArr = (val) => {
+  if (!val) return [];
+  if (Array.isArray(val)) return val;
+  if (typeof val === 'string') { try { const p = JSON.parse(val); return Array.isArray(p) ? p : []; } catch { return []; } }
+  return [];
+};
 
 const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { success, error: showError } = useModal();
   const user = JSON.parse(localStorage.getItem('user'));
+  const isMobile = location.pathname.startsWith('/demo/mobile');
+  const basePath = isMobile ? '/demo/mobile' : '/tugas-departemen';
   const userName = user ? `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.email.split('@')[0] : 'User';
   const currentCompanyId = user?.company_id || 1;
   const role = user?.role?.toLowerCase();
@@ -51,34 +62,46 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
   const [formData, setFormData] = useState(initialFormData);
   const [auditData, setAuditData] = useState(null);
+  const [currentBatchIndex, setCurrentBatchIndex] = useState(0);
+  const [batchPayloads, setBatchPayloads] = useState([]);
+  const [showBatchConfirmModal, setShowBatchConfirmModal] = useState(false);
+  const [zoomedImage, setZoomedImage] = useState(null);
 
   useEffect(() => {
     // Priority: useLocation state, fallback to window.history.state
     const state = location.state || window.history.state?.usr;
     console.log('DEBUG: Checking for audit state:', state);
 
-    if (state?.fromAudit) {
+    if (state?.fromAudit && state.brokenItems && state.brokenItems.length > 0) {
       console.log('DEBUG: Audit data found! Processing...', state);
       setAuditData(state);
+
+      const isBatch = state.isBatchWO;
+      const itemsToProcess = isBatch ? [state.brokenItems[currentBatchIndex || 0]] : state.brokenItems;
+
+      const taskTitle = isBatch 
+        ? `Perbaikan ${state.templateName || 'Temuan'} - ${itemsToProcess[0]?.name || ''}`
+        : `Perbaikan ${state.templateName || 'Temuan'} - ${state.shift || ''}`;
+
       setFormData(prev => ({
         ...prev,
-        nama_wo: `Perbaikan ${state.templateName || 'Temuan'} - ${state.shift || ''}`,
+        nama_wo: taskTitle,
         departemen_tujuan: state.targetDept || 'ENGINEERING',
-        deskripsi: `WO dibuat otomatis dari audit #SES-${state.session_id}.`,
+        deskripsi: `WO dibuat otomatis dari audit #SES-${state.session_id}${isBatch ? ` untuk item ${itemsToProcess[0]?.name || ''}` : ''}.`,
         urgensi: 'Kritis',
-        tanggal_mulai: new Date().toISOString().split('T')[0],
-        tanggal_selesai: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+        tanggal_mulai: prev.tanggal_mulai || new Date().toISOString().split('T')[0],
+        tanggal_selesai: prev.tanggal_selesai || new Date(Date.now() + 86400000).toISOString().split('T')[0],
         checklist_session_id: state.session_id,
-        wo_items: (state.brokenItems || []).map(item => ({
+        wo_items: itemsToProcess.map(item => ({
           id: item.id,
           name: item.name,
-          original_notes: item.notes || 'Temuan audit',
-          original_photo: item.photo_url || '',
+          original_notes: item.notes || '',
+          original_photos: safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : []),
           status: 'pending'
         }))
       }));
     }
-  }, [location.state]);
+  }, [location.state, currentBatchIndex]);
   
   // Watch formData changes for debug
   useEffect(() => {
@@ -291,8 +314,27 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    setLoading(true);
+    
+    // Batch WO logic
+    if (auditData?.isBatchWO && auditData.brokenItems) {
+      setBatchPayloads(prev => {
+        const newBatch = [...prev];
+        newBatch[currentBatchIndex] = formData;
+        return newBatch;
+      });
+      
+      if (currentBatchIndex < auditData.brokenItems.length - 1) {
+        success('Disimpan', `WO untuk item "${auditData.brokenItems[currentBatchIndex].name}" telah disiapkan. Lanjut ke item berikutnya.`);
+        setCurrentBatchIndex(prev => prev + 1);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setShowBatchConfirmModal(true);
+      }
+      return;
+    }
 
+    // Normal single WO submit
+    setLoading(true);
     try {
       const response = await authFetch('/api/department-tasks', {
         method: 'POST',
@@ -301,7 +343,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
       if (response.ok) {
         success('Berhasil', 'Tugas departemen berhasil dibuat!');
-        navigate('/tugas-departemen/terkirim');
+        navigate(`${basePath}/terkirim`);
       } else {
         const errorData = await response.json();
         showError('Gagal', errorData.message || 'Gagal membuat tugas departemen.');
@@ -314,24 +356,82 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
     }
   };
 
-  const inputClass = (field) => `w-full px-4 py-3 rounded-lg border text-[13px] outline-none transition-all ${
-    errors[field] ? 'border-[#F1416C] bg-[#FFF5F8]' : 'border-[#E4E6EF] bg-white focus:border-[#0095E8] focus:ring-1 focus:ring-[#0095E8]/20'
-  }`;
+  const handleSubmitBatch = async () => {
+    setLoading(true);
+    setShowBatchConfirmModal(false);
+    let successCount = 0;
+    
+    try {
+      for (const payload of batchPayloads) {
+        const response = await authFetch('/api/department-tasks', {
+          method: 'POST',
+          body: JSON.stringify(payload)
+        });
+        if (response.ok) {
+          successCount++;
+        }
+      }
+      
+      if (successCount === batchPayloads.length) {
+        success('Berhasil', `${successCount} Work Order berhasil dibuat secara berurutan.`);
+      } else {
+        showError('Sebagian Berhasil', `${successCount} dari ${batchPayloads.length} WO berhasil dibuat.`);
+      }
+      navigate(`${basePath}/terkirim`);
+    } catch (err) {
+      console.error('Batch submit error:', err);
+      showError('Kesalahan Jaringan', 'Terjadi kesalahan saat menghubungi server.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const labelClass = "text-[13px] font-semibold text-[#3F4254]";
+  const inputClass = (field) => `w-full px-5 py-4 rounded-2xl border text-[14px] font-bold outline-none transition-all ${
+    errors[field] 
+      ? 'border-[#F1416C] bg-[#FFF5F8] text-[#F1416C]' 
+      : 'border-slate-100 bg-slate-50 focus:bg-white focus:border-[#0095E8] focus:ring-4 focus:ring-blue-50 text-slate-700'
+  } placeholder:text-slate-300 placeholder:font-medium`;
+
+  const labelClass = "text-[13px] font-black text-slate-700 uppercase tracking-wider";
   const requiredStar = <span className="text-[#F1416C] ml-0.5">*</span>;
 
   return (
-    <div className="p-8 px-10 pb-24">
+    <div className={`${isMobile ? 'p-4 pb-24' : 'p-8 px-10 pb-24'}`}>
       {/* Notice */}
       <div className="flex items-center gap-2 mb-8 bg-[#F1FAFF] rounded-lg px-4 py-3 border border-[#D6EEFB]">
         <Info size={16} className="text-[#0095E8] flex-shrink-0" />
         <span className="text-[12px] text-[#0095E8] font-medium">Tanda (*) adalah wajib di isi</span>
       </div>
 
+      {/* Batch Banner */}
+      {auditData?.isBatchWO && auditData.brokenItems && auditData.brokenItems.length > 0 && (
+        <div className={`mx-0 mb-6 bg-[#E8FFF3] border border-[#50CD89]/30 rounded-xl ${isMobile ? 'p-4' : 'p-5'} flex flex-col md:flex-row md:items-center justify-between shadow-sm gap-4`}>
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-white flex items-center justify-center text-[#50CD89] shadow-sm">
+              <CheckCircle size={24} />
+            </div>
+            <div>
+              <p className="text-[15px] font-bold text-[#181C32] mb-1">Pembuatan WO Masal (Item {currentBatchIndex + 1} dari {auditData.brokenItems.length})</p>
+              <p className="text-[13px] text-[#3F4254]">
+                Sedang mengonfigurasi Work Order untuk temuan: <span className="font-bold">{auditData.brokenItems[currentBatchIndex]?.name}</span>
+              </p>
+            </div>
+          </div>
+          <div className="text-right">
+            <p className="text-[11px] font-bold text-[#A1A5B7] uppercase mb-1">Progress</p>
+            <div className="w-32 h-2 bg-white rounded-full overflow-hidden shadow-inner">
+              <div 
+                className="h-full bg-[#50CD89] transition-all duration-500" 
+                style={{ width: `${((currentBatchIndex) / auditData.brokenItems.length) * 100}%` }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Audit Findings Section */}
       {auditData && formData.wo_items.length > 0 && (
-        <div className="bg-white rounded-xl border border-[#F1416C]/20 p-8 mb-6 overflow-hidden relative">
+        <div className={`bg-white rounded-xl border border-[#F1416C]/20 ${isMobile ? 'p-4' : 'p-8'} mb-6 overflow-hidden relative`}>
           <div className="absolute top-0 right-0 p-4 opacity-5">
              <AlertTriangle size={80} className="text-[#F1416C]" />
           </div>
@@ -344,24 +444,42 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           <div className="space-y-3">
             {formData.wo_items.map((item, idx) => (
-              <div key={idx} className="flex items-start gap-4 p-4 rounded-xl bg-[#FFF5F8] border border-[#F1416C]/10 group transition-all hover:bg-white hover:shadow-md">
-                <div className="w-6 text-[11px] font-mono text-[#F1416C]/50 pt-0.5">{idx + 1}</div>
-                <div className="flex-1">
-                  <p className="text-[13px] font-bold text-[#181C32]">{item.name}</p>
+              <div key={idx} className={`flex ${isMobile ? 'flex-col' : 'items-center'} gap-5 p-5 rounded-2xl bg-white border-2 border-[#FFF5F8] shadow-sm hover:border-[#F1416C]/20 hover:shadow-md transition-all`}>
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-[#FFF5F8] border border-[#F1416C]/20 flex items-center justify-center flex-shrink-0">
+                    <span className="text-[15px] font-bold text-[#F1416C]">{idx + 1}</span>
+                  </div>
+                  {isMobile && <p className="text-[16px] font-bold text-[#181C32] truncate">{item.name}</p>}
+                </div>
+                
+                <div className="flex-1 min-w-0">
+                  {!isMobile && <p className="text-[16px] font-bold text-[#181C32] truncate">{item.name}</p>}
                   {item.original_notes && (
-                    <p className="text-[12px] text-[#F1416C] mt-1 font-medium bg-white/50 px-2 py-1 rounded inline-block border border-[#F1416C]/5">
+                    <p className="text-[13px] text-[#F1416C] mt-1.5 font-medium bg-[#FFF5F8] px-3 py-1.5 rounded-lg inline-block border border-[#F1416C]/10">
                       Catatan: {item.original_notes}
                     </p>
                   )}
                   
-                  {item.original_photo && (
-                    <div className="mt-3 w-32 h-20 rounded-lg overflow-hidden border border-[#F1416C]/20 bg-white">
-                      <img src={item.original_photo} className="w-full h-full object-cover" alt="Temuan" />
+                  {safeArr(item.original_photos).length > 0 && (
+                    <div className="mt-3 flex flex-wrap gap-3">
+                      {safeArr(item.original_photos).map((photo, pIdx) => (
+                        <div 
+                          key={pIdx}
+                          className="w-28 h-20 rounded-xl overflow-hidden border border-[#E4E6EF] shadow-sm cursor-pointer group/photo relative"
+                          onClick={() => setZoomedImage(photo)}
+                        >
+                          <img src={photo} className="w-full h-full object-cover transition-transform group-hover/photo:scale-110" alt={`Temuan ${pIdx + 1}`} />
+                          <div className="absolute inset-0 bg-black/0 group-hover/photo:bg-black/20 transition-colors flex items-center justify-center">
+                            <Image size={16} className="text-white opacity-0 group-hover/photo:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
-                <div className="flex flex-col items-end gap-2">
-                  <div className="px-2 py-1 bg-[#F1416C] text-white rounded text-[10px] font-bold uppercase tracking-wider">
+                
+                <div className={`flex ${isMobile ? 'flex-row' : 'flex-col'} items-center ${isMobile ? 'justify-between' : 'justify-center'} gap-3 ${isMobile ? 'border-t' : 'border-l'} border-[#F1F1F4] ${isMobile ? 'pt-4' : 'pl-5'}`}>
+                  <div className="px-3 py-1.5 bg-[#F1416C] text-white rounded-md text-[11px] font-extrabold uppercase tracking-widest shadow-sm shadow-[#F1416C]/20">
                     Rusak
                   </div>
                   <button 
@@ -370,10 +488,10 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
                       const newItems = formData.wo_items.filter((_, i) => i !== idx);
                       setFormData({ ...formData, wo_items: newItems });
                     }}
-                    className="p-1.5 rounded-lg bg-white border border-[#E4E6EF] text-[#F1416C] hover:bg-[#FFF5F8] transition-all shadow-sm"
+                    className="p-2 rounded-xl bg-white border border-[#E4E6EF] text-[#A1A5B7] hover:text-[#F1416C] hover:bg-[#FFF5F8] hover:border-[#F1416C]/30 transition-all shadow-sm flex items-center gap-2"
                     title="Batalkan item ini"
                   >
-                    <X size={14} />
+                    <X size={16} strokeWidth={2.5} />
                   </button>
                 </div>
               </div>
@@ -389,13 +507,13 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
         </div>
       )}
 
-      <div className="bg-white rounded-xl border border-[#F1F1F4] p-8">
+      <div className={`bg-white rounded-xl border border-[#F1F1F4] ${isMobile ? 'p-4' : 'p-8'}`}>
         <h2 className="text-[15px] font-bold text-[#0095E8] mb-8">Informasi Tugas</h2>
 
         <div className="space-y-6">
           {/* Perusahaan */}
-          <div className="flex items-center gap-8">
-            <label className="w-48 text-[13px] font-semibold text-[#3F4254]">
+          <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
               Perusahaan <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -411,8 +529,8 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Departemen Asal - Auto-filled & locked from user's department */}
-          <div className="flex items-center gap-8">
-            <label className="w-48 text-[13px] font-semibold text-[#3F4254]">
+          <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
               Departemen asal <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -426,8 +544,8 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Nama Peminta */}
-          <div className="flex items-center gap-8">
-            <label className="w-48 text-[13px] font-semibold text-[#3F4254]">
+          <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
               Nama peminta <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -441,8 +559,8 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Departemen Tujuan */}
-          <div className="flex items-center gap-8">
-            <label className="w-48 text-[13px] font-semibold text-[#3F4254]">
+          <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
               Departemen tujuan <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -458,8 +576,8 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Template */}
-          <div className="flex items-center gap-8">
-            <label className="w-48 text-[13px] font-semibold text-[#3F4254]">
+          <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
               Template
             </label>
             <div className="flex-1 max-w-4xl">
@@ -478,9 +596,9 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
             <label className={labelClass}>Nama {isChecklist ? 'Checklist' : 'WO'} {requiredStar}</label>
-            <div className="col-span-3">
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'}`}>
               <input
                 type="text"
                 name="nama_wo"
@@ -494,9 +612,9 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Deskripsi */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
             <label className={labelClass}>Deskripsi {requiredStar}</label>
-            <div className="col-span-3 relative">
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'} relative`}>
               <textarea
                 name="deskripsi"
                 value={formData.deskripsi}
@@ -512,12 +630,12 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Titik Lokasi */}
-          <div className="grid grid-cols-4 items-start gap-4">
-            <div>
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
+            <div className={`${isMobile ? 'w-full' : ''}`}>
               <label className="text-[13px] font-semibold text-[#0095E8]">Titik lokasi</label>
               <p className="text-[10px] text-[#A1A5B7] mt-0.5">Pilih titik lokasi pekerjaan</p>
             </div>
-            <div className="col-span-3">
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'}`}>
               <div className="relative mb-2">
                 <MapPin size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A5B7]" />
                 <input
@@ -536,9 +654,9 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Detail Alamat */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
             <label className={labelClass}>Detail alamat</label>
-            <div className="col-span-3 relative">
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'} relative`}>
               <textarea
                 name="detail_alamat"
                 value={formData.detail_alamat}
@@ -553,12 +671,12 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Lampiran */}
-          <div className="grid grid-cols-4 items-start gap-4">
-            <div>
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
+            <div className={`${isMobile ? 'w-full' : ''}`}>
               <label className="text-[13px] font-semibold text-[#0095E8]">Lampiran</label>
               <p className="text-[10px] text-[#A1A5B7] mt-0.5 leading-tight">Pastikan file yang diunggah sesuai dengan panduan kriteria</p>
             </div>
-            <div className="col-span-3">
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'}`}>
               {uploadedFile ? (
                 <div className="flex items-center gap-4 bg-[#F1FAFF] border border-[#D6EEFB] rounded-xl px-5 py-4">
                   <div className="w-10 h-10 rounded-lg bg-white border border-[#E4E6EF] flex items-center justify-center flex-shrink-0">
@@ -619,9 +737,9 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Tenggat Waktu */}
-          <div className="grid grid-cols-4 items-start gap-4">
-            <label className="text-[13px] font-semibold text-[#0095E8]">Tenggat waktu {requiredStar}</label>
-            <div className="col-span-3 flex items-center gap-3">
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
+            <label className={`${isMobile ? 'w-full' : 'text-[13px] font-semibold text-[#0095E8]'}`}>Tenggat waktu {requiredStar}</label>
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'} flex items-center gap-3`}>
               <div className="flex-1">
                 <CustomDatePicker
                   value={formData.tanggal_mulai}
@@ -647,9 +765,9 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           {/* Urgensi */}
-          <div className="grid grid-cols-4 items-start gap-4">
+          <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
             <label className={labelClass}>Urgensi {requiredStar}</label>
-            <div className="col-span-3 relative">
+            <div className={`${isMobile ? 'w-full' : 'col-span-3'} relative`}>
               <button
                 type="button"
                 onClick={() => setUrgensiOpen(!urgensiOpen)}
@@ -685,22 +803,93 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
         </div>
 
         {/* Footer Buttons */}
-        <div className="flex justify-end gap-3 mt-10 pt-6 border-t border-[#F1F1F4]">
-          <button
-            onClick={() => navigate('/tugas-departemen/terkirim')}
-            className="px-8 py-2.5 border border-[#E4E6EF] rounded-lg text-[13px] font-bold text-[#7E8299] hover:bg-gray-50 transition-colors"
+        <div className={`flex ${isMobile ? 'flex-col-reverse px-2' : 'justify-end'} gap-4 mt-12 pt-8 border-t border-slate-100`}>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
+            onClick={() => navigate(`${basePath}/checklist-riwayat`)}
+            className={`px-8 py-4 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all ${isMobile ? 'w-full' : ''}`}
           >
             Batal
-          </button>
-          <button
+          </motion.button>
+          <motion.button
+            whileTap={{ scale: 0.96 }}
             onClick={handleSubmit}
             disabled={loading}
-            className="px-8 py-2.5 bg-[#0095E8] rounded-lg text-[13px] font-bold text-white hover:bg-[#0084CC] transition-colors disabled:opacity-50"
+            className={`px-12 py-4 bg-[#0095E8] text-white rounded-2xl text-[15px] font-black hover:bg-[#0084CC] shadow-lg shadow-blue-500/20 flex items-center justify-center gap-3 transition-all disabled:opacity-50 ${isMobile ? 'w-full' : ''}`}
           >
-            {loading ? 'Menyimpan...' : 'Buat'}
-          </button>
+            {loading ? (
+               <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin" />
+            ) : (
+              auditData?.isBatchWO && currentBatchIndex < (auditData?.brokenItems?.length || 0) - 1 ? (
+                <>Item Selanjutnya <ChevronRight size={20} /></>
+              ) : (
+                <><Send size={20} /> Kirim {isChecklist ? 'Checklist' : 'Work Order'}</>
+              )
+            )}
+          </motion.button>
         </div>
       </div>
+
+      {/* Modal Konfirmasi Batch */}
+      {showBatchConfirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !loading && setShowBatchConfirmModal(false)} />
+          <div className="relative bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="bg-[#181C32] px-6 py-6 text-white flex items-center justify-between">
+              <h3 className="text-[16px] font-bold flex items-center gap-2">
+                <CheckCircle size={18} className="text-[#50CD89]" />
+                Konfirmasi Work Order Masal
+              </h3>
+              <button 
+                onClick={() => !loading && setShowBatchConfirmModal(false)}
+                className="text-white/50 hover:text-white transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="p-6">
+              <p className="text-[14px] text-[#3F4254] mb-2 font-medium">
+                Anda telah mengonfigurasi <span className="font-bold text-[#0095E8]">{batchPayloads.length} item</span> Work Order dari temuan audit.
+              </p>
+              <p className="text-[13px] text-[#A1A5B7] leading-relaxed mb-6">
+                Apakah Anda yakin ingin membuat semuanya sekaligus? Masing-masing item akan menjadi Work Order yang terpisah.
+              </p>
+              <div className="flex gap-3 pt-2">
+                <button
+                  onClick={() => setShowBatchConfirmModal(false)}
+                  disabled={loading}
+                  className="flex-1 py-3 bg-white border border-[#E4E6EF] text-[#7E8299] rounded-xl text-[13px] font-bold hover:bg-[#F5F8FA] transition-all disabled:opacity-50"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={handleSubmitBatch}
+                  disabled={loading}
+                  className="flex-[1.5] py-3 bg-[#0095E8] text-white rounded-xl text-[13px] font-bold hover:bg-[#0084CC] transition-all shadow-lg shadow-[#0095E8]/20 disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? 'Membuat...' : `Kirim Semua WO (${batchPayloads.length})`}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Image Lightbox Modal */}
+      {zoomedImage && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-8">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setZoomedImage(null)} />
+          <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center pointer-events-none">
+            <img src={zoomedImage} className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto" alt="Zoomed Temuan" />
+            <button 
+              onClick={() => setZoomedImage(null)}
+              className="absolute -top-4 -right-4 sm:top-0 sm:-right-12 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-all pointer-events-auto border border-white/20"
+            >
+              <X size={20} />
+            </button>
+          </div>
+        </div>
+      )}
 
     </div>
   );

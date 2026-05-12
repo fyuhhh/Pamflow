@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Search, Filter, Download, Upload, Plus, Edit3, Trash2, Eye, Power, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, ChevronDown, X, Calendar, AlertCircle, ChevronsUpDown } from 'lucide-react';
+import { Search, Filter, Download, Upload, Plus, Edit3, Trash2, Eye, Power, ChevronLeft, ChevronRight, RefreshCw, CheckCircle, ChevronDown, X, Calendar, AlertCircle, ChevronsUpDown, Info, Clock } from 'lucide-react';
 import { hasPermission } from '../utils/permissions';
 import { useModal } from '../context/ModalContext';
 import Skeleton from './common/Skeleton';
@@ -19,7 +19,7 @@ const RingkasanList = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [currentPage, setCurrentPage] = useState(1);
-  const { success, error: showError } = useModal();
+  const { confirm, success, error: showError } = useModal();
   
   // Filter States
   const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -610,16 +610,73 @@ const RingkasanList = () => {
                         {task.urgensi || 'Normal'}
                       </span>
                     </td>
-                    <td className="px-6 py-5 text-center">
-                      <span className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold flex items-center justify-center gap-1.5 w-fit mx-auto ${
-                        task.progres === 'Selesai' ? 'bg-[#E8FFF3] text-[#50CD89]' :
-                        task.progres === 'Berlangsung' ? 'bg-[#FFF8DD] text-[#FFC700]' :
-                        task.progres === 'Menunggu Persetujuan' ? 'bg-[#F8E3FF] text-[#7239EA]' :
-                        'bg-[#F1FAFF] text-[#0095E8]'
-                      }`}>
-                        {task.progres || 'Terbuka'}
-                        {task.progres === 'Selesai' && <CheckCircle size={14} className="text-[#50CD89]" />}
-                      </span>
+                    <td className="px-6 py-5">
+                      <div className="flex flex-col items-center gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 ${
+                            task.progres === 'Selesai' ? 'bg-[#E8FFF3] text-[#50CD89]' :
+                            task.progres === 'Menunggu Material' ? 'bg-[#FFF8DD] text-[#FFC700]' :
+                            'bg-[#F1FAFF] text-[#0095E8]'
+                          }`}>
+                            {task.progres === 'Menunggu Material' ? 'Menunggu Material' : 
+                             (task.progres === 'Berlangsung' && task.catatan_pengerjaan && !task.waktu_material_dicek) ? 'Berlangsung (Catatan)' :
+                             (task.progres || 'Terbuka')}
+                            {task.progres === 'Selesai' && <CheckCircle size={14} className="ml-1 inline" />}
+                          </span>
+                          
+                           {(task.catatan_material || task.catatan_pengerjaan) && task.progres !== 'Menunggu Approval' && (
+                            <button 
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirm(
+                                  'Rincian Progres Tugas',
+                                  <div className="text-left space-y-6">
+                                    {task.catatan_pengerjaan && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-[11px] font-bold text-blue-600 uppercase tracking-wider">
+                                          <Clock size={12} />
+                                          Catatan Pengerjaan
+                                        </div>
+                                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                                          <p className="text-[13px] text-blue-800 leading-relaxed font-medium">
+                                            {task.catatan_pengerjaan}
+                                          </p>
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 pl-1">
+                                          Dilaporkan pada: {formatDate(task.waktu_catatan_pengerjaan)} {task.waktu_catatan_pengerjaan && formatTime(new Date(task.waktu_catatan_pengerjaan).toLocaleTimeString('en-GB'))}
+                                        </div>
+                                      </div>
+                                    )}
+                                    
+                                    {task.catatan_material && (
+                                      <div className="space-y-2">
+                                        <div className="flex items-center gap-2 text-[11px] font-bold text-amber-600 uppercase tracking-wider">
+                                          <Info size={12} />
+                                          Catatan Material
+                                        </div>
+                                        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+                                          <p className="text-[13px] text-amber-800 leading-relaxed font-medium">
+                                            {task.catatan_material}
+                                          </p>
+                                        </div>
+                                        <div className="text-[10px] text-slate-400 pl-1">
+                                          Dilaporkan pada: {formatDate(task.waktu_catatan_material)} {task.waktu_catatan_material && formatTime(new Date(task.waktu_catatan_material).toLocaleTimeString('en-GB'))}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>,
+                                  () => {},
+                                  { confirmText: 'Tutup', showCancel: false }
+                                );
+                              }}
+                              className="p-1.5 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors shadow-sm border border-blue-100"
+                              title="Lihat Rincian Progres"
+                            >
+                              <Info size={14} className="animate-pulse" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-center">
                       <span className={`px-2.5 py-1 rounded-lg text-[11px] font-semibold ${getStatusBadge(task.status)}`}>
@@ -952,6 +1009,8 @@ const RingkasanList = () => {
           </div>
         </div>
       )}
+
+
 
     </div>
   );

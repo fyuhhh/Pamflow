@@ -34,7 +34,7 @@ const createNewTask = async (req, res) => {
   try {
     const insertedId = await taskService.createTask(req.body);
     console.log('[TaskController] Task inserted with ID:', insertedId);
-    
+
     // Log Activity
     await logAudit({
       entity_type: 'task',
@@ -61,10 +61,10 @@ const createNewTask = async (req, res) => {
 
     // Real-time Sync
     try {
-      socketService.emitToCompany(req.body.company_id, 'task-created', { 
-        id: insertedId, 
+      socketService.emitToCompany(req.body.company_id, 'task-created', {
+        id: insertedId,
         nama_tugas: req.body.nama_tugas,
-        creator_name: req.body.creator_name 
+        creator_name: req.body.creator_name
       });
     } catch (socketErr) {
       console.warn('[TaskController] Socket sync failed:', socketErr.message);
@@ -151,7 +151,7 @@ const approveOrRejectTask = async (req, res) => {
         [req.params.id, user_name || 'Approver', 'Ditolak']
       );
     }
-    
+
     // Log Activity
     await logAudit({
       entity_type: 'task',
@@ -178,9 +178,9 @@ const approveOrRejectTask = async (req, res) => {
     }
 
     // Real-time Sync
-    socketService.emitToCompany(current?.company_id, 'task-approval-updated', { 
-      id: req.params.id, 
-      status: approval_status 
+    socketService.emitToCompany(current?.company_id, 'task-approval-updated', {
+      id: req.params.id,
+      status: approval_status
     });
 
     res.status(200).json({ message: `Task ${approval_status.toLowerCase()} successfully` });
@@ -220,13 +220,13 @@ const getPendingApproval = async (req, res) => {
 
       // Parse JSON fields for frontend consumption
       if (typeof task.agen_id === 'string') {
-        try { task.agen_id = JSON.parse(task.agen_id); } catch(e) {}
+        try { task.agen_id = JSON.parse(task.agen_id); } catch (e) { }
       }
       if (typeof task.details === 'string') {
-        try { task.details = JSON.parse(task.details); } catch(e) {}
+        try { task.details = JSON.parse(task.details); } catch (e) { }
       }
       if (typeof task.submission_data === 'string') {
-        try { task.submission_data = JSON.parse(task.submission_data); } catch(e) {}
+        try { task.submission_data = JSON.parse(task.submission_data); } catch (e) { }
       }
     }
 
@@ -294,8 +294,8 @@ const startAgentTask = async (req, res) => {
 
     // Real-time Sync
     const task = await taskService.getTaskById(req.params.id);
-    socketService.emitToCompany(task?.company_id, 'task-progress-updated', { 
-      id: req.params.id, 
+    socketService.emitToCompany(task?.company_id, 'task-progress-updated', {
+      id: req.params.id,
       progres: 'Berlangsung',
       agent_id
     });
@@ -303,6 +303,99 @@ const startAgentTask = async (req, res) => {
     res.status(200).json({ message: 'Task started successfully', waktu_dimulai });
   } catch (err) {
     console.error('Start task error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const materialCheckedAgentTask = async (req, res) => {
+  const { nama_agen, agent_id, catatan_material } = req.body;
+  try {
+    await taskService.materialCheckTask(req.params.id, { nama_agen, agent_id, catatan_material });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      user_id: agent_id,
+      user_name: nama_agen,
+      action: 'AGENT_MATERIAL_CHECKED',
+      notes: `Agen ${nama_agen || 'Sistem'} telah selesai melakukan pengecekan material${catatan_material ? ` dengan catatan: ${catatan_material}` : ''}`,
+      req
+    });
+
+    // Real-time Sync
+    const task = await taskService.getTaskById(req.params.id);
+    socketService.emitToCompany(task?.company_id, 'task-progress-updated', { 
+      id: req.params.id, 
+      progres: 'Berlangsung',
+      agent_id
+    });
+
+    res.status(200).json({ message: 'Material check completed successfully' });
+  } catch (err) {
+    console.error('Material check error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const proceedToMaterialCheckAgentTask = async (req, res) => {
+  const { nama_agen, agent_id, catatan_pengerjaan } = req.body;
+  try {
+    await taskService.proceedToMaterialCheck(req.params.id, { nama_agen, agent_id, catatan_pengerjaan });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      user_id: agent_id,
+      user_name: nama_agen,
+      action: 'AGENT_PROCEED_TO_MATERIAL_CHECK',
+      notes: `Agen ${nama_agen || 'Sistem'} lanjut ke pengecekan material${catatan_pengerjaan ? ` dengan catatan pengerjaan: ${catatan_pengerjaan}` : ''}`,
+      req
+    });
+
+    // Real-time Sync
+    const task = await taskService.getTaskById(req.params.id);
+    socketService.emitToCompany(task?.company_id, 'task-progress-updated', { 
+      id: req.params.id, 
+      progres: 'Menunggu Material',
+      agent_id
+    });
+
+    res.status(200).json({ message: 'Proceeded to material check successfully' });
+  } catch (err) {
+    console.error('Proceed to material check error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const updatePengerjaanNoteAgentTask = async (req, res) => {
+  const { catatan_pengerjaan, nama_agen, agent_id } = req.body;
+  try {
+    await taskService.updatePengerjaanNote(req.params.id, { catatan_pengerjaan });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      user_id: agent_id,
+      user_name: nama_agen,
+      action: 'AGENT_UPDATE_PENGERJAAN_NOTE',
+      notes: `Agen ${nama_agen || 'Sistem'} memperbarui catatan pengerjaan: ${catatan_pengerjaan}`,
+      req
+    });
+
+    // Real-time Sync
+    const task = await taskService.getTaskById(req.params.id);
+    socketService.emitToCompany(task?.company_id, 'task-progress-updated', { 
+      id: req.params.id, 
+      progres: 'Berlangsung',
+      agent_id
+    });
+
+    res.status(200).json({ message: 'Pengerjaan note updated successfully' });
+  } catch (err) {
+    console.error('Update pengerjaan note error:', err.message);
     res.status(500).json({ message: 'Internal server error' });
   }
 };
@@ -325,8 +418,8 @@ const submitAgentTask = async (req, res) => {
 
     // Real-time Sync
     const task = await taskService.getTaskById(req.params.id);
-    socketService.emitToCompany(task?.company_id, 'task-progress-updated', { 
-      id: req.params.id, 
+    socketService.emitToCompany(task?.company_id, 'task-progress-updated', {
+      id: req.params.id,
       progres: 'Submitted'
     });
 
@@ -355,8 +448,8 @@ const finishAgentTask = async (req, res) => {
 
     // Real-time Sync
     const task = await taskService.getTaskById(req.params.id);
-    socketService.emitToCompany(task?.company_id, 'task-progress-updated', { 
-      id: req.params.id, 
+    socketService.emitToCompany(task?.company_id, 'task-progress-updated', {
+      id: req.params.id,
       progres: 'Selesai'
     });
 
@@ -377,12 +470,39 @@ const getHistory = async (req, res) => {
   }
 };
 
+const updateMaterialNoteAgentTask = async (req, res) => {
+  const { nama_agen, agent_id, catatan_material } = req.body;
+  try {
+    await taskService.updateMaterialNote(req.params.id, { catatan_material });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      user_id: agent_id,
+      user_name: nama_agen,
+      action: 'AGENT_UPDATE_MATERIAL_NOTE',
+      notes: `Agen ${nama_agen || 'Sistem'} memperbarui catatan material: ${catatan_material}`,
+      req
+    });
+
+    // Real-time Sync
+    const task = await taskService.getTaskById(req.params.id);
+    socketService.emitToCompany(task?.company_id, 'task-updated', { id: req.params.id });
+
+    res.status(200).json({ message: 'Material note updated successfully' });
+  } catch (err) {
+    console.error('Update material note error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const patchStatus = async (req, res) => {
   const { status, user_id, user_name } = req.body;
   try {
     const current = await taskService.getTaskById(req.params.id);
     await taskService.updateTaskStatus(req.params.id, status);
-    
+
     // Log Audit
     await logAudit({
       entity_type: 'task',
@@ -439,6 +559,10 @@ module.exports = {
   getPendingApproval,
   getApprovalHistory,
   startAgentTask,
+  materialCheckedAgentTask,
+  proceedToMaterialCheckAgentTask,
+  updatePengerjaanNoteAgentTask,
+  updateMaterialNoteAgentTask,
   submitAgentTask,
   finishAgentTask,
   getHistory,
