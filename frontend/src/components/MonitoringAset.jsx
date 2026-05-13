@@ -107,14 +107,6 @@ const MonitoringAset = () => {
       const handleAssetUpdate = (data) => {
         const cleanData = { ...data, id: parseInt(data.id) };
         setAssets(prev => prev.map(a => a.id === cleanData.id ? { ...a, ...cleanData } : a));
-        
-        // Update active views
-        if (activeMobileAsset?.id === cleanData.id) {
-          setActiveMobileAsset(prev => prev ? { ...prev, ...cleanData } : null);
-        }
-        if (selectedAsset?.id === cleanData.id) {
-          setSelectedAsset(prev => prev ? { ...prev, ...cleanData } : null);
-        }
       };
       socket.on('asset-status-updated', (data) => {
         handleAssetUpdate(data);
@@ -197,35 +189,15 @@ const MonitoringAset = () => {
     const asset = assets.find(a => a.id === assetId);
     if (!asset) return;
 
-    const actionText = asset.is_running ? 'Mematikan' : 'Menyalakan';
     try {
-      const isConfirmed = await confirm({
-        title: `${actionText} Mesin`,
-        message: `Apakah Anda yakin ingin ${actionText.toLowerCase()} mesin "${asset.nama_mesin}"?`,
-        confirmText: actionText,
-        type: asset.is_running ? 'danger' : 'primary'
-      });
-
-      if (!isConfirmed) return;
       setIsToggling(true);
-
       const res = await authFetch(`/api/assets/${assetId}/toggle`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
         const cleanData = { ...data, id: parseInt(data.id) };
-        
-        // Update the main list
         setAssets(prev => prev.map(a => a.id === assetId ? { ...a, ...cleanData } : a));
-        
-        // Update current views AFTER the main list update is scheduled
-        const currentAsset = assets.find(a => a.id === assetId);
-        if (currentAsset) {
-          const updated = { ...currentAsset, ...cleanData };
-          if (activeMobileAsset?.id === assetId) setActiveMobileAsset(updated);
-          if (selectedAsset?.id === assetId) setSelectedAsset(updated);
-        }
       } else {
-        showError('Gagal mengubah status aset di server');
+        showError('Gagal mengubah status aset');
       }
     } catch (err) {
       console.error('Toggle error:', err);
@@ -234,6 +206,22 @@ const MonitoringAset = () => {
       setIsToggling(false);
     }
   };
+
+  // Sync active views when assets state changes
+  useEffect(() => {
+    if (activeMobileAsset) {
+      const updated = assets.find(a => a.id === activeMobileAsset.id);
+      if (updated && (updated.is_running !== activeMobileAsset.is_running || updated.remaining_seconds !== activeMobileAsset.remaining_seconds || updated.operatorName !== activeMobileAsset.operatorName)) {
+        setActiveMobileAsset(updated);
+      }
+    }
+    if (selectedAsset) {
+      const updated = assets.find(a => a.id === selectedAsset.id);
+      if (updated && (updated.is_running !== selectedAsset.is_running || updated.remaining_seconds !== selectedAsset.remaining_seconds || updated.operatorName !== selectedAsset.operatorName)) {
+        setSelectedAsset(updated);
+      }
+    }
+  }, [assets]);
 
   const handleAddNote = async () => {
     if (!newNote.trim()) return;
