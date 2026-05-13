@@ -46,6 +46,7 @@ import ChecklistHarian from './components/ChecklistHarian';
 import { trackPageView, trackLogout } from './services/activityTracker';
 import AssetPlaceholder from './components/AssetPlaceholder';
 import RegisterAset from './components/RegisterAset';
+import MonitoringAset from './components/MonitoringAset';
 
 import DashboardHome from './components/DashboardHome';
 
@@ -239,7 +240,7 @@ function App() {
               {/* Menu ASET */}
               <Route path="/aset/hak-akses" element={<PrivateRoute moduleId="aset_hak_akses"><Dashboard onLogout={logout}><AssetPlaceholder title="Hak Akses Aset" /></Dashboard></PrivateRoute>} />
               <Route path="/aset/register" element={<PrivateRoute moduleId="aset_register"><Dashboard onLogout={logout}><RegisterAset /></Dashboard></PrivateRoute>} />
-              <Route path="/aset/monitoring" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><AssetPlaceholder title="Monitoring Aset" /></Dashboard></PrivateRoute>} />
+              <Route path="/aset/monitoring" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><MonitoringAset /></Dashboard></PrivateRoute>} />
 
               <Route path="/pengaturan/ubah-password" element={<Dashboard onLogout={logout}><ChangePassword /></Dashboard>} />
               <Route path="/profile/user" element={<Dashboard onLogout={logout}><Profile /></Dashboard>} />
