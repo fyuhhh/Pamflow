@@ -731,6 +731,8 @@ const MonitoringAset = () => {
               <button className="absolute top-10 right-6 text-white"><X size={32} /></button>
             </div>
           )}
+        </AnimatePresence>
+        
         {/* Local Confirmation Modal for Toggle (Mobile) */}
         <AnimatePresence>
           {toggleConfirm.show && (
