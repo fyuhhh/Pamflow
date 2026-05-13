@@ -43,12 +43,12 @@ const MODULES = [
   },
   {
     id: 'aset',
-    label: 'Manajemen ASET',
+    label: 'Manajemen Aset',
     isHeader: true,
     submodules: [
-      { id: 'aset_hak_akses', label: 'Hak Akses Aset', actions: ['Buat', 'Lihat', 'Edit', 'Hapus'] },
       { id: 'aset_register', label: 'Register Aset', actions: ['Buat', 'Lihat', 'Edit', 'Hapus', 'Import'] },
       { id: 'aset_monitoring', label: 'Monitoring Aset', actions: ['Lihat', 'Download'] },
+      { id: 'aset_hak_akses', label: 'Hak Akses Aset', actions: ['Buat', 'Lihat', 'Edit', 'Hapus'] },
     ]
   },
   { 

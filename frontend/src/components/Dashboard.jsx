@@ -112,13 +112,13 @@ const Dashboard = ({ children, onLogout }) => {
     },
     {
       id: 'aset',
-      label: 'ASET',
+      label: 'Aset',
       icon: <PiPackageDuotone size={20} />,
       permission: ['aset_hak_akses', 'aset_register', 'aset_monitoring'],
       subItems: [
-        { label: 'Hak Akses Aset', path: '/aset/hak-akses', permission: 'aset_hak_akses' },
         { label: 'Register Aset', path: '/aset/register', permission: 'aset_register' },
         { label: 'Monitoring Aset', path: '/aset/monitoring', permission: 'aset_monitoring' },
+        { label: 'Hak Akses Aset', path: '/aset/hak-akses', permission: 'aset_hak_akses' },
       ]
     },
     {
