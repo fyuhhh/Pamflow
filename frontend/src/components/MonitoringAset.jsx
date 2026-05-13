@@ -334,13 +334,24 @@ const MonitoringAset = () => {
                   outerRadius={45}
                   paddingAngle={5}
                   dataKey="value"
+                  label={({ name, value }) => `${value}`}
+                  labelLine={false}
                 >
                   {analyticsData.priorityChart.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
+                <Legend 
+                  layout="vertical" 
+                  align="right" 
+                  verticalAlign="middle" 
+                  iconType="circle" 
+                  formatter={(value, entry) => {
+                    const item = analyticsData.priorityChart.find(p => p.name === value);
+                    return <span className="text-[10px] font-bold text-[#3F4254]">{value} ({item?.value || 0})</span>;
+                  }}
+                />
               </PieChart>
             </ResponsiveContainer>
           </div>
