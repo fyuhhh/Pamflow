@@ -507,7 +507,7 @@ const RegisterAset = () => {
                       </div>
                       <div className="space-y-1">
                         <label className="text-[10px] font-bold text-[#A1A5B7]">JAM</label>
-                        <input type="number" min="0" max="23" className="w-full px-3 py-2 bg-white border border-[#F1F1F4] rounded-lg text-sm text-center" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
+                        <input type="number" min="0" className="w-full px-3 py-2 bg-white border border-[#F1F1F4] rounded-lg text-sm text-center" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
                       </div>
                     </div>
                     {formData.maintenance_hours > 0 && (
