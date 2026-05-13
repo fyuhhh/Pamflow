@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
+    "dev:pc": "vite --port 5173 --host --mode pc",
+    "dev:mobile": "vite --port 5174 --host --mode mobile",
     "build": "vite build",
     "lint": "eslint .",
     "preview": "vite preview --host --port 4173"
