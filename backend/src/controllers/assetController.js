@@ -14,9 +14,11 @@ const assetController = {
   getAllAssets: async (req, res) => {
     try {
       const company_id = req.user.company_id;
+      const limit = req.query.limit ? parseInt(req.query.limit) : 1000;
+      
       const [rows] = await pool.query(
-        'SELECT a.*, u.firstName, u.lastName FROM assets a LEFT JOIN users u ON a.user_pendaftar_id = u.id WHERE (a.company_id = ? OR (? IS NULL AND a.company_id IS NULL)) ORDER BY a.created_at DESC',
-        [company_id, company_id]
+        'SELECT a.*, u.firstName, u.lastName FROM assets a LEFT JOIN users u ON a.user_pendaftar_id = u.id WHERE (a.company_id = ? OR (? IS NULL AND a.company_id IS NULL)) ORDER BY a.created_at DESC LIMIT ?',
+        [company_id, company_id, limit]
       );
       res.json(rows);
     } catch (error) {
@@ -27,15 +29,15 @@ const assetController = {
 
   createAsset: async (req, res) => {
     try {
-      const { nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran } = req.body;
+      const { nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours } = req.body;
       const company_id = req.user.company_id;
       const user_id = req.user.id;
 
       console.log(`[DEBUG] Creating asset for company ${company_id}, user ${user_id}:`, { nama_mesin, brand });
 
       const [result] = await pool.query(
-        'INSERT INTO assets (company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, user_pendaftar_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran ? JSON.stringify(lampiran) : null, user_id]
+        'INSERT INTO assets (company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours, user_pendaftar_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran ? JSON.stringify(lampiran) : null, maintenance_hours || 0, user_id]
       );
 
       console.log(`[DEBUG] Asset created with ID: ${result.insertId}`);
@@ -126,6 +128,48 @@ const assetController = {
       res.status(201).json({ id: result.insertId, label, message: 'Status created successfully' });
     } catch (error) {
       console.error('Create status error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  getLocations: async (req, res) => {
+    try {
+      const company_id = req.user.company_id;
+      const [rows] = await pool.query(
+        'SELECT * FROM asset_locations WHERE company_id IS NULL OR company_id = ? ORDER BY label ASC',
+        [company_id]
+      );
+      res.json(rows);
+    } catch (error) {
+      console.error('Get locations error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
+  },
+
+  createLocation: async (req, res) => {
+    try {
+      const { label } = req.body;
+      const company_id = req.user.company_id;
+
+      if (!label) return res.status(400).json({ message: 'Label is required' });
+
+      const [existing] = await pool.query(
+        'SELECT * FROM asset_locations WHERE label = ? AND (company_id IS NULL OR company_id = ?)',
+        [label, company_id]
+      );
+
+      if (existing.length > 0) {
+        return res.json({ id: existing[0].id, message: 'Location already exists' });
+      }
+
+      const [result] = await pool.query(
+        'INSERT INTO asset_locations (company_id, label) VALUES (?, ?)',
+        [company_id, label]
+      );
+
+      res.status(201).json({ id: result.insertId, label, message: 'Location created successfully' });
+    } catch (error) {
+      console.error('Create location error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
   },

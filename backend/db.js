@@ -455,6 +455,7 @@ async function initializeDB(retries = 5, delay = 5000) {
         status VARCHAR(100),
         catatan TEXT,
         lampiran LONGTEXT,
+        maintenance_hours INT DEFAULT 0,
         user_pendaftar_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -471,12 +472,20 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
-      // 10.3 Asset Statuses
-      await pool.query(`
       CREATE TABLE IF NOT EXISTS asset_statuses (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_id INT,
         label VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+      // 10.4 Asset Locations
+      await pool.query(`
+      CREATE TABLE IF NOT EXISTS asset_locations (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT,
+        label VARCHAR(255) NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `);

@@ -9,6 +9,8 @@ router.get('/priorities', authMiddleware, assetController.getPriorities);
 router.post('/priorities', authMiddleware, assetController.createPriority);
 router.get('/statuses', authMiddleware, assetController.getStatuses);
 router.post('/statuses', authMiddleware, assetController.createStatus);
+router.get('/locations', authMiddleware, assetController.getLocations);
+router.post('/locations', authMiddleware, assetController.createLocation);
 router.delete('/:id', authMiddleware, assetController.deleteAsset);
 
 module.exports = router;
