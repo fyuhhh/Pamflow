@@ -101,6 +101,13 @@ const HakAksesAset = () => {
       });
 
       if (response.ok) {
+        // Update local session if the user just edited their own role
+        if (role.id === user.role_id) {
+          const updatedUser = { ...user, permissions: role.permissions };
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          window.dispatchEvent(new Event('auth-change'));
+        }
+        
         success('Berhasil', `Hak akses untuk ${role.name} telah diperbarui.`);
       } else {
         showError('Gagal', 'Gagal menyimpan perubahan.');

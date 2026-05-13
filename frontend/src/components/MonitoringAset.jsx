@@ -46,7 +46,8 @@ const MonitoringAset = () => {
   const [selectedAsset, setSelectedAsset] = useState(null);
   const [zoomedImage, setZoomedImage] = useState(null);
   const [assetLogs, setAssetLogs] = useState([]);
-  
+
+  // Permission Logic
   const user = JSON.parse(localStorage.getItem('user'));
   const isSuperAdmin = user?.role?.toLowerCase() === 'super admin';
 
