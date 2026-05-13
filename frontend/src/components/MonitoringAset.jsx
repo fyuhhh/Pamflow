@@ -188,6 +188,19 @@ const MonitoringAset = () => {
   };
 
   const handleToggleStatus = async (id) => {
+    const asset = assets.find(a => a.id === id);
+    if (!asset) return;
+
+    const actionText = asset.is_running ? 'Mematikan' : 'Menyalakan';
+    const isConfirmed = await confirm({
+      title: `${actionText} Mesin`,
+      message: `Apakah Anda yakin ingin ${actionText.toLowerCase()} mesin "${asset.nama_mesin}"?`,
+      confirmText: actionText,
+      type: asset.is_running ? 'danger' : 'primary'
+    });
+
+    if (!isConfirmed) return;
+
     try {
       const res = await authFetch(`/api/assets/${id}/toggle`, { method: 'POST' });
       if (res.ok) {
