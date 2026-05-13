@@ -28,6 +28,7 @@ import {
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { motion, AnimatePresence } from 'framer-motion';
+import { compressImage } from '../utils/imageOptimizer';
 import { 
   BarChart, 
   Bar, 
@@ -805,12 +806,20 @@ const MonitoringAset = () => {
                             type="file" accept="image/*" multiple className="hidden" 
                             onChange={async (e) => {
                               const files = Array.from(e.target.files).slice(0, 5 - maintFormData.photos.length);
-                              for (const file of files) {
-                                const reader = new FileReader();
-                                reader.onloadend = () => {
-                                  setMaintFormData(prev => ({ ...prev, photos: [...prev.photos, reader.result] }));
-                                };
-                                reader.readAsDataURL(file);
+                              try {
+                                const compressedFiles = await Promise.all(
+                                  files.map(file => compressImage(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.7 }))
+                                );
+                                const base64Strings = await Promise.all(
+                                  compressedFiles.map(file => new Promise((resolve) => {
+                                    const reader = new FileReader();
+                                    reader.readAsDataURL(file);
+                                    reader.onloadend = () => resolve(reader.result);
+                                  }))
+                                );
+                                setMaintFormData(prev => ({ ...prev, photos: [...prev.photos, ...base64Strings] }));
+                              } catch (err) {
+                                showError('Gagal memproses gambar');
                               }
                             }} 
                           />
