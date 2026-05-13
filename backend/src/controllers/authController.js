@@ -65,17 +65,31 @@ const login = async (req, res) => {
       }
     }
 
-    // Parse permissions
-    let permissions = {};
-    try {
-      if (userRecord.permissions) {
-        permissions = typeof userRecord.permissions === 'string' 
-          ? JSON.parse(userRecord.permissions) 
-          : userRecord.permissions;
+    // Parse and Merge permissions
+    let finalPermissions = {};
+    const parsePerms = (p) => {
+      if (!p) return {};
+      try {
+        return typeof p === 'string' ? JSON.parse(p) : p;
+      } catch (e) {
+        return {};
       }
-    } catch (e) {
-      console.error('Error parsing login permissions:', e);
-    }
+    };
+
+    const rolePerms = parsePerms(userRecord.role_permissions);
+    const userPerms = parsePerms(userRecord.user_permissions);
+
+    // Merge logic: Combine both. If a module exists in both, merge actions (union)
+    const allModules = new Set([...Object.keys(rolePerms), ...Object.keys(userPerms)]);
+    
+    allModules.forEach(mod => {
+      const rActions = rolePerms[mod] || [];
+      const uActions = userPerms[mod] || [];
+      // Union of actions
+      finalPermissions[mod] = Array.from(new Set([...rActions, ...uActions]));
+    });
+
+    console.log(`Permissions merged for ${userRecord.firstName}:`, JSON.stringify(finalPermissions));
 
     // Generate JWT Tokens
     const tokenPayload = { 
@@ -123,7 +137,7 @@ const login = async (req, res) => {
         userType: userRecord.userType,
         role: userRecord.role,
         role_id: userRecord.role_id,
-        permissions: permissions,
+        permissions: finalPermissions,
         department: userRecord.department,
         companyName: userRecord.company_name,
         phone: userRecord.phone,

@@ -101,6 +101,18 @@ const changePin = async (req, res) => {
   }
 };
 
+const updateUserPermissions = async (req, res) => {
+  const { permissions } = req.body;
+  try {
+    const db = require('../config/db');
+    await db.query('UPDATE users SET permissions = ? WHERE id = ?', [JSON.stringify(permissions), req.params.id]);
+    res.status(200).json({ message: 'User permissions updated successfully' });
+  } catch (err) {
+    console.error('Update user permissions error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 const removeUser = async (req, res) => {
   try {
     await userService.deleteUser(req.params.id);
@@ -118,5 +130,6 @@ module.exports = {
   updateUserDetails,
   changePassword,
   changePin,
+  updateUserPermissions,
   removeUser
 };

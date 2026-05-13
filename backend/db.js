@@ -492,6 +492,18 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
+      // 10.5 Asset Audit Logs
+      await pool.query(`
+      CREATE TABLE IF NOT EXISTS asset_audit_logs (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        asset_id INT,
+        action VARCHAR(50),
+        user_id INT,
+        details TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
       // Seed Default Asset Priorities
       const [prioCheck] = await pool.query('SELECT * FROM asset_priorities LIMIT 1');
       if (prioCheck.length === 0) {

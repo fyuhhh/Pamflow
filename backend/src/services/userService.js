@@ -4,7 +4,7 @@ const bcrypt = require('bcrypt');
 const getUserByEmailOrUsername = async (orgId, identifier, isMobile) => {
   // Unified query to ensure roles and permissions are always fetched
   const query = `
-    SELECT u.*, c.id as company_id, c.name as company_name, c.phone as company_phone, r.permissions
+    SELECT u.*, u.permissions as user_permissions, c.id as company_id, c.name as company_name, c.phone as company_phone, r.permissions as role_permissions
     FROM users u 
     JOIN companies c ON u.orgId = c.companyId 
     LEFT JOIN roles r ON u.role_id = r.id

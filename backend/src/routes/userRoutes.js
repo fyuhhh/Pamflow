@@ -10,6 +10,7 @@ router.put('/:id', userController.updateUserDetails);
 router.delete('/:id', userController.removeUser);
 router.put('/:id/password', userController.changePassword);
 router.put('/:id/pin', userController.changePin);
+router.put('/:id/permissions', userController.updateUserPermissions);
 
 // Backward compatibility redirects
 router.get('/admins', (req, res) => res.redirect('/api/users?type=admin'));
