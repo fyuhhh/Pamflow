@@ -18,7 +18,7 @@ import {
   Settings,
   Info,
   FileText,
-  Tool
+  Wrench
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
@@ -289,7 +289,6 @@ const RegisterAset = () => {
 
   return (
     <div className="p-6 md:p-8 max-w-[1400px] mx-auto min-h-screen bg-[#F8F9FA]">
-      {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h1 className="text-[32px] font-black text-[#181C32] tracking-tight mb-2">Manajemen Aset</h1>
@@ -308,7 +307,6 @@ const RegisterAset = () => {
         </button>
       </div>
 
-      {/* Quick Search & Filters */}
       <div className="bg-white p-5 rounded-[24px] border border-[#F1F1F4] shadow-sm mb-12 flex flex-col md:flex-row gap-5 items-center">
         <div className="relative flex-1 w-full group">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-[#A1A5B7] group-focus-within:text-[#0095E8] transition-colors" size={20} />
@@ -326,7 +324,6 @@ const RegisterAset = () => {
         </button>
       </div>
 
-      {/* Main Table Section */}
       <div className="space-y-6">
         <div className="flex items-center justify-between px-2">
           <div className="flex items-center gap-4">
@@ -353,7 +350,7 @@ const RegisterAset = () => {
               <tbody className="divide-y divide-[#F1F1F4]">
                 {loading ? (
                   [1,2,3].map(i => (
-                    <tr key={i} className="animate-pulse">
+                    <tr key={i} className="animate-pulse" i={i}>
                       <td colSpan="5" className="px-8 py-10"><div className="h-6 bg-slate-100 rounded-xl w-full"></div></td>
                     </tr>
                   ))
@@ -446,7 +443,6 @@ const RegisterAset = () => {
         </div>
       </div>
 
-      {/* Modal - Modern Redesign */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
@@ -463,7 +459,6 @@ const RegisterAset = () => {
               exit={{ scale: 0.95, opacity: 0, y: 30 }}
               className="relative bg-white w-full max-w-5xl rounded-[40px] shadow-2xl overflow-hidden flex flex-col max-h-[92vh] border-4 border-white"
             >
-              {/* Header */}
               <div className="px-10 py-8 border-b border-[#F1F1F4] flex items-center justify-between bg-gradient-to-r from-[#F9F9F9] to-white">
                 <div>
                   <div className="flex items-center gap-3 mb-2">
@@ -483,15 +478,12 @@ const RegisterAset = () => {
               </div>
 
               <form onSubmit={handleSubmit} className="px-10 py-10 overflow-y-auto no-scrollbar grid grid-cols-1 md:grid-cols-12 gap-10">
-                
-                {/* Section 1: Data Utama */}
                 <div className="md:col-span-7 space-y-10">
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b-2 border-[#F1FAFF] pb-3">
                       <div className="w-1.5 h-6 bg-[#0095E8] rounded-full"></div>
                       <h3 className="text-[18px] font-black text-[#181C32]">Informasi Unit</h3>
                     </div>
-                    
                     <div className="space-y-3">
                       <label className="text-[14px] font-black text-[#3F4254] flex items-center gap-2 ml-1">
                         Nama Mesin / Nama Aset <span className="text-red-500 font-black">*</span>
@@ -505,7 +497,6 @@ const RegisterAset = () => {
                         onChange={(e) => setFormData({...formData, nama_mesin: e.target.value})}
                       />
                     </div>
-
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <label className="text-[14px] font-black text-[#3F4254] ml-1">Merk / Brand</label>
@@ -528,7 +519,6 @@ const RegisterAset = () => {
                         />
                       </div>
                     </div>
-
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <label className="text-[14px] font-black text-[#3F4254] ml-1">Serial Number</label>
@@ -550,7 +540,7 @@ const RegisterAset = () => {
                               onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewLocationInput(true) : setFormData({...formData, lokasi: e.target.value})}
                             >
                               <option value="">Pilih Lokasi</option>
-                              {locations.map(l => <option key={l.id} value={l.label}>{l.label}</option>)}
+                              {locations.map(l => <option key={l.id} value={l.label} key={l.id}>{l.label}</option>)}
                               <option value="ADD_NEW">+ Tambah Lokasi Baru</option>
                             </select>
                             <ChevronDown className="absolute right-5 top-1/2 -translate-y-1/2 text-[#A1A5B7] pointer-events-none" size={20} />
@@ -577,72 +567,39 @@ const RegisterAset = () => {
                       <div className="w-1.5 h-6 bg-[#0095E8] rounded-full"></div>
                       <h3 className="text-[18px] font-black text-[#181C32]">Lampiran Foto (Wajib)</h3>
                     </div>
-                    
                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">
                       {formData.lampiran.map((img, idx) => (
                         <div key={idx} className="relative aspect-square rounded-[24px] overflow-hidden border-2 border-[#F1F1F4] group shadow-sm">
                           <img src={img} alt="Preview" className="w-full h-full object-cover" />
                           <div className="absolute inset-0 bg-[#181C32]/60 opacity-0 group-hover:opacity-100 transition-all flex items-center justify-center gap-2">
-                            <button 
-                              type="button"
-                              onClick={() => setZoomedImage(img)}
-                              className="w-9 h-9 rounded-xl bg-white text-[#181C32] flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
-                            >
-                              <Maximize2 size={16} />
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => removeImage(idx)}
-                              className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
-                            >
-                              <Trash2 size={16} />
-                            </button>
+                            <button type="button" onClick={() => setZoomedImage(img)} className="w-9 h-9 rounded-xl bg-white text-[#181C32] flex items-center justify-center hover:scale-110 transition-transform shadow-lg"><Maximize2 size={16} /></button>
+                            <button type="button" onClick={() => removeImage(idx)} className="w-9 h-9 rounded-xl bg-red-500 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg"><Trash2 size={16} /></button>
                           </div>
                         </div>
                       ))}
-                      
                       {formData.lampiran.length < 5 && (
-                        <button 
-                          type="button"
-                          onClick={() => fileInputRef.current?.click()}
-                          className="aspect-square rounded-[24px] border-3 border-dashed border-[#E4E6EF] bg-[#F9F9F9] flex flex-col items-center justify-center gap-2 text-[#A1A5B7] hover:bg-[#F1FAFF] hover:border-[#0095E8] hover:text-[#0095E8] transition-all group"
-                        >
-                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-all">
-                            <Camera size={26} />
-                          </div>
+                        <button type="button" onClick={() => fileInputRef.current?.click()} className="aspect-square rounded-[24px] border-3 border-dashed border-[#E4E6EF] bg-[#F9F9F9] flex flex-col items-center justify-center gap-2 text-[#A1A5B7] hover:bg-[#F1FAFF] hover:border-[#0095E8] hover:text-[#0095E8] transition-all group">
+                          <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm group-hover:scale-110 transition-all"><Camera size={26} /></div>
                           <span className="text-[11px] font-black uppercase tracking-wider">Tambah Foto</span>
-                          <input 
-                            type="file"
-                            multiple
-                            accept="image/*"
-                            className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                          />
+                          <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                         </button>
                       )}
                     </div>
                   </div>
                 </div>
 
-                {/* Section 2: Konfigurasi & Maintenance */}
                 <div className="md:col-span-5 space-y-10">
                   <div className="space-y-6">
                     <div className="flex items-center gap-3 border-b-2 border-[#F1FAFF] pb-3">
                       <div className="w-1.5 h-6 bg-[#0095E8] rounded-full"></div>
                       <h3 className="text-[18px] font-black text-[#181C32]">Status & Prioritas</h3>
                     </div>
-
                     <div className="grid grid-cols-2 gap-6">
                       <div className="space-y-3">
                         <label className="text-[14px] font-black text-[#3F4254] ml-1">Prioritas</label>
                         {!showNewPriorityInput ? (
                           <div className="relative">
-                            <select 
-                              className="w-full px-5 py-4 bg-[#F9F9F9] border-2 border-transparent rounded-[20px] text-[15px] font-bold appearance-none pr-12 cursor-pointer focus:bg-white focus:border-[#0095E8]/30 transition-all"
-                              value={formData.prioritas}
-                              onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewPriorityInput(true) : setFormData({...formData, prioritas: e.target.value})}
-                            >
+                            <select className="w-full px-5 py-4 bg-[#F9F9F9] border-2 border-transparent rounded-[20px] text-[15px] font-bold appearance-none pr-12 cursor-pointer focus:bg-white focus:border-[#0095E8]/30 transition-all" value={formData.prioritas} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewPriorityInput(true) : setFormData({...formData, prioritas: e.target.value})}>
                               {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
                               <option value="ADD_NEW">+ Custom...</option>
                             </select>
@@ -656,16 +613,11 @@ const RegisterAset = () => {
                           </div>
                         )}
                       </div>
-
                       <div className="space-y-3">
                         <label className="text-[14px] font-black text-[#3F4254] ml-1">Kondisi Awal</label>
                         {!showNewStatusInput ? (
                           <div className="relative">
-                            <select 
-                              className="w-full px-5 py-4 bg-[#F9F9F9] border-2 border-transparent rounded-[20px] text-[15px] font-bold appearance-none pr-12 cursor-pointer focus:bg-white focus:border-[#0095E8]/30 transition-all"
-                              value={formData.status}
-                              onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewStatusInput(true) : setFormData({...formData, status: e.target.value})}
-                            >
+                            <select className="w-full px-5 py-4 bg-[#F9F9F9] border-2 border-transparent rounded-[20px] text-[15px] font-bold appearance-none pr-12 cursor-pointer focus:bg-white focus:border-[#0095E8]/30 transition-all" value={formData.status} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewStatusInput(true) : setFormData({...formData, status: e.target.value})}>
                               {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
                               <option value="ADD_NEW">+ Custom...</option>
                             </select>
@@ -687,110 +639,53 @@ const RegisterAset = () => {
                       <div className="w-1.5 h-6 bg-[#50CD89] rounded-full"></div>
                       <h3 className="text-[18px] font-black text-[#181C32]">Penjadwalan Servis</h3>
                     </div>
-
                     <div className="p-7 bg-[#F9F9F9] rounded-[32px] border-2 border-[#F1F1F4] space-y-6 relative overflow-hidden">
-                      <div className="absolute top-0 right-0 p-8 text-[#E4E6EF]/40 -rotate-12 translate-x-4 -translate-y-4">
-                        <Clock size={80} />
-                      </div>
-                      
+                      <div className="absolute top-0 right-0 p-8 text-[#E4E6EF]/40 -rotate-12 translate-x-4 -translate-y-4"><Clock size={80} /></div>
                       <div className="relative space-y-6">
                         <div className="flex items-center gap-3 mb-2">
-                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#50CD89] shadow-sm">
-                            <Settings size={20} />
-                          </div>
+                          <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center text-[#50CD89] shadow-sm"><Settings size={20} /></div>
                           <div>
                             <p className="text-[15px] font-black text-[#181C32] leading-tight">Masa Pakai Maintenance</p>
                             <p className="text-[11px] text-[#A1A5B7] font-bold uppercase tracking-wider">Jam Operasional (Runtime)</p>
                           </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                           <div className="space-y-2">
                             <label className="text-[12px] font-black text-[#7E8299] ml-1">Hari</label>
-                            <input 
-                              type="number" min="0"
-                              className="w-full px-5 py-4 bg-white border-2 border-transparent rounded-[18px] text-[18px] font-black text-[#181C32] focus:border-[#50CD89]/30 transition-all text-center shadow-sm"
-                              value={maintInput.days}
-                              onChange={(e) => handleMaintenanceInput('days', e.target.value)}
-                            />
+                            <input type="number" min="0" className="w-full px-5 py-4 bg-white border-2 border-transparent rounded-[18px] text-[18px] font-black text-[#181C32] focus:border-[#50CD89]/30 transition-all text-center shadow-sm" value={maintInput.days} onChange={(e) => handleMaintenanceInput('days', e.target.value)} />
                           </div>
                           <div className="space-y-2">
                             <label className="text-[12px] font-black text-[#7E8299] ml-1">Jam</label>
-                            <input 
-                              type="number" min="0" max="23"
-                              className="w-full px-5 py-4 bg-white border-2 border-transparent rounded-[18px] text-[18px] font-black text-[#181C32] focus:border-[#50CD89]/30 transition-all text-center shadow-sm"
-                              value={maintInput.hours}
-                              onChange={(e) => handleMaintenanceInput('hours', e.target.value)}
-                            />
+                            <input type="number" min="0" max="23" className="w-full px-5 py-4 bg-white border-2 border-transparent rounded-[18px] text-[18px] font-black text-[#181C32] focus:border-[#50CD89]/30 transition-all text-center shadow-sm" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
                           </div>
                         </div>
-
                         {formData.maintenance_hours > 0 && (
-                          <motion.div 
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-[#E8FFF3] p-5 rounded-[24px] border-2 border-[#50CD89]/10 flex items-center gap-4"
-                          >
-                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#50CD89] shadow-sm">
-                              <CheckCircle2 size={24} />
-                            </div>
+                          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-[#E8FFF3] p-5 rounded-[24px] border-2 border-[#50CD89]/10 flex items-center gap-4">
+                            <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center text-[#50CD89] shadow-sm"><CheckCircle2 size={24} /></div>
                             <div>
                               <p className="text-[11px] text-[#50CD89] font-black uppercase tracking-widest">Total Terhitung</p>
-                              <p className="text-[20px] font-black text-[#181C32] leading-none">
-                                {formData.maintenance_hours} <span className="text-[14px] text-[#7E8299]">Jam Kerja</span>
-                              </p>
+                              <p className="text-[20px] font-black text-[#181C32] leading-none">{formData.maintenance_hours} <span className="text-[14px] text-[#7E8299]">Jam Kerja</span></p>
                             </div>
                           </motion.div>
                         )}
-
                         <div className="flex gap-3 px-1">
                           <Info size={16} className="text-[#0095E8] shrink-0 mt-0.5" />
-                          <p className="text-[12px] text-[#7E8299] font-bold leading-relaxed">
-                            Peringatan maintenance akan muncul setelah mesin beroperasi selama durasi jam yang Anda tentukan di atas.
-                          </p>
+                          <p className="text-[12px] text-[#7E8299] font-bold leading-relaxed">Peringatan maintenance akan muncul setelah mesin beroperasi selama durasi jam yang Anda tentukan di atas.</p>
                         </div>
                       </div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    <label className="text-[14px] font-black text-[#3F4254] flex items-center gap-2 ml-1">
-                      <FileText size={18} className="text-[#A1A5B7]" />
-                      Catatan Spesifikasi / History
-                    </label>
-                    <textarea 
-                      rows="4"
-                      className="w-full px-6 py-5 bg-[#F9F9F9] border-2 border-transparent rounded-[24px] text-[15px] font-bold text-[#181C32] focus:bg-white focus:border-[#0095E8]/30 transition-all resize-none placeholder:font-normal"
-                      placeholder="Masukkan catatan teknis atau riwayat awal aset jika ada..."
-                      value={formData.catatan}
-                      onChange={(e) => setFormData({...formData, catatan: e.target.value})}
-                    />
+                    <label className="text-[14px] font-black text-[#3F4254] flex items-center gap-2 ml-1"><FileText size={18} className="text-[#A1A5B7]" />Catatan Spesifikasi / History</label>
+                    <textarea rows="4" className="w-full px-6 py-5 bg-[#F9F9F9] border-2 border-transparent rounded-[24px] text-[15px] font-bold text-[#181C32] focus:bg-white focus:border-[#0095E8]/30 transition-all resize-none" placeholder="Masukkan catatan teknis atau riwayat awal aset jika ada..." value={formData.catatan} onChange={(e) => setFormData({...formData, catatan: e.target.value})} />
                   </div>
                 </div>
 
-                {/* Fixed Footer */}
                 <div className="md:col-span-12 flex gap-6 pt-10 border-t-2 border-[#F1F1F4] mt-4">
-                  <button 
-                    type="button"
-                    disabled={submitting}
-                    onClick={() => setShowModal(false)}
-                    className="flex-1 py-5 bg-[#F9F9F9] text-[#7E8299] rounded-[24px] font-black text-[16px] hover:bg-[#F1F1F4] transition-all border-2 border-transparent"
-                  >
-                    Batalkan
-                  </button>
-                  <button 
-                    type="submit"
-                    disabled={submitting}
-                    className="flex-[2] py-5 bg-[#0095E8] text-white rounded-[24px] font-black text-[18px] hover:bg-[#0084CC] transition-all shadow-2xl shadow-[#0095E8]/30 flex items-center justify-center gap-4 disabled:opacity-50 hover:-translate-y-1 active:translate-y-0"
-                  >
-                    {submitting ? (
-                      <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle2 size={24} />
-                        <span>Simpan Data Aset Sekarang</span>
-                      </>
-                    )}
+                  <button type="button" disabled={submitting} onClick={() => setShowModal(false)} className="flex-1 py-5 bg-[#F9F9F9] text-[#7E8299] rounded-[24px] font-black text-[16px] hover:bg-[#F1F1F4] transition-all border-2 border-transparent">Batalkan</button>
+                  <button type="submit" disabled={submitting} className="flex-[2] py-5 bg-[#0095E8] text-white rounded-[24px] font-black text-[18px] hover:bg-[#0084CC] transition-all shadow-2xl shadow-[#0095E8]/30 flex items-center justify-center gap-4 disabled:opacity-50 hover:-translate-y-1 active:translate-y-0">
+                    {submitting ? <div className="w-6 h-6 border-3 border-white/30 border-t-white rounded-full animate-spin" /> : <><CheckCircle2 size={24} /><span>Simpan Data Aset Sekarang</span></>}
                   </button>
                 </div>
               </form>
@@ -799,24 +694,12 @@ const RegisterAset = () => {
         )}
       </AnimatePresence>
 
-      {/* Image Zoom Modal */}
       <AnimatePresence>
         {zoomedImage && (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-8 bg-[#181C32]/95 backdrop-blur-xl" onClick={() => setZoomedImage(null)}>
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.9, opacity: 0 }}
-              className="relative max-w-5xl w-full flex items-center justify-center"
-              onClick={e => e.stopPropagation()}
-            >
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }} className="relative max-w-5xl w-full flex items-center justify-center" onClick={e => e.stopPropagation()}>
               <img src={zoomedImage} alt="Zoom" className="w-full h-auto max-h-[85vh] object-contain rounded-[32px] shadow-2xl border-4 border-white/10" />
-              <button 
-                onClick={() => setZoomedImage(null)}
-                className="absolute -top-12 -right-12 w-14 h-14 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/20"
-              >
-                <X size={32} />
-              </button>
+              <button onClick={() => setZoomedImage(null)} className="absolute -top-12 -right-12 w-14 h-14 rounded-full bg-white/10 backdrop-blur-md text-white flex items-center justify-center hover:bg-white/20 transition-all border border-white/20"><X size={32} /></button>
             </motion.div>
           </div>
         )}
