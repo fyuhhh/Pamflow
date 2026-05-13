@@ -246,6 +246,140 @@ const MonitoringAset = () => {
     try { return JSON.parse(lampiran); } catch (e) { return []; }
   };
 
+  // --- RESTORED LOGIC ---
+  const handleDelete = async (id, name) => {
+    const isConfirmed = await confirm({
+      title: 'Hapus Aset',
+      message: `Apakah Anda yakin ingin menghapus aset "${name}"? Tindakan ini tidak dapat dibatalkan.`,
+      confirmText: 'Hapus Sekarang',
+      type: 'danger'
+    });
+
+    if (isConfirmed) {
+      try {
+        const res = await authFetch(`/api/assets/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          success('Aset berhasil dihapus');
+          fetchAssets();
+        } else {
+          showError('Gagal menghapus aset');
+        }
+      } catch (err) {
+        showError('Terjadi kesalahan sistem');
+      }
+    }
+  };
+
+  const openEditModal = (asset) => {
+    setEditingAsset(asset);
+    setEditFormData({
+      nama_mesin: asset.nama_mesin || '',
+      brand: asset.brand || '',
+      model_tipe: asset.model_tipe || '',
+      serial_number: asset.serial_number || '',
+      lokasi: asset.lokasi || '',
+      prioritas: asset.prioritas || '',
+      status: asset.status || '',
+      catatan: asset.catatan || '',
+      lampiran: safeLampiran(asset.lampiran),
+      maintenance_hours: asset.maintenance_hours || 0
+    });
+    const d = Math.floor(asset.maintenance_hours / 24);
+    const h = asset.maintenance_hours % 24;
+    setMaintInput({ days: d, hours: h });
+    setIsEditModalOpen(true);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    try {
+      const res = await authFetch(`/api/assets/${editingAsset.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(editFormData)
+      });
+      if (res.ok) {
+        setIsEditModalOpen(false);
+        success('Data aset berhasil diperbarui');
+        fetchAssets();
+      } else {
+        showError('Gagal memperbarui data aset');
+      }
+    } catch (err) {
+      showError('Terjadi kesalahan sistem');
+    }
+  };
+
+  const handleMaintenanceInput = (type, val) => {
+    const newVal = parseInt(val) || 0;
+    const nextMaint = { ...maintInput, [type]: newVal };
+    setMaintInput(nextMaint);
+    setEditFormData({ ...editFormData, maintenance_hours: (nextMaint.days * 24) + nextMaint.hours });
+  };
+
+  const handleFileChange = async (e) => {
+    const files = Array.from(e.target.files);
+    const newImages = [];
+    for (const file of files) {
+      if (file.size > 2 * 1024 * 1024) {
+        showError(`File ${file.name} terlalu besar (Max 2MB)`);
+        continue;
+      }
+      const reader = new FileReader();
+      const promise = new Promise((resolve) => {
+        reader.onloadend = () => resolve(reader.result);
+      });
+      reader.readAsDataURL(file);
+      newImages.push(await promise);
+    }
+    setEditFormData({ ...editFormData, lampiran: [...editFormData.lampiran, ...newImages] });
+  };
+
+  const analyticsData = useMemo(() => {
+    const statusCounts = {};
+    const priorityCounts = {};
+    assets.forEach(asset => {
+      statusCounts[asset.status] = (statusCounts[asset.status] || 0) + 1;
+      priorityCounts[asset.prioritas] = (priorityCounts[asset.prioritas] || 0) + 1;
+    });
+    return { 
+      statusChart: Object.keys(statusCounts).map(name => ({ name, value: statusCounts[name] })),
+      priorityChart: Object.keys(priorityCounts).map(name => ({ name, value: priorityCounts[name] })),
+      total: assets.length 
+    };
+  }, [assets]);
+
+  const COLORS = ['#0095E8', '#50CD89', '#FFC700', '#F1416C', '#7239EA'];
+
+  const filteredAssets = assets.filter(asset => {
+    const matchesSearch = 
+      asset.nama_mesin.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      asset.serial_number?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = !activeFilters.status || asset.status === activeFilters.status;
+    const matchesPriority = !activeFilters.prioritas || asset.prioritas === activeFilters.prioritas;
+    const matchesLocation = !activeFilters.lokasi || asset.lokasi === activeFilters.lokasi;
+    return matchesSearch && matchesStatus && matchesPriority && matchesLocation;
+  });
+
+  const totalPages = Math.ceil(filteredAssets.length / rowsPerPage);
+  const paginatedAssets = filteredAssets.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+
+  const getPriorityColor = (p) => {
+    const pLow = p?.toLowerCase();
+    if (pLow === 'tinggi' || pLow === 'kritis') return 'bg-red-50 text-red-600';
+    if (pLow === 'sedang') return 'bg-amber-50 text-amber-600';
+    if (pLow === 'rendah') return 'bg-blue-50 text-blue-600';
+    return 'bg-slate-50 text-slate-600';
+  };
+
+  const getStatusColor = (s) => {
+    const sLow = s?.toLowerCase();
+    if (sLow === 'baik' || sLow === 'normal') return 'text-[#50CD89]';
+    if (sLow === 'maintenance' || sLow === 'perbaikan') return 'text-[#FFC700]';
+    if (sLow === 'rusak' || sLow === 'breakdown') return 'text-[#F1416C]';
+    return 'text-[#A1A5B7]';
+  };
+
   // --- MOBILE VIEW COMPONENTS ---
   if (isMobile) {
     return (
