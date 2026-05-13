@@ -183,7 +183,7 @@ const Dashboard = ({ children, onLogout }) => {
             {isSidebarOpen && (
               <div className="flex flex-col">
                 <span className="text-lg font-bold leading-none tracking-tight text-[#181C32]">PamFlow</span>
-                <span className="text-[10px] font-medium text-[#A1A5B7] self-end">v1.8.0</span>
+                <span className="text-[10px] font-medium text-[#A1A5B7] self-end">v1.8.2</span>
               </div>
             )}
           </div>

@@ -265,6 +265,32 @@ const MobileProfile = ({ onLogout }) => {
         <div className="mb-8">
           <motion.h3 variants={itemVariants} className="text-[17px] font-bold text-slate-800 mb-4">Lainnya</motion.h3>
           <div className="space-y-3">
+            <motion.div variants={itemVariants}>
+              <div className="p-4 bg-[#F9F9F9] rounded-2xl border border-[#F1F1F4]">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[13px] font-bold text-slate-700">Debug Izin Aset</span>
+                  <span className="text-[10px] font-bold text-[#0095E8] bg-[#E1F0FF] px-2 py-0.5 rounded">v1.8.2</span>
+                </div>
+                <div className="grid grid-cols-2 gap-2 mt-3">
+                  {['aset_menu', 'aset_register', 'aset_monitoring', 'aset_audit', 'aset_hak_akses'].map(mod => (
+                    <div key={mod} className="flex items-center gap-2">
+                      <div className={`w-2 h-2 rounded-full ${user?.permissions?.[mod] ? 'bg-green-500' : 'bg-slate-300'}`} />
+                      <span className="text-[10px] font-medium text-slate-500 truncate">{mod.replace('aset_', '')}</span>
+                    </div>
+                  ))}
+                </div>
+                {user?.permissions?.aset_menu ? (
+                  <p className="text-[10px] text-green-600 font-bold mt-3 bg-green-50 p-2 rounded-lg border border-green-100 flex items-center gap-2">
+                    <CheckCircle size={12} /> Menu Aset Terdeteksi
+                  </p>
+                ) : (
+                  <p className="text-[10px] text-red-600 font-bold mt-3 bg-red-50 p-2 rounded-lg border border-red-100 flex items-center gap-2">
+                    <AlertCircle size={12} /> Menu Aset TIDAK Terdeteksi
+                  </p>
+                )}
+              </div>
+            </motion.div>
+
             {[
               { icon: FileText, label: 'Syarat & Ketentuan' },
               { icon: ShieldCheck, label: 'Kebijakan Privasi' }
