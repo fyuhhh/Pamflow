@@ -62,6 +62,7 @@ const MonitoringAset = () => {
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isToggling, setIsToggling] = useState(false);
+  const [toggleConfirm, setToggleConfirm] = useState({ show: false, assetId: null, action: '' });
   const timerRef = useRef(null);
 
   // App Mode Detection
@@ -183,14 +184,25 @@ const MonitoringAset = () => {
     }
   };
 
-  const handleToggleStatus = async (id) => {
-    if (isToggling) return;
+  const handleToggleStatus = (id) => {
     const assetId = parseInt(id);
     const asset = assets.find(a => a.id === assetId);
     if (!asset) return;
+    setToggleConfirm({ 
+      show: true, 
+      assetId, 
+      action: asset.is_running ? 'Mematikan' : 'Menyalakan' 
+    });
+  };
+
+  const executeToggleStatus = async () => {
+    const { assetId } = toggleConfirm;
+    if (!assetId || isToggling) return;
 
     try {
       setIsToggling(true);
+      setToggleConfirm({ show: false, assetId: null, action: '' });
+      
       const res = await authFetch(`/api/assets/${assetId}/toggle`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
@@ -1079,6 +1091,41 @@ const MonitoringAset = () => {
         )}
       </AnimatePresence>
 
+        {/* Local Confirmation Modal for Toggle */}
+        <AnimatePresence>
+          {toggleConfirm.show && (
+            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '' })} />
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
+              >
+                <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${toggleConfirm.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
+                   <Power size={40} />
+                </div>
+                <h3 className="text-[20px] font-black text-slate-800 mb-2">{toggleConfirm.action} Mesin?</h3>
+                <p className="text-[14px] text-slate-500 font-medium mb-8 leading-relaxed">
+                  Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit mesin <strong>{assets.find(a => a.id === toggleConfirm.assetId)?.nama_mesin}</strong> sekarang?
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <button 
+                    onClick={() => setToggleConfirm({ show: false, assetId: null, action: '' })}
+                    className="py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[15px]"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={executeToggleStatus}
+                    className={`py-4 text-white rounded-2xl font-black text-[15px] shadow-lg ${toggleConfirm.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
+                  >
+                    Ya, Yakin
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -1086,6 +1133,13 @@ const MonitoringAset = () => {
         .custom-scrollbar::-webkit-scrollbar-track { background: #F9F9F9; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #E4E6EF; border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #D1D3E0; }
+        @keyframes spin-slow {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
+        .animate-spin-slow {
+          animation: spin-slow 2s linear infinite;
+        }
       `}</style>
     </div>
   );
