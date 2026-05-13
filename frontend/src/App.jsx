@@ -44,6 +44,7 @@ import PasswordResetRequests from './components/PasswordResetRequests';
 import RelasiDepartemen from './components/RelasiDepartemen';
 import ChecklistHarian from './components/ChecklistHarian';
 import { trackPageView, trackLogout } from './services/activityTracker';
+import AssetPlaceholder from './components/AssetPlaceholder';
 
 import DashboardHome from './components/DashboardHome';
 
@@ -233,6 +234,11 @@ function App() {
 
               <Route path="/tugas-departemen/checklist-harian" element={<PrivateRoute><Dashboard onLogout={logout}><ChecklistHarian /></Dashboard></PrivateRoute>} />
               <Route path="/tugas-departemen/checklist-riwayat" element={<PrivateRoute><Dashboard onLogout={logout}><ChecklistHarian /></Dashboard></PrivateRoute>} />
+              
+              {/* Menu ASET */}
+              <Route path="/aset/hak-akses" element={<PrivateRoute moduleId="aset_hak_akses"><Dashboard onLogout={logout}><AssetPlaceholder title="Hak Akses Aset" /></Dashboard></PrivateRoute>} />
+              <Route path="/aset/register" element={<PrivateRoute moduleId="aset_register"><Dashboard onLogout={logout}><AssetPlaceholder title="Register Aset" /></Dashboard></PrivateRoute>} />
+              <Route path="/aset/monitoring" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><AssetPlaceholder title="Monitoring Aset" /></Dashboard></PrivateRoute>} />
 
               <Route path="/pengaturan/ubah-password" element={<Dashboard onLogout={logout}><ChangePassword /></Dashboard>} />
               <Route path="/profile/user" element={<Dashboard onLogout={logout}><Profile /></Dashboard>} />

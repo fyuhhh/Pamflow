@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, HelpCircle, Info, Clock, ChevronRight, X, Phone, FileText, CheckCircle2, PlayCircle, AlertCircle, Activity, PieChart } from 'lucide-react';
+import { Bell, HelpCircle, Info, Clock, ChevronRight, X, Phone, FileText, CheckCircle2, PlayCircle, AlertCircle, Activity, PieChart, Package, Database, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -459,6 +459,42 @@ const MobileHome = () => {
           )}
         </motion.section>
 
+        {/* Manajemen ASET */}
+        <motion.section variants={itemVariants} className="px-6 mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Manajemen ASET</h3>
+              <span className="bg-[#FFF8DD] text-[#FFC700] text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Beta</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 gap-3">
+            {[
+              { id: 'hak-akses', label: 'Hak Akses Aset', icon: <Lock size={20} />, color: 'text-blue-500', bg: 'bg-blue-50', path: '/aset/hak-akses' },
+              { id: 'register', label: 'Register Aset', icon: <Database size={20} />, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/aset/register' },
+              { id: 'monitoring', label: 'Monitoring Aset', icon: <Activity size={20} />, color: 'text-purple-500', bg: 'bg-purple-50', path: '/aset/monitoring' },
+            ].map(item => (
+              <motion.div 
+                whileTap={{ scale: 0.98 }}
+                key={item.id}
+                onClick={() => navigate(item.path)}
+                className="bg-white p-4 rounded-[24px] border border-slate-100 shadow-sm flex items-center justify-between group active:bg-slate-50 transition-colors"
+              >
+                <div className="flex items-center gap-4">
+                  <div className={`w-11 h-11 ${item.bg} ${item.color} rounded-2xl flex items-center justify-center shadow-sm`}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <h4 className="text-[14px] font-black text-slate-800 leading-tight">{item.label}</h4>
+                    <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">Pengembangan</p>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="text-slate-300 group-active:text-slate-500 transition-colors" />
+              </motion.div>
+            ))}
+          </div>
+        </motion.section>
+
         {/* Tugas Departemen */}
         <motion.section variants={itemVariants} className="px-6 mb-8">
           <div className="flex items-center gap-2 mb-4">
@@ -526,6 +562,7 @@ const MobileHome = () => {
             </div>
           )}
         </motion.section>
+
 
         {/* Tugas Hari ini */}
         <motion.section variants={itemVariants} className="px-6 mb-8">

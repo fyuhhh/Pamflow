@@ -19,7 +19,8 @@ import {
   PiUsersDuotone,
   PiClipboardTextDuotone,
   PiBuildingsDuotone,
-  PiGearDuotone
+  PiGearDuotone,
+  PiPackageDuotone
 } from 'react-icons/pi';
 
 import Logo from './Logo';
@@ -107,6 +108,17 @@ const Dashboard = ({ children, onLogout }) => {
         { label: 'Buat WO', path: '/tugas-departemen/buat-wo', permission: 'tugas_dept_buat_wo' },
         { label: 'Diterima', path: '/tugas-departemen/diterima', permission: 'tugas_dept_diterima' },
         { label: 'Terkirim', path: '/tugas-departemen/terkirim', permission: 'tugas_dept_terkirim' },
+      ]
+    },
+    {
+      id: 'aset',
+      label: 'ASET',
+      icon: <PiPackageDuotone size={20} />,
+      permission: ['aset_hak_akses', 'aset_register', 'aset_monitoring'],
+      subItems: [
+        { label: 'Hak Akses Aset', path: '/aset/hak-akses', permission: 'aset_hak_akses' },
+        { label: 'Register Aset', path: '/aset/register', permission: 'aset_register' },
+        { label: 'Monitoring Aset', path: '/aset/monitoring', permission: 'aset_monitoring' },
       ]
     },
     {

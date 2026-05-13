@@ -41,6 +41,16 @@ const MODULES = [
       { id: 'tugas_dept_terkirim', label: 'Terkirim', actions: ['Lihat', 'Edit', 'Hapus', 'Download'] },
     ]
   },
+  {
+    id: 'aset',
+    label: 'Manajemen ASET',
+    isHeader: true,
+    submodules: [
+      { id: 'aset_hak_akses', label: 'Hak Akses Aset', actions: ['Buat', 'Lihat', 'Edit', 'Hapus'] },
+      { id: 'aset_register', label: 'Register Aset', actions: ['Buat', 'Lihat', 'Edit', 'Hapus', 'Import'] },
+      { id: 'aset_monitoring', label: 'Monitoring Aset', actions: ['Lihat', 'Download'] },
+    ]
+  },
   { 
     id: 'pengaturan', 
     label: 'Pengaturan', 
