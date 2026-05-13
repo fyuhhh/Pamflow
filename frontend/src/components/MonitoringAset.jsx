@@ -47,6 +47,14 @@ const MonitoringAset = () => {
   const [zoomedImage, setZoomedImage] = useState(null);
   const [assetLogs, setAssetLogs] = useState([]);
   
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isSuperAdmin = user?.role?.toLowerCase() === 'super admin';
+
+  const hasPerm = (moduleId, action) => {
+    if (isSuperAdmin) return true;
+    return user?.permissions?.[moduleId]?.includes(action);
+  };
+  
   // Edit State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
@@ -457,8 +465,12 @@ const MonitoringAset = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2" onClick={e => e.stopPropagation()}>
-                        <button onClick={() => openEditModal(asset)} className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-[#0095E8] hover:border-[#0095E8]/30 rounded-lg transition-all"><Edit2 size={14} /></button>
-                        <button onClick={() => handleDelete(asset.id, asset.nama_mesin)} className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-red-500 hover:border-red-200 rounded-lg transition-all"><Trash2 size={14} /></button>
+                        {hasPerm('aset_register', 'Edit') && (
+                          <button onClick={() => openEditModal(asset)} className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-[#0095E8] hover:border-[#0095E8]/30 rounded-lg transition-all"><Edit2 size={14} /></button>
+                        )}
+                        {hasPerm('aset_register', 'Hapus') && (
+                          <button onClick={() => handleDelete(asset.id, asset.nama_mesin)} className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-red-500 hover:border-red-200 rounded-lg transition-all"><Trash2 size={14} /></button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -523,32 +535,34 @@ const MonitoringAset = () => {
                   </div>
 
                   {/* Edit History (Audit Trail) */}
-                  <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                      <History size={16} className="text-[#0095E8]" />
-                      <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Perubahan & Audit</h4>
-                    </div>
-                    <div className="max-h-[400px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
-                      {assetLogs.length > 0 ? (
-                        assetLogs.map((log, idx) => (
-                          <div key={idx} className="p-4 bg-white border border-[#F1F1F4] rounded-xl flex items-start gap-4 shadow-sm">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-normal ${log.action === 'CREATE' ? 'bg-[#E8FFF3] text-[#50CD89]' : 'bg-[#FFF5F8] text-[#F1416C]'}`}>
-                              {log.action === 'CREATE' ? 'C' : 'U'}
-                            </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs font-normal text-[#3F4254]">{log.firstName} {log.lastName}</p>
-                                <p className="text-[10px] font-normal text-[#A1A5B7]">{formatDateTime(log.created_at).date} | {formatDateTime(log.created_at).time}</p>
+                  {hasPerm('aset_audit', 'Lihat') && (
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <History size={16} className="text-[#0095E8]" />
+                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Perubahan & Audit</h4>
+                      </div>
+                      <div className="max-h-[400px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
+                        {assetLogs.length > 0 ? (
+                          assetLogs.map((log, idx) => (
+                            <div key={idx} className="p-4 bg-white border border-[#F1F1F4] rounded-xl flex items-start gap-4 shadow-sm">
+                              <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-normal ${log.action === 'CREATE' ? 'bg-[#E8FFF3] text-[#50CD89]' : 'bg-[#FFF5F8] text-[#F1416C]'}`}>
+                                {log.action === 'CREATE' ? 'C' : 'U'}
                               </div>
-                              <p className="text-[11px] text-[#7E8299] font-light italic">{log.details}</p>
+                              <div className="flex-1">
+                                <div className="flex items-center justify-between mb-1">
+                                  <p className="text-xs font-normal text-[#3F4254]">{log.firstName} {log.lastName}</p>
+                                  <p className="text-[10px] font-normal text-[#A1A5B7]">{formatDateTime(log.created_at).date} | {formatDateTime(log.created_at).time}</p>
+                                </div>
+                                <p className="text-[11px] text-[#7E8299] font-light italic">{log.details}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-[#A1A5B7] font-light italic">Belum ada riwayat perubahan.</p>
-                      )}
+                          ))
+                        ) : (
+                          <p className="text-xs text-[#A1A5B7] font-light italic">Belum ada riwayat perubahan.</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
                 <div className="lg:col-span-4 space-y-6">

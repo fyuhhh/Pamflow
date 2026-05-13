@@ -30,6 +30,14 @@ const RegisterAset = () => {
   const [showModal, setShowModal] = useState(false);
   const [zoomedImage, setZoomedImage] = useState(null);
   
+  const user = JSON.parse(localStorage.getItem('user'));
+  const isSuperAdmin = user?.role?.toLowerCase() === 'super admin';
+
+  const hasPerm = (moduleId, action) => {
+    if (isSuperAdmin) return true;
+    return user?.permissions?.[moduleId]?.includes(action);
+  };
+  
   // Dynamic Dropdowns
   const [priorities, setPriorities] = useState([]);
   const [statuses, setStatuses] = useState([]);
@@ -285,13 +293,15 @@ const RegisterAset = () => {
           <h1 className="text-2xl font-bold text-[#181C32] mb-1">Registrasi Aset</h1>
           <p className="text-[#A1A5B7] text-sm font-light">Kelola dan daftar aset baru perusahaan dengan mudah.</p>
         </div>
-        <button 
-          onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-[#0095E8] text-white rounded-xl text-sm font-normal hover:bg-[#0084CC] transition-all shadow-sm"
-        >
-          <Plus size={18} />
-          <span>Tambah Aset</span>
-        </button>
+        {hasPerm('aset_register', 'Buat') && (
+          <button 
+            onClick={() => setShowModal(true)}
+            className="flex items-center gap-2 px-6 py-3 bg-[#0095E8] text-white rounded-xl text-sm font-normal hover:bg-[#0084CC] transition-all shadow-sm"
+          >
+            <Plus size={18} />
+            <span>Tambah Aset</span>
+          </button>
+        )}
       </div>
 
       {/* Toolbar */}
