@@ -19,27 +19,33 @@ const MobileAppLayout = ({ children }) => {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
   const canApprove = user?.can_approve === 1 || user?.can_approve === true;
   const [pendingCount, setPendingCount] = useState(0);
+  const [maintCount, setMaintCount] = useState(0);
 
-  // Fetch pending approval count
+  // Fetch counts
   useEffect(() => {
-    if (!canApprove) return;
-    const fetchCount = async () => {
+    const fetchCounts = async () => {
       try {
-        const response = await authFetch(
-          `/api/tasks/pending-approval?company_id=${user?.company_id}&departemen=${encodeURIComponent(user?.department || '')}`
-        );
-        if (response.ok) {
-          const data = await response.json();
-          setPendingCount(data.length);
+        if (canApprove) {
+          const appRes = await authFetch(`/api/tasks/pending-approval?company_id=${user?.company_id}&departemen=${encodeURIComponent(user?.department || '')}`);
+          if (appRes.ok) {
+            const data = await appRes.json();
+            setPendingCount(data.length);
+          }
+        }
+        const assetRes = await authFetch('/api/assets');
+        if (assetRes.ok) {
+          const assets = await assetRes.json();
+          const count = assets.filter(a => a.remaining_seconds <= 172800).length;
+          setMaintCount(count);
         }
       } catch (err) {
-        console.error('Error fetching pending count:', err);
+        console.error('Error fetching counts:', err);
       }
     };
-    fetchCount();
-    const interval = setInterval(fetchCount, 30000);
+    fetchCounts();
+    const interval = setInterval(fetchCounts, 30000);
     return () => clearInterval(interval);
-  }, [canApprove]);
+  }, [canApprove, user?.company_id]);
 
   const hasPerm = (moduleId, action = 'Lihat') => {
     if (!user) return false;
@@ -157,9 +163,32 @@ const MobileAppLayout = ({ children }) => {
                       padding: '0 4px',
                       lineHeight: '18px',
                       boxShadow: '0 0 8px rgba(241,65,108,0.4)',
-                      border: '2px solid white',
+                      border: '2px solid white'
                     }}>
                       {pendingCount}
+                    </span>
+                  )}
+                  {item.path === '/demo/mobile/aset' && maintCount > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-6px',
+                      right: '-8px',
+                      backgroundColor: '#F1416C',
+                      color: 'white',
+                      fontSize: '10px',
+                      fontWeight: 800,
+                      minWidth: '18px',
+                      height: '18px',
+                      borderRadius: '999px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      lineHeight: '18px',
+                      boxShadow: '0 0 8px rgba(241,65,108,0.4)',
+                      border: '2px solid white'
+                    }}>
+                      {maintCount}
                     </span>
                   )}
                 </div>

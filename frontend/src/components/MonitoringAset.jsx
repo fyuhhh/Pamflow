@@ -1193,9 +1193,29 @@ const MonitoringAset = () => {
   return (
     <div className="p-6 md:p-8 max-w-[1400px] mx-auto min-h-screen bg-[#FBFBFB]">
       {/* Header */}
-      <div className="mb-10">
-        <h1 className="text-2xl font-bold text-[#181C32] mb-1">Monitoring Aset</h1>
-        <p className="text-[#A1A5B7] text-sm font-medium">Pengawasan unit operasional secara real-time dan terstruktur.</p>
+      <div className="mb-10 flex justify-between items-start">
+        <div>
+          <h1 className="text-2xl font-bold text-[#181C32] mb-1">Monitoring Aset</h1>
+          <p className="text-[#A1A5B7] text-sm font-medium">Pengawasan unit operasional secara real-time dan terstruktur.</p>
+        </div>
+        
+        {/* Maintenance Alert Banner for PC */}
+        {assets.filter(a => a.remaining_seconds <= 172800).length > 0 && (
+          <motion.div 
+            initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
+            className="flex items-center gap-4 bg-red-50 border border-red-100 p-4 rounded-2xl shadow-sm animate-pulse"
+          >
+            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white shrink-0">
+               <Zap size={20} />
+            </div>
+            <div>
+               <p className="text-[14px] font-black text-red-600 leading-tight">
+                  {assets.filter(a => a.remaining_seconds <= 172800).length} Alat Perlu Maintenance!
+               </p>
+               <p className="text-[11px] font-bold text-red-400">Segera lakukan pengecekan pada unit dengan sisa waktu kritis.</p>
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Analytics Section */}
