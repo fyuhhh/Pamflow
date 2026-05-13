@@ -13,6 +13,7 @@ import {
   CheckCircle2,
   Filter,
   X,
+  ChevronRight,
   ChevronDown,
   Info
 } from 'lucide-react';
