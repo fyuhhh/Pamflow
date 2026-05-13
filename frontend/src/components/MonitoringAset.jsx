@@ -993,7 +993,7 @@ const MonitoringAset = () => {
                 <div>
                   <h4 className="text-[14px] font-black text-slate-800 mb-4">Dokumentasi Foto</h4>
                   <div className="grid grid-cols-2 gap-3">
-                    {safeLampiran(selectedAsset.lampiran).map((img, idx) => (
+                    {safeParseJSON(selectedAsset.lampiran).map((img, idx) => (
                       <div key={idx} className="aspect-square rounded-2xl overflow-hidden border border-slate-100" onClick={() => setZoomedImage(img)}>
                         <img src={img} className="w-full h-full object-cover" />
                       </div>
