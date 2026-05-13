@@ -238,6 +238,12 @@ const RegisterAset = () => {
         </div>
       </div>
 
+      {/* Asset List Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <div className="w-2 h-8 bg-[#0095E8] rounded-full"></div>
+        <h2 className="text-[20px] font-black text-[#181C32] tracking-tight">Data yang baru saja ditambahkan</h2>
+      </div>
+
       {/* Asset List */}
       <div className="bg-white rounded-2xl border border-[#F1F1F4] shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
@@ -248,7 +254,7 @@ const RegisterAset = () => {
                 <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Spesifikasi</th>
                 <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
                 <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Prioritas</th>
-                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
+                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Monitoring</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F1F4]">
@@ -304,23 +310,12 @@ const RegisterAset = () => {
                       </span>
                     </td>
                     <td className="px-6 py-5 text-right">
-                      <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <div className="flex justify-end gap-2">
                         <button 
-                          title="Detail / Catatan"
-                          onClick={() => {
-                            if (asset.catatan) {
-                              confirm('Catatan Aset', asset.catatan, () => {}, { hideCancel: true, confirmLabel: 'Tutup' });
-                            }
-                          }}
-                          className={`p-2 rounded-lg transition-colors ${asset.catatan ? 'text-[#0095E8] hover:bg-[#F1FAFF]' : 'text-slate-200 cursor-not-allowed'}`}
+                          onClick={() => window.location.href = '/aset/monitoring'}
+                          className="w-9 h-9 flex items-center justify-center bg-[#F1FAFF] text-[#0095E8] rounded-xl hover:bg-[#0095E8] hover:text-white transition-all shadow-sm border border-[#0095E8]/10"
                         >
-                          <Info size={18} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(asset.id)}
-                          className="p-2 text-[#F1416C] hover:bg-[#FFF5F8] rounded-lg transition-colors"
-                        >
-                          <Trash2 size={18} />
+                          <ChevronRight size={18} />
                         </button>
                       </div>
                     </td>
