@@ -452,7 +452,8 @@ async function initializeDB(retries = 5, delay = 5000) {
         serial_number VARCHAR(255),
         lokasi VARCHAR(255),
         prioritas VARCHAR(100),
-        kondisi TEXT,
+        status VARCHAR(100),
+        catatan TEXT,
         user_pendaftar_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
@@ -469,12 +470,31 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
+      // 10.3 Asset Statuses
+      await pool.query(`
+      CREATE TABLE IF NOT EXISTS asset_statuses (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT,
+        label VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
       // Seed Default Asset Priorities
       const [prioCheck] = await pool.query('SELECT * FROM asset_priorities LIMIT 1');
       if (prioCheck.length === 0) {
         const defaults = ['Rendah', 'Sedang', 'Tinggi'];
         for (const label of defaults) {
           await pool.query('INSERT INTO asset_priorities (label) VALUES (?)', [label]);
+        }
+      }
+
+      // Seed Default Asset Statuses
+      const [statusCheck] = await pool.query('SELECT * FROM asset_statuses LIMIT 1');
+      if (statusCheck.length === 0) {
+        const defaults = ['Baik', 'Maintenance', 'Rusak'];
+        for (const label of defaults) {
+          await pool.query('INSERT INTO asset_statuses (label) VALUES (?)', [label]);
         }
       }
 

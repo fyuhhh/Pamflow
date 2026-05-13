@@ -12,7 +12,9 @@ import {
   AlertCircle,
   CheckCircle2,
   Filter,
-  X
+  X,
+  ChevronDown,
+  Info
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
@@ -23,12 +25,18 @@ const RegisterAset = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showModal, setShowModal] = useState(false);
+  
+  // Dynamic Dropdowns
   const [priorities, setPriorities] = useState([]);
+  const [statuses, setStatuses] = useState([]);
+  
   const [showNewPriorityInput, setShowNewPriorityInput] = useState(false);
   const [newPriorityLabel, setNewPriorityLabel] = useState('');
   
+  const [showNewStatusInput, setShowNewStatusInput] = useState(false);
+  const [newStatusLabel, setNewStatusLabel] = useState('');
+  
   const { success, error: showError, confirm } = useModal();
-  const user = JSON.parse(localStorage.getItem('user'));
 
   const [formData, setFormData] = useState({
     nama_mesin: '',
@@ -37,7 +45,8 @@ const RegisterAset = () => {
     serial_number: '',
     lokasi: '',
     prioritas: 'Sedang',
-    kondisi: 'Baik'
+    status: 'Baik',
+    catatan: ''
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -45,6 +54,7 @@ const RegisterAset = () => {
   useEffect(() => {
     fetchAssets();
     fetchPriorities();
+    fetchStatuses();
   }, []);
 
   const fetchAssets = async () => {
@@ -73,6 +83,18 @@ const RegisterAset = () => {
     }
   };
 
+  const fetchStatuses = async () => {
+    try {
+      const response = await authFetch('/api/assets/statuses');
+      if (response.ok) {
+        const data = await response.json();
+        setStatuses(data);
+      }
+    } catch (err) {
+      console.error('Fetch statuses error:', err);
+    }
+  };
+
   const handleAddPriority = async () => {
     if (!newPriorityLabel.trim()) return;
     try {
@@ -88,6 +110,24 @@ const RegisterAset = () => {
       }
     } catch (err) {
       showError('Error', 'Gagal menambah prioritas baru');
+    }
+  };
+
+  const handleAddStatus = async () => {
+    if (!newStatusLabel.trim()) return;
+    try {
+      const response = await authFetch('/api/assets/statuses', {
+        method: 'POST',
+        body: JSON.stringify({ label: newStatusLabel })
+      });
+      if (response.ok) {
+        await fetchStatuses();
+        setFormData({ ...formData, status: newStatusLabel });
+        setNewStatusLabel('');
+        setShowNewStatusInput(false);
+      }
+    } catch (err) {
+      showError('Error', 'Gagal menambah kondisi baru');
     }
   };
 
@@ -110,7 +150,8 @@ const RegisterAset = () => {
           serial_number: '',
           lokasi: '',
           prioritas: 'Sedang',
-          kondisi: 'Baik'
+          status: 'Baik',
+          catatan: ''
         });
         fetchAssets();
       } else {
@@ -150,6 +191,14 @@ const RegisterAset = () => {
     if (pLow === 'sedang') return 'bg-amber-50 text-amber-600 border-amber-100';
     if (pLow === 'rendah') return 'bg-blue-50 text-blue-600 border-blue-100';
     return 'bg-slate-50 text-slate-600 border-slate-100';
+  };
+
+  const getStatusColor = (s) => {
+    const sLow = s?.toLowerCase();
+    if (sLow === 'baik' || sLow === 'normal') return 'text-[#50CD89]';
+    if (sLow === 'maintenance' || sLow === 'perbaikan') return 'text-[#FFC700]';
+    if (sLow === 'rusak' || sLow === 'breakdown') return 'text-[#F1416C]';
+    return 'text-[#A1A5B7]';
   };
 
   return (
@@ -223,28 +272,30 @@ const RegisterAset = () => {
                   <tr key={asset.id} className="hover:bg-[#F9F9F9]/50 transition-colors group">
                     <td className="px-6 py-5">
                       <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-xl bg-[#F1FAFF] text-[#0095E8] flex items-center justify-center">
+                        <div className="w-10 h-10 rounded-xl bg-[#F1FAFF] text-[#0095E8] flex items-center justify-center shadow-sm border border-[#0095E8]/10">
                           <Package size={20} />
                         </div>
                         <div>
-                          <p className="text-[14px] font-bold text-[#181C32]">{asset.nama_mesin}</p>
-                          <p className="text-[12px] text-[#A1A5B7] font-medium">{asset.brand || '-'}</p>
+                          <p className="text-[14px] font-black text-[#181C32]">{asset.nama_mesin}</p>
+                          <p className="text-[12px] text-[#A1A5B7] font-bold">{asset.brand || '-'}</p>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div>
                         <p className="text-[13px] font-bold text-[#4B5563]">{asset.model_tipe || '-'}</p>
-                        <p className="text-[12px] text-[#A1A5B7]">S/N: <span className="font-mono text-[#0095E8]">{asset.serial_number || 'N/A'}</span></p>
+                        <p className="text-[12px] text-[#A1A5B7]">S/N: <span className="font-mono text-[#0095E8] font-bold">{asset.serial_number || 'N/A'}</span></p>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="space-y-1">
-                        <div className="flex items-center gap-1.5 text-[13px] text-[#4B5563] font-medium">
+                        <div className="flex items-center gap-1.5 text-[13px] text-[#4B5563] font-bold">
                           <MapPin size={14} className="text-[#A1A5B7]" />
                           {asset.lokasi || '-'}
                         </div>
-                        <div className="text-[12px] text-[#A1A5B7]">Kondisi: <span className="text-[#50CD89] font-bold">{asset.kondisi || 'Baik'}</span></div>
+                        <div className="text-[12px] text-[#A1A5B7] font-medium flex items-center gap-1">
+                          Kondisi: <span className={`font-black ${getStatusColor(asset.status)}`}>{asset.status || 'Baik'}</span>
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -254,6 +305,17 @@ const RegisterAset = () => {
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button 
+                          title="Detail / Catatan"
+                          onClick={() => {
+                            if (asset.catatan) {
+                              confirm('Catatan Aset', asset.catatan, () => {}, { hideCancel: true, confirmLabel: 'Tutup' });
+                            }
+                          }}
+                          className={`p-2 rounded-lg transition-colors ${asset.catatan ? 'text-[#0095E8] hover:bg-[#F1FAFF]' : 'text-slate-200 cursor-not-allowed'}`}
+                        >
+                          <Info size={18} />
+                        </button>
                         <button 
                           onClick={() => handleDelete(asset.id)}
                           className="p-2 text-[#F1416C] hover:bg-[#FFF5F8] rounded-lg transition-colors"
@@ -285,29 +347,30 @@ const RegisterAset = () => {
               initial={{ scale: 0.95, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 20 }}
-              className="relative bg-white w-full max-w-2xl rounded-[24px] shadow-2xl overflow-hidden"
+              className="relative bg-white w-full max-w-3xl rounded-[32px] shadow-2xl overflow-hidden border border-white/20"
             >
-              <div className="p-6 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]">
+              <div className="p-8 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]">
                 <div>
-                  <h2 className="text-[20px] font-black text-[#181C32]">Daftarkan Aset Baru</h2>
-                  <p className="text-[13px] text-[#A1A5B7] font-medium">Lengkapi informasi aset dengan rinci</p>
+                  <h2 className="text-[24px] font-black text-[#181C32] tracking-tight">Daftarkan Aset Baru</h2>
+                  <p className="text-[13px] text-[#A1A5B7] font-bold">Pastikan data yang dimasukkan akurat dan lengkap</p>
                 </div>
                 <button 
                   onClick={() => setShowModal(false)}
-                  className="p-2 hover:bg-white rounded-full text-[#A1A5B7] transition-colors shadow-sm"
+                  className="w-10 h-10 flex items-center justify-center hover:bg-white rounded-full text-[#A1A5B7] transition-all shadow-sm border border-[#E4E6EF]/40"
                 >
                   <X size={20} />
                 </button>
               </div>
 
-              <form onSubmit={handleSubmit} className="p-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+              <form onSubmit={handleSubmit} className="p-8 max-h-[70vh] overflow-y-auto no-scrollbar">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                  {/* Basic Info */}
                   <div className="space-y-2">
-                    <label className="text-[13px] font-bold text-[#3F4254]">Nama Mesin / Aset *</label>
+                    <label className="text-[13px] font-bold text-[#3F4254]">Nama Mesin / Aset <span className="text-red-500">*</span></label>
                     <input 
                       required
                       type="text"
-                      className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
+                      className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all placeholder:text-[#A1A5B7] placeholder:font-normal"
                       placeholder="Contoh: AC Central Chiller"
                       value={formData.nama_mesin}
                       onChange={(e) => setFormData({...formData, nama_mesin: e.target.value})}
@@ -317,7 +380,7 @@ const RegisterAset = () => {
                     <label className="text-[13px] font-bold text-[#3F4254]">Brand / Merk</label>
                     <input 
                       type="text"
-                      className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
+                      className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all placeholder:text-[#A1A5B7] placeholder:font-normal"
                       placeholder="Contoh: Daikin"
                       value={formData.brand}
                       onChange={(e) => setFormData({...formData, brand: e.target.value})}
@@ -327,7 +390,7 @@ const RegisterAset = () => {
                     <label className="text-[13px] font-bold text-[#3F4254]">Model / Tipe</label>
                     <input 
                       type="text"
-                      className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
+                      className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all placeholder:text-[#A1A5B7] placeholder:font-normal"
                       placeholder="Contoh: VRV IV-S"
                       value={formData.model_tipe}
                       onChange={(e) => setFormData({...formData, model_tipe: e.target.value})}
@@ -337,7 +400,7 @@ const RegisterAset = () => {
                     <label className="text-[13px] font-bold text-[#3F4254]">Serial Number</label>
                     <input 
                       type="text"
-                      className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all font-mono"
+                      className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-black text-[#0095E8] focus:ring-2 focus:ring-[#0095E8]/20 transition-all font-mono"
                       placeholder="SN-123456789"
                       value={formData.serial_number}
                       onChange={(e) => setFormData({...formData, serial_number: e.target.value})}
@@ -347,18 +410,20 @@ const RegisterAset = () => {
                     <label className="text-[13px] font-bold text-[#3F4254]">Lokasi Penempatan</label>
                     <input 
                       type="text"
-                      className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
+                      className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all placeholder:text-[#A1A5B7] placeholder:font-normal"
                       placeholder="Contoh: Rooftop Pentacity"
                       value={formData.lokasi}
                       onChange={(e) => setFormData({...formData, lokasi: e.target.value})}
                     />
                   </div>
+                  
+                  {/* Priority Dropdown */}
                   <div className="space-y-2">
                     <label className="text-[13px] font-bold text-[#3F4254]">Prioritas Aset</label>
                     {!showNewPriorityInput ? (
                       <div className="relative">
                         <select 
-                          className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all appearance-none"
+                          className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all appearance-none pr-12 cursor-pointer"
                           value={formData.prioritas}
                           onChange={(e) => {
                             if (e.target.value === 'ADD_NEW') {
@@ -371,16 +436,16 @@ const RegisterAset = () => {
                           {priorities.map(p => (
                             <option key={p.id} value={p.label}>{p.label}</option>
                           ))}
-                          <option value="ADD_NEW" className="text-[#0095E8] font-bold">+ Tambah Baru...</option>
+                          <option value="ADD_NEW" className="text-[#0095E8] font-black">+ Tambah Baru...</option>
                         </select>
-                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7] pointer-events-none" size={16} />
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7] pointer-events-none" size={18} />
                       </div>
                     ) : (
                       <div className="flex gap-2">
                         <input 
                           autoFocus
                           type="text"
-                          className="flex-1 px-4 py-3 bg-[#F1FAFF] border border-[#0095E8]/20 rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
+                          className="flex-1 px-5 py-4 bg-[#F1FAFF] border border-[#0095E8]/20 rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
                           placeholder="Nama prioritas..."
                           value={newPriorityLabel}
                           onChange={(e) => setNewPriorityLabel(e.target.value)}
@@ -388,50 +453,104 @@ const RegisterAset = () => {
                         <button 
                           type="button"
                           onClick={handleAddPriority}
-                          className="px-4 bg-[#0095E8] text-white rounded-xl font-bold text-[12px]"
+                          className="px-6 bg-[#0095E8] text-white rounded-2xl font-black text-[12px] hover:bg-[#0084CC] transition-colors"
                         >
                           Simpan
                         </button>
                         <button 
                           type="button"
                           onClick={() => setShowNewPriorityInput(false)}
-                          className="px-4 bg-slate-100 text-slate-500 rounded-xl font-bold text-[12px]"
+                          className="px-4 bg-slate-100 text-slate-500 rounded-2xl font-bold text-[12px] hover:bg-slate-200 transition-colors"
                         >
                           Batal
                         </button>
                       </div>
                     )}
                   </div>
+
+                  {/* Status Dropdown */}
+                  <div className="space-y-2">
+                    <label className="text-[13px] font-bold text-[#3F4254]">Kondisi Aset</label>
+                    {!showNewStatusInput ? (
+                      <div className="relative">
+                        <select 
+                          className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all appearance-none pr-12 cursor-pointer"
+                          value={formData.status}
+                          onChange={(e) => {
+                            if (e.target.value === 'ADD_NEW') {
+                              setShowNewStatusInput(true);
+                            } else {
+                              setFormData({...formData, status: e.target.value});
+                            }
+                          }}
+                        >
+                          {statuses.map(s => (
+                            <option key={s.id} value={s.label}>{s.label}</option>
+                          ))}
+                          <option value="ADD_NEW" className="text-[#0095E8] font-black">+ Tambah Baru...</option>
+                        </select>
+                        <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7] pointer-events-none" size={18} />
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input 
+                          autoFocus
+                          type="text"
+                          className="flex-1 px-5 py-4 bg-[#F1FAFF] border border-[#0095E8]/20 rounded-2xl text-[14px] font-bold text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all"
+                          placeholder="Nama kondisi..."
+                          value={newStatusLabel}
+                          onChange={(e) => setNewStatusLabel(e.target.value)}
+                        />
+                        <button 
+                          type="button"
+                          onClick={handleAddStatus}
+                          className="px-6 bg-[#0095E8] text-white rounded-2xl font-black text-[12px] hover:bg-[#0084CC] transition-colors"
+                        >
+                          Simpan
+                        </button>
+                        <button 
+                          type="button"
+                          onClick={() => setShowNewStatusInput(false)}
+                          className="px-4 bg-slate-100 text-slate-500 rounded-2xl font-bold text-[12px] hover:bg-slate-200 transition-colors"
+                        >
+                          Batal
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   <div className="space-y-2 md:col-span-2">
-                    <label className="text-[13px] font-bold text-[#3F4254]">Kondisi & Catatan Tambahan</label>
+                    <label className="text-[13px] font-bold text-[#3F4254]">Catatan Tambahan (Opsional)</label>
                     <textarea 
-                      rows="3"
-                      className="w-full px-4 py-3 bg-[#F9F9F9] border-none rounded-xl text-[14px] focus:ring-2 focus:ring-[#0095E8]/20 transition-all resize-none"
-                      placeholder="Jelaskan kondisi fisik atau catatan teknis lainnya..."
-                      value={formData.kondisi}
-                      onChange={(e) => setFormData({...formData, kondisi: e.target.value})}
+                      rows="4"
+                      className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-medium text-[#181C32] focus:ring-2 focus:ring-[#0095E8]/20 transition-all resize-none placeholder:text-[#A1A5B7] placeholder:font-normal"
+                      placeholder="Jelaskan spesifikasi detail, riwayat singkat, atau catatan teknis lainnya..."
+                      value={formData.catatan}
+                      onChange={(e) => setFormData({...formData, catatan: e.target.value})}
                     />
                   </div>
                 </div>
 
-                <div className="flex gap-4 pt-4 border-t border-[#F1F1F4]">
+                <div className="flex gap-4 pt-6 border-t border-[#F1F1F4] sticky bottom-0 bg-white">
                   <button 
                     type="button"
                     disabled={submitting}
                     onClick={() => setShowModal(false)}
-                    className="flex-1 py-4 bg-[#F9F9F9] text-[#7E8299] rounded-xl font-bold text-[14px] hover:bg-[#F1F1F4] transition-all disabled:opacity-50"
+                    className="flex-1 py-4 bg-[#F9F9F9] text-[#7E8299] rounded-2xl font-bold text-[15px] hover:bg-[#F1F1F4] transition-all disabled:opacity-50 border border-[#E4E6EF]/50"
                   >
                     Batal
                   </button>
                   <button 
                     type="submit"
                     disabled={submitting}
-                    className="flex-[2] py-4 bg-[#0095E8] text-white rounded-xl font-bold text-[14px] hover:bg-[#0084CC] transition-all shadow-lg shadow-[#0095E8]/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="flex-[2] py-4 bg-[#0095E8] text-white rounded-2xl font-black text-[15px] hover:bg-[#0084CC] transition-all shadow-xl shadow-[#0095E8]/30 flex items-center justify-center gap-3 disabled:opacity-50"
                   >
-                    {submitting ? 'Menyimpan...' : (
+                    {submitting ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
                       <>
-                        <CheckCircle2 size={18} />
-                        <span>Daftarkan Aset</span>
+                        <CheckCircle2 size={20} />
+                        <span>Simpan Data Aset</span>
                       </>
                     )}
                   </button>
@@ -449,11 +568,5 @@ const RegisterAset = () => {
     </div>
   );
 };
-
-const ChevronDown = ({ size, className }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
-    <path d="m6 9 6 6 6-6"/>
-  </svg>
-);
 
 export default RegisterAset;

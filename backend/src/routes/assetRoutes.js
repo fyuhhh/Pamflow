@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
 const assetController = require('../controllers/assetController');
-const { authenticateToken } = require('../middleware/auth');
+const authMiddleware = require('../middleware/authMiddleware');
 
-router.get('/', authenticateToken, assetController.getAllAssets);
-router.post('/', authenticateToken, assetController.createAsset);
-router.get('/priorities', authenticateToken, assetController.getPriorities);
-router.post('/priorities', authenticateToken, assetController.createPriority);
-router.delete('/:id', authenticateToken, assetController.deleteAsset);
+router.get('/', authMiddleware, assetController.getAllAssets);
+router.post('/', authMiddleware, assetController.createAsset);
+router.get('/priorities', authMiddleware, assetController.getPriorities);
+router.post('/priorities', authMiddleware, assetController.createPriority);
+router.get('/statuses', authMiddleware, assetController.getStatuses);
+router.post('/statuses', authMiddleware, assetController.createStatus);
+router.delete('/:id', authMiddleware, assetController.deleteAsset);
 
 module.exports = router;
