@@ -101,13 +101,6 @@ const MobileDemo = ({ onLogout }) => {
       case '/demo/mobile/dept-task/:id': // Managed by startsWith but included for clarity
         return <MobileDeptTaskDetail />;
       
-      // Asset Routes
-      case '/demo/mobile/aset/hak-akses':
-        return <AssetPlaceholder title="Hak Akses Aset" />;
-      case '/demo/mobile/aset/register':
-        return <AssetPlaceholder title="Register Aset" />;
-      case '/demo/mobile/aset/monitoring':
-        return <AssetPlaceholder title="Monitoring Aset" />;
       default:
         if (location.pathname.startsWith('/demo/mobile/dept-task/')) {
           return <MobileDeptTaskDetail />;
