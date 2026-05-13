@@ -92,6 +92,16 @@ const MonitoringAset = () => {
     if (isSuperAdmin) return true;
     return user?.permissions?.[moduleId]?.includes(action);
   };
+
+  const safeParseJSON = (str, fallback = []) => {
+    if (!str) return fallback;
+    try {
+      return typeof str === 'string' ? JSON.parse(str) : str;
+    } catch (e) {
+      console.error('JSON Parse error:', e);
+      return fallback;
+    }
+  };
   
   // Edit State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -367,12 +377,6 @@ const MonitoringAset = () => {
     };
   };
 
-  const safeLampiran = (lampiran) => {
-    if (!lampiran) return [];
-    if (Array.isArray(lampiran)) return lampiran;
-    try { return JSON.parse(lampiran); } catch (e) { return []; }
-  };
-
   // --- RESTORED LOGIC ---
   const handleDelete = async (id, name) => {
     const isConfirmed = await confirm({
@@ -408,7 +412,7 @@ const MonitoringAset = () => {
       prioritas: asset.prioritas || '',
       status: asset.status || '',
       catatan: asset.catatan || '',
-      lampiran: safeLampiran(asset.lampiran),
+      lampiran: safeParseJSON(asset.lampiran),
       maintenance_hours: asset.maintenance_hours || 0
     });
     const d = Math.floor(asset.maintenance_hours / 24);
@@ -998,9 +1002,9 @@ const MonitoringAset = () => {
                                 </div>
                                 <span className="text-[11px] font-bold text-slate-600">PIC: {log.responsible_person}</span>
                              </div>
-                             {log.photos && JSON.parse(log.photos).length > 0 && (
+                             {log.photos && safeParseJSON(log.photos).length > 0 && (
                                <div className="grid grid-cols-3 gap-2 mt-2">
-                                  {JSON.parse(log.photos).map((img, i) => (
+                                  {safeParseJSON(log.photos).map((img, i) => (
                                     <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-slate-100" onClick={() => setZoomedImage(img)} />
                                   ))}
                                </div>
@@ -1408,7 +1412,7 @@ const MonitoringAset = () => {
                    <div>
                      <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider mb-4">Media & Lampiran</h4>
                      <div className="grid grid-cols-2 gap-3">
-                       {safeLampiran(selectedAsset.lampiran).map((img, idx) => (
+                       {safeParseJSON(selectedAsset.lampiran).map((img, idx) => (
                          <img key={idx} src={img} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
                        ))}
                      </div>
@@ -1431,9 +1435,9 @@ const MonitoringAset = () => {
                                 </div>
                                 <p className="text-[11px] text-slate-600 leading-relaxed">{log.actions_taken}</p>
                                 <p className="text-[9px] font-bold text-[#0095E8]">PIC: {log.responsible_person}</p>
-                                {log.photos && JSON.parse(log.photos).length > 0 && (
+                                {log.photos && safeParseJSON(log.photos).length > 0 && (
                                   <div className="grid grid-cols-4 gap-2 mt-2">
-                                     {JSON.parse(log.photos).map((img, i) => (
+                                     {safeParseJSON(log.photos).map((img, i) => (
                                        <img key={i} src={img} className="w-full aspect-square object-cover rounded-lg cursor-zoom-in" onClick={() => setZoomedImage(img)} />
                                      ))}
                                   </div>
