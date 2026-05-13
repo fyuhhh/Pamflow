@@ -60,6 +60,7 @@ const MonitoringAset = () => {
   const [activeMobileAsset, setActiveMobileAsset] = useState(null);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [newNote, setNewNote] = useState('');
+  const [notePhotos, setNotePhotos] = useState([]);
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isToggling, setIsToggling] = useState(false);
@@ -338,17 +339,21 @@ const MonitoringAset = () => {
   }, [assets]);
 
   const handleAddNote = async () => {
-    if (!newNote.trim()) return;
+    if (!newNote.trim() && notePhotos.length === 0) return;
     setIsSubmittingNote(true);
     try {
       const assetId = isMobile ? activeMobileAsset?.id : selectedAsset?.id;
       const res = await authFetch(`/api/assets/${assetId}/note`, {
         method: 'POST',
-        body: JSON.stringify({ note: newNote })
+        body: JSON.stringify({ 
+          note: newNote,
+          photos: notePhotos
+        })
       });
       if (res.ok) {
         success('Catatan berhasil ditambahkan');
         setNewNote('');
+        setNotePhotos([]);
         setIsNoteModalOpen(false);
         fetchAssetLogs(assetId);
         // Update local asset catatan
@@ -909,14 +914,61 @@ const MonitoringAset = () => {
                   <button onClick={() => setIsNoteModalOpen(false)} className="text-slate-400"><X size={24} /></button>
                 </div>
                 <textarea 
-                  className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all min-h-[150px]"
+                  className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all min-h-[120px]"
                   placeholder="Ketik pesan atau informasi tentang unit ini untuk tim lain..."
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                 />
+
+                {/* Photo Upload for Note (Mobile) */}
+                <div className="mt-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-[12px] font-black text-slate-400 uppercase tracking-widest">Lampiran Foto ({notePhotos.length}/5)</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {notePhotos.map((img, idx) => (
+                      <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
+                        <img src={img} className="w-full h-full object-cover" />
+                        <button 
+                          onClick={() => setNotePhotos(prev => prev.filter((_, i) => i !== idx))}
+                          className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md"
+                        >
+                          <X size={12} />
+                        </button>
+                      </div>
+                    ))}
+                    {notePhotos.length < 5 && (
+                      <label className="w-20 h-20 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer active:bg-slate-100 transition-all">
+                        <Camera size={24} />
+                        <input 
+                          type="file" accept="image/*" multiple className="hidden" 
+                          onChange={async (e) => {
+                            const files = Array.from(e.target.files).slice(0, 5 - notePhotos.length);
+                            try {
+                              const compressedFiles = await Promise.all(
+                                files.map(file => compressImage(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.7 }))
+                              );
+                              const base64Strings = await Promise.all(
+                                compressedFiles.map(file => new Promise((resolve) => {
+                                  const reader = new FileReader();
+                                  reader.readAsDataURL(file);
+                                  reader.onloadend = () => resolve(reader.result);
+                                }))
+                              );
+                              setNotePhotos(prev => [...prev, ...base64Strings]);
+                            } catch (err) {
+                              showError('Gagal memproses gambar');
+                            }
+                          }} 
+                        />
+                      </label>
+                    )}
+                  </div>
+                </div>
+
                 <motion.button
                   whileTap={{ scale: 0.98 }}
-                  disabled={isSubmittingNote || !newNote.trim()}
+                  disabled={isSubmittingNote || (!newNote.trim() && notePhotos.length === 0)}
                   onClick={handleAddNote}
                   className="w-full mt-6 py-4 bg-[#0095E8] text-white rounded-2xl font-black text-[16px] shadow-xl shadow-blue-100 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
@@ -981,6 +1033,13 @@ const MonitoringAset = () => {
                               <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
                            </div>
                            <p className="text-[13px] text-slate-700 font-medium italic">"{note.details}"</p>
+                           {note.photos && safeParseJSON(note.photos).length > 0 && (
+                             <div className="grid grid-cols-3 gap-2 mt-3">
+                                {safeParseJSON(note.photos).map((img, i) => (
+                                  <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-amber-100" onClick={() => setZoomedImage(img)} />
+                                ))}
+                             </div>
+                           )}
                         </div>
                       ))}
                       {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
@@ -1065,6 +1124,13 @@ const MonitoringAset = () => {
                           <span className="text-[10px] font-bold text-slate-400">{formatDateTime(log.created_at).date}, {formatDateTime(log.created_at).time}</span>
                         </div>
                         <p className="text-[13px] font-medium text-slate-700">{log.details}</p>
+                        {log.action === 'NOTE' && log.photos && safeParseJSON(log.photos).length > 0 && (
+                          <div className="grid grid-cols-3 gap-2 mt-2">
+                             {safeParseJSON(log.photos).map((img, i) => (
+                               <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl" onClick={() => setZoomedImage(img)} />
+                             ))}
+                          </div>
+                        )}
                         <p className="text-[11px] font-bold text-slate-400 mt-2">— {log.firstName}</p>
                       </div>
                     ))}
@@ -1404,6 +1470,13 @@ const MonitoringAset = () => {
                                 <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
                              </div>
                              <p className="text-[12px] text-slate-600 italic">"{note.details}"</p>
+                             {note.photos && safeParseJSON(note.photos).length > 0 && (
+                               <div className="grid grid-cols-4 gap-2 mt-3">
+                                  {safeParseJSON(note.photos).map((img, i) => (
+                                    <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                                  ))}
+                               </div>
+                             )}
                           </div>
                         ))}
                         {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
@@ -1502,14 +1575,59 @@ const MonitoringAset = () => {
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl">
               <h3 className="text-lg font-bold text-slate-800 mb-6">Tambah Catatan Tim</h3>
               <textarea 
-                className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-blue-100 outline-none transition-all min-h-[120px]"
+                className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-blue-100 outline-none transition-all min-h-[100px]"
                 placeholder="Tulis pesan untuk tim..."
                 value={newNote}
                 onChange={e => setNewNote(e.target.value)}
               />
+
+              {/* Photo Upload for Note (PC) */}
+              <div className="mt-6">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Lampiran Foto ({notePhotos.length}/5)</p>
+                <div className="flex flex-wrap gap-3">
+                  {notePhotos.map((img, idx) => (
+                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
+                      <img src={img} className="w-full h-full object-cover" />
+                      <button 
+                        onClick={() => setNotePhotos(prev => prev.filter((_, i) => i !== idx))}
+                        className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white flex items-center justify-center shadow-lg"
+                      >
+                        <X size={10} />
+                      </button>
+                    </div>
+                  ))}
+                  {notePhotos.length < 5 && (
+                    <label className="w-16 h-16 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-blue-500 hover:border-blue-200 cursor-pointer transition-all">
+                      <Camera size={20} />
+                      <input 
+                        type="file" accept="image/*" multiple className="hidden" 
+                        onChange={async (e) => {
+                          const files = Array.from(e.target.files).slice(0, 5 - notePhotos.length);
+                          try {
+                            const compressedFiles = await Promise.all(
+                              files.map(file => compressImage(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.7 }))
+                            );
+                            const base64Strings = await Promise.all(
+                              compressedFiles.map(file => new Promise((resolve) => {
+                                const reader = new FileReader();
+                                reader.readAsDataURL(file);
+                                reader.onloadend = () => resolve(reader.result);
+                              }))
+                            );
+                            setNotePhotos(prev => [...prev, ...base64Strings]);
+                          } catch (err) {
+                            showError('Gagal memproses gambar');
+                          }
+                        }} 
+                      />
+                    </label>
+                  )}
+                </div>
+              </div>
+
               <div className="flex gap-3 mt-8">
                 <button onClick={() => setIsNoteModalOpen(false)} className="flex-1 py-3 bg-slate-50 text-slate-500 rounded-xl font-bold text-sm">Batal</button>
-                <button onClick={handleAddNote} disabled={isSubmittingNote} className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-100">Kirim</button>
+                <button onClick={handleAddNote} disabled={isSubmittingNote || (!newNote.trim() && notePhotos.length === 0)} className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-100">Kirim</button>
               </div>
             </motion.div>
           </div>
