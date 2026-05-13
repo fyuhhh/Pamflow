@@ -505,11 +505,19 @@ const MonitoringAset = () => {
         fetchAssets();
         // Update selected asset if viewing detail
         if (selectedAsset && selectedAsset.id === editingAsset.id) {
-          const updated = { ...selectedAsset, ...editFormData };
+          const updated = { 
+            ...selectedAsset, 
+            ...editFormData,
+            remaining_seconds: (editFormData.maintenance_hours || 0) * 3600
+          };
           setSelectedAsset(updated);
         }
         if (activeMobileAsset && activeMobileAsset.id === editingAsset.id) {
-          const updated = { ...activeMobileAsset, ...editFormData };
+          const updated = { 
+            ...activeMobileAsset, 
+            ...editFormData,
+            remaining_seconds: (editFormData.maintenance_hours || 0) * 3600
+          };
           setActiveMobileAsset(updated);
         }
       } else {
