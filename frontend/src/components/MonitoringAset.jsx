@@ -31,7 +31,9 @@ import {
   ResponsiveContainer,
   Cell,
   PieChart,
-  Pie
+  Pie,
+  Legend,
+  LabelList
 } from 'recharts';
 import { useModal } from '../context/ModalContext';
 
@@ -294,32 +296,51 @@ const MonitoringAset = () => {
           </div>
         </div>
 
+        {/* Status Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm h-[200px]">
-          <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest mb-4">Distribusi Kondisi</p>
+          <div className="flex justify-between items-center mb-4">
+            <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest">Distribusi Kondisi Aset</p>
+          </div>
           <div className="w-full h-[120px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analyticsData.statusChart}>
+              <BarChart data={analyticsData.statusChart} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#A1A5B7' }} />
                 <YAxis hide />
-                <Tooltip cursor={{ fill: '#F9F9F9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '12px' }} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  {analyticsData.statusChart.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
+                <Tooltip 
+                  cursor={{ fill: '#F9F9F9' }}
+                  contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
+                />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]} barSize={40}>
+                  {analyticsData.statusChart.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                  <LabelList dataKey="value" position="top" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#181C32' }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
         </div>
 
+        {/* Priority Pie */}
         <div className="bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm h-[200px] flex flex-col">
-          <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest mb-2">Prioritas</p>
+          <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest mb-2">Level Prioritas</p>
           <div className="flex-1 w-full h-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                <Pie data={analyticsData.priorityChart} innerRadius={30} outerRadius={50} paddingAngle={5} dataKey="value">
-                  {analyticsData.priorityChart.map((entry, index) => <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />)}
+                <Pie
+                  data={analyticsData.priorityChart}
+                  innerRadius={25}
+                  outerRadius={45}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {analyticsData.priorityChart.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[(index + 2) % COLORS.length]} />
+                  ))}
                 </Pie>
                 <Tooltip />
+                <Legend layout="vertical" align="right" verticalAlign="middle" iconType="circle" wrapperStyle={{ fontSize: '10px', fontWeight: 'bold' }} />
               </PieChart>
             </ResponsiveContainer>
           </div>
