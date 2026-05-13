@@ -629,35 +629,54 @@ const MonitoringAset = () => {
 
               {/* GIANT ON/OFF BUTTON & TIMER */}
               <div className="flex flex-col items-center justify-center gap-8 py-4">
-                {/* Big Round Toggle or Maintenance Required */}
-                {activeMobileAsset.remaining_seconds <= 0 ? (
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => setIsMaintModalOpen(true)}
-                    className="w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 bg-amber-500 border-amber-100 shadow-amber-200 text-white"
-                  >
-                    <AlertTriangle size={48} strokeWidth={2.5} className="animate-pulse" />
-                    <span className="text-[14px] font-black uppercase tracking-widest text-center px-4">Maintenance Required</span>
-                  </motion.button>
-                ) : (
-                  <motion.button
-                    whileTap={{ scale: 0.9 }}
-                    disabled={isToggling}
-                    onClick={() => handleToggleStatus(activeMobileAsset.id)}
-                    className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${
-                      isToggling ? 'opacity-70 grayscale' : ''
-                    } ${
-                      activeMobileAsset.is_running 
-                        ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
-                        : 'bg-white border-slate-50 shadow-slate-200 text-slate-300'
-                    }`}
-                  >
-                    <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
-                    <span className="text-[18px] font-black uppercase tracking-widest">
-                      {isToggling ? 'Wait...' : (activeMobileAsset.is_running ? 'Stop' : 'Start')}
-                    </span>
-                  </motion.button>
-                )}
+                {/* Big Round Toggle or Maintenance Selection */}
+                <div className="flex flex-col items-center gap-6">
+                  {/* Start / Stop Button */}
+                  {!(activeMobileAsset.remaining_seconds <= 0 && !activeMobileAsset.is_running) && (
+                    <motion.button
+                      whileTap={{ scale: 0.9 }}
+                      disabled={isToggling}
+                      onClick={() => handleToggleStatus(activeMobileAsset.id)}
+                      className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${
+                        isToggling ? 'opacity-70 grayscale' : ''
+                      } ${
+                        activeMobileAsset.is_running 
+                          ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
+                          : (activeMobileAsset.remaining_seconds <= 172800 ? 'bg-amber-500 border-amber-50 shadow-amber-100 text-white' : 'bg-white border-slate-50 shadow-slate-200 text-slate-300')
+                      }`}
+                    >
+                      <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
+                      <span className="text-[18px] font-black uppercase tracking-widest">
+                        {isToggling ? 'Wait...' : (activeMobileAsset.is_running ? 'Stop' : 'Start')}
+                      </span>
+                    </motion.button>
+                  )}
+
+                  {/* Maintenance Button (Shown if <= 48h and NOT running) */}
+                  {!activeMobileAsset.is_running && activeMobileAsset.remaining_seconds <= 172800 && (
+                    <motion.button
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setIsMaintModalOpen(true)}
+                      className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[14px] uppercase tracking-wider shadow-lg transition-all ${
+                        activeMobileAsset.remaining_seconds <= 0 
+                          ? 'bg-amber-500 text-white shadow-amber-100 w-64 h-64 rounded-full flex-col !gap-4' 
+                          : 'bg-white text-amber-600 border border-amber-100'
+                      }`}
+                    >
+                      {activeMobileAsset.remaining_seconds <= 0 ? (
+                        <>
+                          <AlertTriangle size={64} className="animate-pulse" />
+                          <span className="text-center">Maintenance Required<br/><span className="text-[10px] opacity-70">Unit Locked</span></span>
+                        </>
+                      ) : (
+                        <>
+                          <Settings size={18} />
+                          <span>Maintenance Sekarang</span>
+                        </>
+                      )}
+                    </motion.button>
+                  )}
+                </div>
 
                 {/* COUNTDOWN TIMER */}
                 <div className="text-center">
@@ -979,7 +998,7 @@ const MonitoringAset = () => {
                         <img src={img} className="w-full h-full object-cover" />
                       </div>
                     ))}
-                    {safeLampiran(selectedAsset.lampiran).length === 0 && (
+                    {safeParseJSON(selectedAsset.lampiran).length === 0 && (
                       <div className="col-span-2 py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-center text-slate-400 text-[12px] font-bold">Tidak ada foto lampiran</div>
                     )}
                   </div>
