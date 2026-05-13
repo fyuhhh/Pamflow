@@ -61,6 +61,7 @@ const MonitoringAset = () => {
   const [newNote, setNewNote] = useState('');
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
+  const [isToggling, setIsToggling] = useState(false);
   const timerRef = useRef(null);
 
   // App Mode Detection
@@ -191,6 +192,7 @@ const MonitoringAset = () => {
   };
 
   const handleToggleStatus = async (id) => {
+    if (isToggling) return;
     const assetId = parseInt(id);
     const asset = assets.find(a => a.id === assetId);
     if (!asset) return;
@@ -205,6 +207,7 @@ const MonitoringAset = () => {
       });
 
       if (!isConfirmed) return;
+      setIsToggling(true);
 
       const res = await authFetch(`/api/assets/${assetId}/toggle`, { method: 'POST' });
       if (res.ok) {
@@ -215,7 +218,6 @@ const MonitoringAset = () => {
         setAssets(prev => prev.map(a => a.id === assetId ? { ...a, ...cleanData } : a));
         
         // Update current views AFTER the main list update is scheduled
-        // We find the existing asset and merge it ourselves to be safe
         const currentAsset = assets.find(a => a.id === assetId);
         if (currentAsset) {
           const updated = { ...currentAsset, ...cleanData };
@@ -228,6 +230,8 @@ const MonitoringAset = () => {
     } catch (err) {
       console.error('Toggle error:', err);
       showError('Terjadi kesalahan saat mengubah status');
+    } finally {
+      setIsToggling(false);
     }
   };
 
@@ -496,15 +500,20 @@ const MonitoringAset = () => {
                 {/* Big Round Toggle */}
                 <motion.button
                   whileTap={{ scale: 0.9 }}
+                  disabled={isToggling}
                   onClick={() => handleToggleStatus(activeMobileAsset.id)}
                   className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${
+                    isToggling ? 'opacity-70 grayscale' : ''
+                  } ${
                     activeMobileAsset.is_running 
                       ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
                       : 'bg-white border-slate-50 shadow-slate-200 text-slate-300'
                   }`}
                 >
-                  <Power size={48} strokeWidth={2.5} className={activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} />
-                  <span className="text-[18px] font-black uppercase tracking-widest">{activeMobileAsset.is_running ? 'Stop' : 'Start'}</span>
+                  <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
+                  <span className="text-[18px] font-black uppercase tracking-widest">
+                    {isToggling ? 'Wait...' : (activeMobileAsset.is_running ? 'Stop' : 'Start')}
+                  </span>
                 </motion.button>
 
                 {/* COUNTDOWN TIMER */}
