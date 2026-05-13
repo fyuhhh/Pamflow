@@ -1460,7 +1460,7 @@ const MonitoringAset = () => {
                   }
 
                   return (
-                    <tr key={asset.id} className="hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer">
+                    <tr key={asset.id} className={`hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer ${liveTime <= 172800 ? 'bg-red-50/50' : ''}`}>
                       <td className="px-6 py-5 text-sm font-light text-[#7E8299]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                       <td className="px-6 py-5">
                         <p className="text-sm font-normal text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
@@ -1470,7 +1470,7 @@ const MonitoringAset = () => {
                         <div className="flex items-center gap-3">
                           <div className={`w-2.5 h-2.5 rounded-full ${asset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                           <div>
-                            <p className={`text-sm font-black tabular-nums ${asset.is_running ? 'text-[#0095E8]' : 'text-slate-700'}`}>
+                            <p className={`text-sm font-black tabular-nums ${liveTime <= 172800 ? 'text-red-600' : (asset.is_running ? 'text-[#0095E8]' : 'text-slate-700')}`}>
                               {formatTime(liveTime)}
                             </p>
                             <p className="text-[9px] text-[#A1A5B7] font-bold uppercase tracking-wider">
@@ -1527,7 +1527,7 @@ const MonitoringAset = () => {
               <div className="p-8 overflow-y-auto no-scrollbar grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-8 space-y-8">
                   {/* Timer Large Display in Detail */}
-                  <div className="p-8 bg-[#1E1E2D] rounded-[32px] text-white flex flex-col items-center justify-center relative overflow-hidden">
+                  <div className={`p-8 rounded-[32px] text-white flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-500 ${timeLeft <= 172800 ? 'bg-red-600 shadow-xl shadow-red-100' : 'bg-[#1E1E2D]'}`}>
                     <div className="absolute top-0 right-0 p-6 opacity-10">
                       <Zap size={100} />
                     </div>
