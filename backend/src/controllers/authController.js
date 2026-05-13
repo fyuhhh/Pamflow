@@ -80,6 +80,7 @@ const login = async (req, res) => {
     // Generate JWT Tokens
     const tokenPayload = { 
       id: userRecord.id, 
+      company_id: userRecord.company_id,
       orgId: userRecord.orgId, 
       userType: userRecord.userType,
       role: userRecord.role
@@ -192,6 +193,7 @@ const refreshAuthToken = async (req, res) => {
     const newAccessToken = jwt.sign(
       { 
         id: decoded.id, 
+        company_id: decoded.company_id,
         orgId: decoded.orgId, 
         userType: decoded.userType,
         role: decoded.role

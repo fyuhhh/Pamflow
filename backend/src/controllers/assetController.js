@@ -15,8 +15,8 @@ const assetController = {
     try {
       const company_id = req.user.company_id;
       const [rows] = await pool.query(
-        'SELECT a.*, u.firstName, u.lastName FROM assets a LEFT JOIN users u ON a.user_pendaftar_id = u.id WHERE a.company_id = ? ORDER BY a.created_at DESC',
-        [company_id]
+        'SELECT a.*, u.firstName, u.lastName FROM assets a LEFT JOIN users u ON a.user_pendaftar_id = u.id WHERE (a.company_id = ? OR (? IS NULL AND a.company_id IS NULL)) ORDER BY a.created_at DESC',
+        [company_id, company_id]
       );
       res.json(rows);
     } catch (error) {
