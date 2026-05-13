@@ -99,7 +99,7 @@ const CompanyForm = () => {
         <form onSubmit={handleSubmit} className="p-8 px-8 space-y-6">
           {/* Nama Perusahaan */}
           <div className="flex items-center gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254]">
+            <label className="w-48 text-sm text-[#3F4254]">
               Nama perusahaan <span className="text-[#F1416C]">*</span>
             </label>
             <input 
@@ -115,7 +115,7 @@ const CompanyForm = () => {
 
           {/* ID Perusahaan */}
           <div className="flex items-center gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254]">
+            <label className="w-48 text-sm text-[#3F4254]">
               ID perusahaan <span className="text-[#F1416C]">*</span>
             </label>
             <input 
@@ -132,7 +132,7 @@ const CompanyForm = () => {
 
           {/* Tipe */}
           <div className="flex items-center gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254]">
+            <label className="w-48 text-sm text-[#3F4254]">
               Tipe <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex items-center gap-10 flex-1 max-w-2xl">
@@ -163,7 +163,7 @@ const CompanyForm = () => {
 
           {/* Zona Waktu */}
           <div className="flex items-center gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254]">
+            <label className="w-48 text-sm text-[#3F4254]">
               Zona waktu <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-2xl relative">
@@ -184,7 +184,7 @@ const CompanyForm = () => {
 
           {/* Alamat Perusahaan */}
           <div className="flex items-start gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254] pt-3">
+            <label className="w-48 text-sm text-[#3F4254] pt-3">
               Alamat perusahaan <span className="text-[#F1416C]">*</span>
             </label>
             <textarea 
@@ -200,11 +200,11 @@ const CompanyForm = () => {
 
           {/* Nomor Telepon */}
           <div className="flex items-center gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254]">
+            <label className="w-48 text-sm text-[#3F4254]">
               Nomor telepon <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-2xl flex items-center">
-              <div className="px-4 py-3 bg-[#F9F9F9] border border-[#F1F1F4] rounded-l-lg text-sm font-semibold text-[#3F4254] border-r-0">
+              <div className="px-4 py-3 bg-[#F9F9F9] border border-[#F1F1F4] rounded-l-lg text-sm text-[#3F4254] border-r-0">
                 +62
               </div>
               <input 
@@ -221,7 +221,7 @@ const CompanyForm = () => {
 
           {/* Status Toggle */}
           <div className="flex items-center gap-8">
-            <label className="w-48 text-sm font-semibold text-[#3F4254]">
+            <label className="w-48 text-sm text-[#3F4254]">
               Status
             </label>
             <div className="flex items-center gap-3">

@@ -237,7 +237,7 @@ const BuatHakAkses = () => {
           <div className="space-y-6">
             {/* Level */}
             <div className="flex items-center gap-8">
-              <label className="w-48 text-sm font-semibold text-[#3F4254]">Level hak akses <span className="text-[#F1416C]">*</span></label>
+              <label className="w-48 text-sm text-[#3F4254]">Level hak akses <span className="text-[#F1416C]">*</span></label>
               <div className="flex-1 max-w-2xl relative">
                 <select
                   name="level"
@@ -265,7 +265,7 @@ const BuatHakAkses = () => {
 
             {/* Nama */}
             <div className="flex items-center gap-8">
-              <label className="w-48 text-sm font-semibold text-[#3F4254]">Nama hak akses <span className="text-[#F1416C]">*</span></label>
+              <label className="w-48 text-sm text-[#3F4254]">Nama hak akses <span className="text-[#F1416C]">*</span></label>
               <input 
                 type="text"
                 name="name"
@@ -280,7 +280,7 @@ const BuatHakAkses = () => {
 
           {/* Matrix Section */}
           <div className="space-y-4">
-            <h3 className="text-base font-bold text-[#181C32] text-center mb-6">Pilihan Hak Akses</h3>
+            <h3 className="text-base font-semibold text-[#181C32] text-center mb-6">Pilihan Hak Akses</h3>
             
             {!formData.level ? (
               <div className="py-12 bg-[#F9F9F9] rounded-xl border border-dashed border-[#E4E6EF] text-center">
@@ -291,9 +291,9 @@ const BuatHakAkses = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-[#F5F8FA] border-b border-[#F1F1F4]">
-                      <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider w-[300px]">Akses</th>
+                      <th className="px-6 py-4 text-[11px] font-semibold text-[#A1A5B7] uppercase tracking-wider w-[300px]">Akses</th>
                       {ACTIONS.map(action => (
-                        <th key={action} className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-center">
+                        <th key={action} className="px-6 py-4 text-[11px] font-semibold text-[#A1A5B7] uppercase tracking-wider text-center">
                           {action}
                         </th>
                       ))}
@@ -307,7 +307,7 @@ const BuatHakAkses = () => {
                             onChange={(e) => handleSelectAll(e.target.checked)}
                             className="w-4 h-4 rounded border-[#E4E6EF] text-[#0095E8] focus:ring-[#0095E8]"
                           />
-                          <span className="text-[12px] font-bold text-[#3F4254] group-hover:text-[#0095E8] transition-colors">Pilih Semua</span>
+                          <span className="text-[12px] font-semibold text-[#3F4254] group-hover:text-[#0095E8] transition-colors">Pilih Semua</span>
                         </label>
                       </td>
                       <td colSpan={6}></td>

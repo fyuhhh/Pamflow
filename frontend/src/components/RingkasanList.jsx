@@ -460,19 +460,19 @@ const RingkasanList = () => {
           <div className="flex items-center bg-[#F9F9F9] border border-[#F1F1F4] rounded-lg p-1 gap-1">
             <button 
               onClick={() => { setJenisTugasFilter('Semua'); setCurrentPage(1); }}
-              className={`px-4 py-1.5 rounded-md text-[13px] font-bold transition-all ${jenisTugasFilter === 'Semua' ? 'bg-white text-[#3F4254] shadow-sm' : 'text-[#A1A5B7] hover:text-[#3F4254]'}`}
+              className={`px-4 py-1.5 rounded-md text-[13px] font-semibold transition-all ${jenisTugasFilter === 'Semua' ? 'bg-white text-[#3F4254] shadow-sm' : 'text-[#A1A5B7] hover:text-[#3F4254]'}`}
             >
               Semua
             </button>
             <button 
               onClick={() => { setJenisTugasFilter('WO'); setCurrentPage(1); }}
-              className={`px-4 py-1.5 rounded-md text-[13px] font-bold transition-all ${jenisTugasFilter === 'WO' ? 'bg-white text-[#7239EA] shadow-sm' : 'text-[#A1A5B7] hover:text-[#7239EA]'}`}
+              className={`px-4 py-1.5 rounded-md text-[13px] font-semibold transition-all ${jenisTugasFilter === 'WO' ? 'bg-white text-[#7239EA] shadow-sm' : 'text-[#A1A5B7] hover:text-[#7239EA]'}`}
             >
               WO
             </button>
             <button 
               onClick={() => { setJenisTugasFilter('Checklist'); setCurrentPage(1); }}
-              className={`px-4 py-1.5 rounded-md text-[13px] font-bold transition-all ${jenisTugasFilter === 'Checklist' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-[#A1A5B7] hover:text-[var(--primary)]'}`}
+              className={`px-4 py-1.5 rounded-md text-[13px] font-semibold transition-all ${jenisTugasFilter === 'Checklist' ? 'bg-white text-[var(--primary)] shadow-sm' : 'text-[#A1A5B7] hover:text-[var(--primary)]'}`}
             >
               Checklist
             </button>
@@ -517,22 +517,22 @@ const RingkasanList = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="border-b border-[#F1F1F4] bg-[#F9F9F9]">
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left w-[50px]">No</th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left min-w-[140px]">
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left w-[50px]">No</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left min-w-[140px]">
                   <div className="flex items-center gap-1">ID Tugas <ChevronsUpDown size={11} className="text-[#C4C4C4]" /></div>
                 </th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left min-w-[200px]">
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left min-w-[200px]">
                   <div className="flex items-center gap-1">Nama Tugas <ChevronsUpDown size={11} className="text-[#C4C4C4]" /></div>
                 </th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left min-w-[180px]">
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left min-w-[180px]">
                   <div className="flex items-center gap-1">Jadwal Tugas <ChevronsUpDown size={11} className="text-[#C4C4C4]" /></div>
                 </th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left min-w-[150px]">Perusahaan</th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left min-w-[150px]">Departemen</th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-left min-w-[100px]">Urgensi</th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-center min-w-[130px]">Progres Tugas</th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-center min-w-[100px]">Status</th>
-                <th className="px-6 py-5 text-[11px] font-bold text-[#B5B5C3] uppercase text-center w-[100px]">Aksi</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left min-w-[150px]">Perusahaan</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left min-w-[150px]">Departemen</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-left min-w-[100px]">Urgensi</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-center min-w-[130px]">Progres Tugas</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-center min-w-[100px]">Status</th>
+                <th className="px-6 py-5 text-[11px] font-semibold text-[#B5B5C3] uppercase text-center w-[100px]">Aksi</th>
               </tr>
             </thead>
             <tbody>

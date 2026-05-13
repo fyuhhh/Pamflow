@@ -319,9 +319,7 @@ const TemplateList = () => {
           </div>
         </div>
       </div>
-      <div className="mt-4 text-[11px] text-[#A1A5B7] px-1 font-medium italic">
-        Powered By AIT- 2026 ©
-      </div>
+
 
       {/* Import Modal */}
       {isImportOpen && (

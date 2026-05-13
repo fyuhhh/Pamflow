@@ -987,7 +987,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[11px] font-bold text-[#A1A5B7] uppercase mb-1">Progress</p>
+            <p className="text-[11px] font-semibold text-[#A1A5B7] mb-1">Progress</p>
             <div className="w-32 h-2 bg-white rounded-full overflow-hidden shadow-inner">
               <div 
                 className="h-full bg-[#50CD89] transition-all duration-500" 
@@ -1016,15 +1016,15 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-[#50CD89] border-opacity-10">
               <div>
-                <p className="text-[11px] text-[#A1A5B7] uppercase font-bold mb-1 tracking-wider">ID WO</p>
+                <p className="text-[11px] text-[#A1A5B7] font-semibold mb-1">ID WO</p>
                 <p className="text-[13px] font-semibold text-[#3F4254]">{sourceDeptTask.jenis_tugas === 'checklist' ? 'CHK' : 'WO'}-{sourceDeptTask.dept_id_asal || sourceDeptTask.departemen_asal?.substring(0, 3).toUpperCase() || 'GEN'}{String(sourceDeptTask.id).padStart(5, '0')}</p>
               </div>
               <div>
-                <p className="text-[11px] text-[#A1A5B7] uppercase font-bold mb-1 tracking-wider">Departemen Asal</p>
+                <p className="text-[11px] text-[#A1A5B7] font-semibold mb-1">Departemen Asal</p>
                 <p className="text-[13px] font-semibold text-[#3F4254]">{sourceDeptTask.departemen_asal}</p>
               </div>
               <div>
-                <p className="text-[11px] text-[#A1A5B7] uppercase font-bold mb-1 tracking-wider">Lampiran</p>
+                <p className="text-[11px] text-[#A1A5B7] font-semibold mb-1">Lampiran</p>
                 {sourceDeptTask.lampiran ? (
                   <a
                     href={`${API_URL}${sourceDeptTask.lampiran}`}
@@ -1148,7 +1148,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
               <div className="space-y-6">
 
                 <div className="flex items-center gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299]">
+                  <label className="w-56 text-sm text-[#3F4254]">
                     Perusahaan <span className="text-[#F1416C]">*</span>
                   </label>
                   <div className="flex-1">
@@ -1165,7 +1165,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                 </div>
 
                 <div className="flex items-center gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299]">
+                  <label className="w-56 text-sm text-[#3F4254]">
                     Departemen <span className="text-[#F1416C]">*</span>
                   </label>
                   <div className="flex-1">
@@ -1183,7 +1183,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
 
                 <div className="flex items-start gap-8">
                   <div className="w-56 pt-3">
-                    <label className="text-sm font-semibold text-[#7E8299] block mb-1">
+                    <label className="text-sm text-[#3F4254] block mb-1">
                       Nama tugas <span className="text-[#F1416C]">*</span>
                     </label>
                     <span className="text-xs text-[#B5B5C3]">Masukkan nama tugas yang akan dikerjakan oleh agen</span>
@@ -1195,7 +1195,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                 </div>
 
                 <div className="flex items-center gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299]">
+                  <label className="w-56 text-sm text-[#3F4254]">
                     Urgensi <span className="text-[#F1416C]">*</span>
                   </label>
                   <div className="flex-1">
@@ -1217,14 +1217,14 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
 
                 <div className="flex items-start gap-8">
                   <div className="w-56 pt-3">
-                    <label className="text-sm font-semibold text-[#7E8299] block mb-1">Nomor perintah kerja</label>
+                    <label className="text-sm text-[#3F4254] block mb-1">Nomor perintah kerja</label>
                     <span className="text-xs text-[#B5B5C3]">Nomor yang akan digunakan oleh agen di lapangan</span>
                   </div>
                   <input type="text" name="nomor_perintah_kerja" value={formData.nomor_perintah_kerja || 'Otomatis saat disimpan'} readOnly className="flex-1 px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm bg-[#F5F8FA] text-[#A1A5B7] cursor-not-allowed" />
                 </div>
 
                 <div className="flex items-start gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299] pt-3">Deskripsi tugas</label>
+                  <label className="w-56 text-sm text-[#3F4254] pt-3">Deskripsi tugas</label>
                   <div className="flex-1">
                     <textarea name="deskripsi" value={formData.deskripsi} onChange={handleChange} placeholder="Masukkan deskripsi tugas" rows="5" className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none resize-y min-h-[100px]"></textarea>
                     <div className="text-right text-xs text-[#B5B5C3] mt-1">{formData.deskripsi.length}/1000</div>
@@ -1233,7 +1233,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
 
                 <div className="flex items-start gap-8">
                   <div className="w-56 pt-3">
-                    <label className="text-sm font-semibold text-[#7E8299] block mb-1">Titik Lokasi</label>
+                    <label className="text-sm text-[#3F4254] block mb-1">Titik Lokasi</label>
                     <span className="text-xs text-[#B5B5C3]">Pilih titik lokasi yang akan digunakan agen untuk menyelesaikan tugas</span>
                   </div>
                   <div className="flex-1 space-y-3">
@@ -1248,7 +1248,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                 </div>
 
                 <div className="flex items-start gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299] pt-3">Detail alamat</label>
+                  <label className="w-56 text-sm text-[#3F4254] pt-3">Detail alamat</label>
                   <div className="flex-1">
                     <textarea name="detail_alamat" value={formData.detail_alamat} onChange={handleChange} placeholder="Masukkan detail alamat ..." rows="4" className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none resize-y min-h-[100px]"></textarea>
                     <div className="text-right text-xs text-[#B5B5C3] mt-1">{formData.detail_alamat.length}/1000</div>
@@ -1261,11 +1261,11 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
 
             {/* INFORMASI JADWAL */}
             <div>
-              <h3 className="text-base font-bold text-[#181C32] mb-6">Informasi Jadwal</h3>
+              <h3 className="text-base font-semibold text-[#181C32] mb-6">Informasi Jadwal</h3>
               <div className="space-y-6">
 
                 <div className="flex items-center gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299]">
+                  <label className="w-56 text-sm text-[#3F4254]">
                     Aturan waktu <span className="text-[#F1416C]">*</span>
                   </label>
                   <div className="flex-1 flex items-center gap-8">
@@ -1285,7 +1285,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                 </div>
 
                 <div className="flex items-center gap-8">
-                  <label className="w-56 text-sm font-semibold text-[#7E8299]">
+                  <label className="w-56 text-sm text-[#3F4254]">
                     Tanggal tugas <span className="text-[#F1416C]">*</span>
                   </label>
                   <div className="flex-1 flex flex-col">
@@ -1389,7 +1389,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
 
                 {taskType !== 'wo' && (
                   <div className="flex items-start gap-8">
-                    <label className="w-56 text-sm font-semibold text-[#7E8299] pt-1 mt-2">Pengulangan</label>
+                    <label className="w-56 text-sm text-[#7E8299] pt-1 mt-2">Pengulangan</label>
                     <div className="flex-1 w-full max-w-full">
                       <div className="flex items-center gap-4 mb-2">
                         <label className="flex items-center gap-2 cursor-pointer w-[240px] flex-shrink-0">

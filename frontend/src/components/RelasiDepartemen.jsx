@@ -110,7 +110,7 @@ const RelasiDepartemen = () => {
       {/* Header */}
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h2 className="text-[18px] font-bold text-[#181C32]">Relasi Departemen</h2>
+          <h2 className="text-[18px] font-semibold text-[#181C32]">Relasi Departemen</h2>
           <p className="text-[12px] text-[#7E8299] mt-1">
             Kelola hubungan antar departemen untuk alur checklist dan Work Order otomatis
           </p>
@@ -137,11 +137,11 @@ const RelasiDepartemen = () => {
       {/* Add Form */}
       {showForm && (
         <div className="bg-white border border-[#E4E6EF] rounded-xl p-6 mb-6 shadow-sm">
-          <h3 className="text-[14px] font-bold text-[#181C32] mb-5">Tambah Relasi Baru</h3>
+          <h3 className="text-[14px] font-semibold text-[#181C32] mb-5">Tambah Relasi Baru</h3>
           <form onSubmit={handleAdd} className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-[12px] font-semibold text-[#3F4254] mb-1.5 block">
+                <label className="text-[12px] font-medium text-[#3F4254] mb-1.5 block">
                   Departemen Asal <span className="text-[#F1416C]">*</span>
                 </label>
                 <SearchableSelect
@@ -156,7 +156,7 @@ const RelasiDepartemen = () => {
                 <p className="text-[10px] text-[#A1A5B7] mt-1">Dept yang melakukan checklist (misal: Operasional)</p>
               </div>
               <div>
-                <label className="text-[12px] font-semibold text-[#3F4254] mb-1.5 block">
+                <label className="text-[12px] font-medium text-[#3F4254] mb-1.5 block">
                   Departemen Tujuan <span className="text-[#F1416C]">*</span>
                 </label>
                 <SearchableSelect
@@ -196,7 +196,7 @@ const RelasiDepartemen = () => {
       ) : relations.length === 0 ? (
         <div className="text-center py-20 bg-white rounded-xl border border-[#F1F1F4]">
           <Building2 size={40} className="text-[#E4E6EF] mx-auto mb-3" />
-          <p className="text-[14px] font-bold text-[#3F4254]">Belum ada relasi departemen</p>
+          <p className="text-[14px] font-semibold text-[#3F4254]">Belum ada relasi departemen</p>
           <p className="text-[12px] text-[#A1A5B7] mt-1">Tambah relasi untuk mengaktifkan alur checklist & WO otomatis</p>
         </div>
       ) : (

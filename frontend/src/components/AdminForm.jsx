@@ -139,8 +139,8 @@ const AdminForm = () => {
   return (
     <div className="max-w-[1000px] mx-auto space-y-6">
       <div className="flex items-center justify-between">
-         <h2 className="text-[14px] font-bold text-[#181C32]">{isEdit ? 'Edit' : 'Tambah'} {contextLabel}</h2>
-         <button onClick={() => navigate(listLink)} className="flex items-center gap-2 px-4 py-2 bg-[#F5F8FA] text-[#7E8299] rounded-lg text-[12px] font-bold hover:bg-[#E1E3EA] transition-colors">
+         <h2 className="text-[14px] font-semibold text-[#181C32]">{isEdit ? 'Edit' : 'Tambah'} {contextLabel}</h2>
+         <button onClick={() => navigate(listLink)} className="flex items-center gap-2 px-4 py-2 bg-[#F5F8FA] text-[#7E8299] rounded-lg text-[12px] font-semibold hover:bg-[#E1E3EA] transition-colors">
             <ArrowLeft size={16} /> Kembali
          </button>
       </div>
@@ -149,36 +149,36 @@ const AdminForm = () => {
         {/* Account Info */}
         <div className="bg-white rounded-xl border border-[#E1E3EA] p-8">
            <div className="mb-8 pb-4 border-b border-[#F5F8FA]">
-              <h3 className="text-[14px] font-bold text-[#181C32]">Informasi Akun</h3>
+              <h3 className="text-[14px] font-semibold text-[#181C32]">Informasi Akun</h3>
               <p className="text-[12px] text-[#A1A5B7]">Detail dasar untuk akun pengguna</p>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">No. Karyawan (NIK)</label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">No. Karyawan (NIK)</label>
                  <input type="text" name="employeeId" value={formData.employeeId} onChange={handleChange} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20" />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Email Kantor <span className="text-red-500">*</span></label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Email Kantor <span className="text-red-500">*</span></label>
                  <input type="email" name="email" required value={formData.email} onChange={handleChange} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20" />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Nama Depan <span className="text-red-500">*</span></label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Nama Depan <span className="text-red-500">*</span></label>
                  <input type="text" name="firstName" required value={formData.firstName} onChange={handleChange} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20" />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Nama Belakang</label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Nama Belakang</label>
                  <input type="text" name="lastName" value={formData.lastName} onChange={handleChange} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20" />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Nomor Telepon <span className="text-red-500">*</span></label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Nomor Telepon <span className="text-red-500">*</span></label>
                  <div className="flex">
-                    <span className="px-4 py-3 bg-[#E1E3EA] border-none rounded-l-lg text-[13px] font-bold text-[#3F4254]">+62</span>
+                    <span className="px-4 py-3 bg-[#E1E3EA] border-none rounded-l-lg text-[13px] font-semibold text-[#3F4254]">+62</span>
                     <input type="tel" name="phone" required value={formData.phone} onChange={handleChange} className="flex-1 px-4 py-3 bg-[#F5F8FA] border-none rounded-r-lg text-[13px] text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20" />
                  </div>
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Password {isEdit && '(Opsional)'}</label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Password {isEdit && '(Opsional)'}</label>
                  <input type="password" name="password" required={!isEdit} value={formData.password} onChange={handleChange} placeholder={isEdit ? "Kosongkan jika tidak diubah" : "••••••••"} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20" />
               </div>
            </div>
@@ -187,26 +187,26 @@ const AdminForm = () => {
         {/* Permissions */}
         <div className="bg-white rounded-xl border border-[#E1E3EA] p-8">
            <div className="mb-8 pb-4 border-b border-[#F5F8FA]">
-              <h3 className="text-[14px] font-bold text-[#181C32]">Hak Akses & Departemen</h3>
+              <h3 className="text-[14px] font-semibold text-[#181C32]">Hak Akses & Departemen</h3>
               <p className="text-[12px] text-[#A1A5B7]">Tentukan otorisasi pengguna dalam sistem</p>
            </div>
 
            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-10 gap-y-6">
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Hak Akses <span className="text-red-500">*</span></label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Hak Akses <span className="text-red-500">*</span></label>
                  <SearchableSelect name="role" options={rolesList.length > 0 ? rolesList : [{ id: 1, name: 'Admin' }, { id: 2, name: 'Super Admin' }]} value={formData.role} valueField="name" onChange={handleChange} />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Perusahaan <span className="text-red-500">*</span></label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Perusahaan <span className="text-red-500">*</span></label>
                  <SearchableSelect name="company_id" options={companies} value={formData.company_id} onChange={handleChange} disabled={!isSuperAdmin} />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Departemen <span className="text-red-500">*</span></label>
+                 <label className="text-[12px] font-medium text-[#3F4254]">Departemen <span className="text-red-500">*</span></label>
                  <SearchableSelect name="department" options={departments} value={formData.department} valueField="name" onChange={handleChange} />
               </div>
               <div className="space-y-2">
-                 <label className="text-[12px] font-bold text-[#3F4254]">Status</label>
-                 <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] font-bold text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20 appearance-none">
+                 <label className="text-[12px] font-medium text-[#3F4254]">Status</label>
+                 <select name="status" value={formData.status} onChange={handleChange} className="w-full px-4 py-3 bg-[#F5F8FA] border-none rounded-lg text-[13px] font-semibold text-[#3F4254] outline-none focus:ring-2 focus:ring-[#0095E8]/20 appearance-none">
                     <option value="Aktif">Aktif</option>
                     <option value="Nonaktif">Nonaktif</option>
                  </select>

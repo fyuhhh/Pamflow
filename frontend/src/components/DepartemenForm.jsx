@@ -116,7 +116,7 @@ const DepartemenForm = () => {
         >
           <ChevronLeft size={24} className="text-[#A1A5B7]" />
         </button>
-        <h1 className="text-[20px] font-bold text-[#181C32]">
+        <h1 className="text-[20px] font-semibold text-[#181C32]">
           {isEdit ? 'Edit Departemen' : 'Buat Departemen'}
         </h1>
       </div>

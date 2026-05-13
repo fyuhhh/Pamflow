@@ -301,7 +301,7 @@ const TemplateForm = () => {
     });
   };
 
-  const labelClass = "text-[13px] font-semibold text-[#3F4254]";
+  const labelClass = "text-[13px] font-medium text-[#3F4254]";
   const requiredStar = <span className="text-[#F1416C] ml-0.5">*</span>;
   const inputClass = "w-full px-4 py-3 rounded-lg border border-[#E4E6EF] bg-white text-[13px] outline-none transition-all focus:border-[#0095E8] focus:ring-1 focus:ring-[#0095E8]/20 text-[#3F4254]";
 
@@ -315,7 +315,7 @@ const TemplateForm = () => {
         >
           <ChevronLeft size={20} />
         </button>
-        <h2 className="text-[17px] font-bold text-[#181C32]">
+        <h2 className="text-[17px] font-semibold text-[#181C32]">
           {isEditMode ? 'Edit Template' : 'Buat Template'}
         </h2>
       </div>
@@ -527,7 +527,7 @@ const TemplateForm = () => {
                         >
                           <div className={`bg-white w-4 h-4 rounded-full shadow-md transform duration-300 ease-in-out ${detail.wajib_diisi ? 'translate-x-4' : ''}`}></div>
                         </div>
-                        <span className="text-[13px] font-bold text-[#3F4254]">Wajib diisi</span>
+                        <span className="text-[13px] font-medium text-[#3F4254]">Wajib diisi</span>
                       </div>
                     </div>
                   </div>
@@ -541,14 +541,14 @@ const TemplateForm = () => {
             <button 
               type="button" 
               onClick={() => setAllRequired(true)}
-              className="flex items-center gap-2 text-[#50CD89] text-[13px] font-bold hover:underline"
+              className="flex items-center gap-2 text-[#50CD89] text-[13px] font-semibold hover:underline"
             >
               <CheckCircle2 size={18} /> Set Semua Wajib
             </button>
             <button 
               type="button" 
               onClick={addDetail}
-              className="flex items-center gap-2 text-[#0095E8] text-[13px] font-bold hover:underline"
+              className="flex items-center gap-2 text-[#0095E8] text-[13px] font-semibold hover:underline"
             >
               <Plus size={18} /> Tambah Detail Tugas
             </button>

@@ -392,7 +392,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
       : 'border-slate-100 bg-slate-50 focus:bg-white focus:border-[#0095E8] focus:ring-4 focus:ring-blue-50 text-slate-700'
   } placeholder:text-slate-300 placeholder:font-medium`;
 
-  const labelClass = "text-[13px] font-black text-slate-700 uppercase tracking-wider";
+  const labelClass = `${isMobile ? 'w-full' : 'w-48'} text-[13px] text-[#3F4254]`;
   const requiredStar = <span className="text-[#F1416C] ml-0.5">*</span>;
 
   return (
@@ -418,7 +418,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
             </div>
           </div>
           <div className="text-right">
-            <p className="text-[11px] font-bold text-[#A1A5B7] uppercase mb-1">Progress</p>
+            <p className="text-[11px] font-semibold text-[#A1A5B7] mb-1">Progress</p>
             <div className="w-32 h-2 bg-white rounded-full overflow-hidden shadow-inner">
               <div 
                 className="h-full bg-[#50CD89] transition-all duration-500" 
@@ -499,8 +499,8 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
           
           <div className="mt-6 p-4 bg-[#F1FAFF] rounded-lg border border-[#D6EEFB] flex items-start gap-3">
-            <Info size={16} className="text-[#0095E8] mt-0.5" />
-            <p className="text-[12px] text-[#0095E8] leading-relaxed">
+            <Info size={16} className="text-[#3F4254] mt-0.5" />
+            <p className="text-[12px] text-[#3F4254] leading-relaxed">
               Daftar di atas adalah item yang akan diperbaiki. Anda dapat menghapus item yang tidak perlu dikerjakan sekarang dengan mengklik ikon silang di kanan item.
             </p>
           </div>
@@ -508,12 +508,12 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
       )}
 
       <div className={`bg-white rounded-xl border border-[#F1F1F4] ${isMobile ? 'p-4' : 'p-8'}`}>
-        <h2 className="text-[15px] font-bold text-[#0095E8] mb-8">Informasi Tugas</h2>
+        <h2 className="text-[15px] font-semibold text-[#0095E8] mb-8">Informasi Tugas</h2>
 
         <div className="space-y-6">
           {/* Perusahaan */}
           <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
-            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] text-[#3F4254]`}>
               Perusahaan <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -530,7 +530,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Departemen Asal - Auto-filled & locked from user's department */}
           <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
-            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] text-[#3F4254]`}>
               Departemen asal <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -545,7 +545,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Nama Peminta */}
           <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
-            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] text-[#3F4254]`}>
               Nama peminta <span className="text-[#F1416C]">*</span>
             </label>
             <div className="flex-1 max-w-4xl">
@@ -577,7 +577,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Template */}
           <div className={`flex ${isMobile ? 'flex-col items-start' : 'items-center'} gap-2 md:gap-8`}>
-            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] font-semibold text-[#3F4254]`}>
+            <label className={`${isMobile ? 'w-full' : 'w-48'} text-[13px] text-[#3F4254]`}>
               Template
             </label>
             <div className="flex-1 max-w-4xl">
@@ -597,7 +597,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           </div>
 
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
-            <label className={labelClass}>Nama {isChecklist ? 'Checklist' : 'WO'} {requiredStar}</label>
+            <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Nama {isChecklist ? 'Checklist' : 'WO'} {requiredStar}</label>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'}`}>
               <input
                 type="text"
@@ -613,7 +613,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Deskripsi */}
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
-            <label className={labelClass}>Deskripsi {requiredStar}</label>
+            <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Deskripsi {requiredStar}</label>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'} relative`}>
               <textarea
                 name="deskripsi"
@@ -632,7 +632,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           {/* Titik Lokasi */}
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
             <div className={`${isMobile ? 'w-full' : ''}`}>
-              <label className="text-[13px] font-semibold text-[#0095E8]">Titik lokasi</label>
+              <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Titik lokasi</label>
               <p className="text-[10px] text-[#A1A5B7] mt-0.5">Pilih titik lokasi pekerjaan</p>
             </div>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'}`}>
@@ -655,7 +655,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Detail Alamat */}
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
-            <label className={labelClass}>Detail alamat</label>
+            <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Detail alamat</label>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'} relative`}>
               <textarea
                 name="detail_alamat"
@@ -673,7 +673,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           {/* Lampiran */}
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
             <div className={`${isMobile ? 'w-full' : ''}`}>
-              <label className="text-[13px] font-semibold text-[#0095E8]">Lampiran</label>
+              <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Lampiran</label>
               <p className="text-[10px] text-[#A1A5B7] mt-0.5 leading-tight">Pastikan file yang diunggah sesuai dengan panduan kriteria</p>
             </div>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'}`}>
@@ -738,7 +738,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Tenggat Waktu */}
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
-            <label className={`${isMobile ? 'w-full' : 'text-[13px] font-semibold text-[#0095E8]'}`}>Tenggat waktu {requiredStar}</label>
+            <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Tenggat waktu {requiredStar}</label>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'} flex items-center gap-3`}>
               <div className="flex-1">
                 <CustomDatePicker
@@ -766,7 +766,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
 
           {/* Urgensi */}
           <div className={`grid ${isMobile ? 'grid-cols-1' : 'grid-cols-4'} items-start gap-2 md:gap-4`}>
-            <label className={labelClass}>Urgensi {requiredStar}</label>
+            <label className={`${isMobile ? 'w-full' : 'w-52'} text-[13px] text-[#3F4254]`}>Urgensi {requiredStar}</label>
             <div className={`${isMobile ? 'w-full' : 'col-span-3'} relative`}>
               <button
                 type="button"
@@ -807,7 +807,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           <motion.button
             whileTap={{ scale: 0.96 }}
             onClick={() => navigate(`${basePath}/checklist-riwayat`)}
-            className={`px-8 py-4 rounded-2xl text-[14px] font-black border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all ${isMobile ? 'w-full' : ''}`}
+            className={`px-8 py-4 rounded-2xl text-[14px] font-bold border border-slate-200 text-slate-400 hover:bg-slate-50 transition-all ${isMobile ? 'w-full' : ''}`}
           >
             Batal
           </motion.button>
@@ -815,7 +815,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
             whileTap={{ scale: 0.96 }}
             onClick={handleSubmit}
             disabled={loading}
-            className={`px-12 py-4 bg-[#0095E8] text-white rounded-2xl text-[15px] font-black hover:bg-[#0084CC] shadow-lg shadow-blue-500/20 flex items-center justify-center gap-3 transition-all disabled:opacity-50 ${isMobile ? 'w-full' : ''}`}
+            className={`px-12 py-4 bg-[#0095E8] text-white rounded-2xl text-[15px] font-bold hover:bg-[#0084CC] shadow-lg shadow-blue-500/20 flex items-center justify-center gap-3 transition-all disabled:opacity-50 ${isMobile ? 'w-full' : ''}`}
           >
             {loading ? (
                <div className="w-5 h-5 border-3 border-white/20 border-t-white rounded-full animate-spin" />
