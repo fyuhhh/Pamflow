@@ -188,29 +188,43 @@ const MonitoringAset = () => {
   };
 
   const handleToggleStatus = async (id) => {
-    const asset = assets.find(a => a.id === id);
+    const assetId = parseInt(id);
+    const asset = assets.find(a => a.id === assetId);
     if (!asset) return;
 
     const actionText = asset.is_running ? 'Mematikan' : 'Menyalakan';
-    const isConfirmed = await confirm({
-      title: `${actionText} Mesin`,
-      message: `Apakah Anda yakin ingin ${actionText.toLowerCase()} mesin "${asset.nama_mesin}"?`,
-      confirmText: actionText,
-      type: asset.is_running ? 'danger' : 'primary'
-    });
-
-    if (!isConfirmed) return;
-
     try {
-      const res = await authFetch(`/api/assets/${id}/toggle`, { method: 'POST' });
+      const isConfirmed = await confirm({
+        title: `${actionText} Mesin`,
+        message: `Apakah Anda yakin ingin ${actionText.toLowerCase()} mesin "${asset.nama_mesin}"?`,
+        confirmText: actionText,
+        type: asset.is_running ? 'danger' : 'primary'
+      });
+
+      if (!isConfirmed) return;
+
+      const res = await authFetch(`/api/assets/${assetId}/toggle`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        setAssets(prev => prev.map(a => a.id === id ? { ...a, ...data } : a));
-        if (activeMobileAsset?.id === id) setActiveMobileAsset(prev => ({ ...prev, ...data }));
-        if (selectedAsset?.id === id) setSelectedAsset(prev => ({ ...prev, ...data }));
+        // Ensure ID is number
+        if (data.id) data.id = parseInt(data.id);
+        
+        setAssets(prev => {
+          const newState = prev.map(a => a.id === assetId ? { ...a, ...data } : a);
+          
+          // Update active views immediately from the new state
+          const updatedAsset = newState.find(a => a.id === assetId);
+          if (activeMobileAsset?.id === assetId) setActiveMobileAsset(updatedAsset);
+          if (selectedAsset?.id === assetId) setSelectedAsset(updatedAsset);
+          
+          return newState;
+        });
+      } else {
+        showError('Gagal mengubah status aset di server');
       }
     } catch (err) {
-      showError('Gagal mengubah status aset');
+      console.error('Toggle error:', err);
+      showError('Terjadi kesalahan saat mengubah status');
     }
   };
 
@@ -500,7 +514,7 @@ const MonitoringAset = () => {
                     <div className="w-full max-w-[200px] h-1.5 bg-slate-100 rounded-full mt-6 overflow-hidden">
                       <motion.div 
                         initial={{ width: 0 }}
-                        animate={{ width: `${(timeLeft / (activeMobileAsset.maintenance_hours * 3600)) * 100}%` }}
+                        animate={{ width: `${(activeMobileAsset.maintenance_hours && activeMobileAsset.maintenance_hours > 0) ? Math.min(100, (timeLeft / (activeMobileAsset.maintenance_hours * 3600)) * 100) : 0}%` }}
                         className={`h-full ${timeLeft < 3600 ? 'bg-red-500' : 'bg-[#0095E8]'}`} 
                       />
                     </div>
