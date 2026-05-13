@@ -114,6 +114,15 @@ const MonitoringAset = () => {
     maintenance_hours: 0
   });
   const [maintInput, setMaintInput] = useState({ days: 0, hours: 0 });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  // New item inputs for Edit Modal
+  const [showNewLocInput, setShowNewLocInput] = useState(false);
+  const [newLocLabel, setNewLocLabel] = useState('');
+  const [showNewStatInput, setShowNewStatInput] = useState(false);
+  const [newStatLabel, setNewStatLabel] = useState('');
+  const [showNewPrioInput, setShowNewPrioInput] = useState(false);
+  const [newPrioLabel, setNewPrioLabel] = useState('');
 
   const { confirm, success, error: showError } = useModal();
   
@@ -367,6 +376,61 @@ const MonitoringAset = () => {
     }
   };
 
+  // Add New Handlers for Edit Modal
+  const handleAddNewLoc = async () => {
+    if (!newLocLabel.trim()) return;
+    try {
+      const res = await authFetch('/api/assets/locations', {
+        method: 'POST',
+        body: JSON.stringify({ label: newLocLabel })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(prev => [...prev, data]);
+        setEditFormData({ ...editFormData, lokasi: data.label });
+        setShowNewLocInput(false);
+        setNewLocLabel('');
+        success('Lokasi baru ditambahkan');
+      }
+    } catch (err) { showError('Gagal menambah lokasi'); }
+  };
+
+  const handleAddNewStat = async () => {
+    if (!newStatLabel.trim()) return;
+    try {
+      const res = await authFetch('/api/assets/statuses', {
+        method: 'POST',
+        body: JSON.stringify({ label: newStatLabel })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStatuses(prev => [...prev, data]);
+        setEditFormData({ ...editFormData, status: data.label });
+        setShowNewStatInput(false);
+        setNewStatLabel('');
+        success('Status baru ditambahkan');
+      }
+    } catch (err) { showError('Gagal menambah status'); }
+  };
+
+  const handleAddNewPrio = async () => {
+    if (!newPrioLabel.trim()) return;
+    try {
+      const res = await authFetch('/api/assets/priorities', {
+        method: 'POST',
+        body: JSON.stringify({ label: newPrioLabel })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPriorities(prev => [...prev, data]);
+        setEditFormData({ ...editFormData, prioritas: data.label });
+        setShowNewPrioInput(false);
+        setNewPrioLabel('');
+        success('Prioritas baru ditambahkan');
+      }
+    } catch (err) { showError('Gagal menambah prioritas'); }
+  };
+
   const formatTime = (seconds) => {
     const hrs = Math.floor(seconds / 3600);
     const mins = Math.floor((seconds % 3600) / 60);
@@ -429,6 +493,7 @@ const MonitoringAset = () => {
 
   const handleUpdate = async (e) => {
     e.preventDefault();
+    setIsUpdating(true);
     try {
       const res = await authFetch(`/api/assets/${editingAsset.id}`, {
         method: 'PUT',
@@ -438,11 +503,22 @@ const MonitoringAset = () => {
         setIsEditModalOpen(false);
         success('Data aset berhasil diperbarui');
         fetchAssets();
+        // Update selected asset if viewing detail
+        if (selectedAsset && selectedAsset.id === editingAsset.id) {
+          const updated = { ...selectedAsset, ...editFormData };
+          setSelectedAsset(updated);
+        }
+        if (activeMobileAsset && activeMobileAsset.id === editingAsset.id) {
+          const updated = { ...activeMobileAsset, ...editFormData };
+          setActiveMobileAsset(updated);
+        }
       } else {
         showError('Gagal memperbarui data aset');
       }
     } catch (err) {
       showError('Terjadi kesalahan sistem');
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -725,6 +801,18 @@ const MonitoringAset = () => {
                   <span className="text-[13px] font-black text-slate-700">Detail Aset</span>
                 </motion.button>
               </div>
+
+              {/* Edit Button Mobile */}
+              {hasPerm('aset_register', 'Edit') && (
+                <motion.button
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => openEditModal(activeMobileAsset)}
+                  className="w-full mt-6 py-4 bg-slate-50 text-slate-500 rounded-[24px] font-black text-[14px] flex items-center justify-center gap-2 border border-slate-100"
+                >
+                  <Edit2 size={16} />
+                  <span>Edit Data Teknikal</span>
+                </motion.button>
+              )}
 
               {/* Team Notes Section Mobile (Max 3) */}
               <div className="space-y-4">
@@ -1587,72 +1675,144 @@ const MonitoringAset = () => {
         )}
       </AnimatePresence>
 
-      {/* Note Modal for PC */}
-      <AnimatePresence>
-        {isNoteModalOpen && !isMobile && (
-          <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setIsNoteModalOpen(false)} />
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="relative bg-white w-full max-w-md rounded-[32px] p-8 shadow-2xl">
-              <h3 className="text-lg font-bold text-slate-800 mb-6">Tambah Catatan Tim</h3>
-              <textarea 
-                className="w-full p-4 bg-slate-50 border border-transparent rounded-2xl text-sm focus:bg-white focus:border-blue-100 outline-none transition-all min-h-[100px]"
-                placeholder="Tulis pesan untuk tim..."
-                value={newNote}
-                onChange={e => setNewNote(e.target.value)}
-              />
-
-              {/* Photo Upload for Note (PC) */}
-              <div className="mt-6">
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3">Lampiran Foto ({notePhotos.length}/5)</p>
-                <div className="flex flex-wrap gap-3">
-                  {notePhotos.map((img, idx) => (
-                    <div key={idx} className="relative w-16 h-16 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
-                      <img src={img} className="w-full h-full object-cover" />
-                      <button 
-                        onClick={() => setNotePhotos(prev => prev.filter((_, i) => i !== idx))}
-                        className="absolute top-0 right-0 w-5 h-5 bg-red-500 text-white flex items-center justify-center shadow-lg"
-                      >
-                        <X size={10} />
-                      </button>
-                    </div>
-                  ))}
-                  {notePhotos.length < 5 && (
-                    <label className="w-16 h-16 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-300 hover:text-blue-500 hover:border-blue-200 cursor-pointer transition-all">
-                      <Camera size={20} />
-                      <input 
-                        type="file" accept="image/*" multiple className="hidden" 
-                        onChange={async (e) => {
-                          const files = Array.from(e.target.files).slice(0, 5 - notePhotos.length);
-                          try {
-                            const compressedFiles = await Promise.all(
-                              files.map(file => compressImage(file, { maxWidth: 1024, maxHeight: 1024, quality: 0.7 }))
-                            );
-                            const base64Strings = await Promise.all(
-                              compressedFiles.map(file => new Promise((resolve) => {
-                                const reader = new FileReader();
-                                reader.readAsDataURL(file);
-                                reader.onloadend = () => resolve(reader.result);
-                              }))
-                            );
-                            setNotePhotos(prev => [...prev, ...base64Strings]);
-                          } catch (err) {
-                            showError('Gagal memproses gambar');
-                          }
-                        }} 
-                      />
-                    </label>
-                  )}
+       {/* Edit Asset Modal (Universal) */}
+       <AnimatePresence>
+         {isEditModalOpen && (
+           <div className="fixed inset-0 z-[4000] flex items-center justify-center p-0 md:p-4 overflow-hidden">
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
+             <motion.div 
+               initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+               animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
+               exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+               className={`relative bg-white w-full ${isMobile ? 'h-[92vh] rounded-t-[40px] mt-auto' : 'max-w-2xl max-h-[90vh] rounded-[32px]'} flex flex-col shadow-2xl`}
+             >
+                {/* Modal Header */}
+                <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between shrink-0">
+                  <div>
+                    <h3 className="text-xl font-black text-slate-800">Edit Data Aset</h3>
+                    <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{editingAsset?.nama_mesin}</p>
+                  </div>
+                  <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400"><X size={20} /></button>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-8">
-                <button onClick={() => setIsNoteModalOpen(false)} className="flex-1 py-3 bg-slate-50 text-slate-500 rounded-xl font-bold text-sm">Batal</button>
-                <button onClick={handleAddNote} disabled={isSubmittingNote || (!newNote.trim() && notePhotos.length === 0)} className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl font-bold text-sm shadow-lg shadow-blue-100">Kirim</button>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+                {/* Modal Body */}
+                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                  <form onSubmit={handleUpdate} className="space-y-6">
+                    {/* Basic Info Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nama Mesin</label>
+                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.nama_mesin} onChange={e => setEditFormData({...editFormData, nama_mesin: e.target.value})} required />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Brand</label>
+                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.brand} onChange={e => setEditFormData({...editFormData, brand: e.target.value})} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Model / Tipe</label>
+                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.model_tipe} onChange={e => setEditFormData({...editFormData, model_tipe: e.target.value})} />
+                      </div>
+                      <div className="space-y-1.5">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Serial Number</label>
+                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.serial_number} onChange={e => setEditFormData({...editFormData, serial_number: e.target.value})} />
+                      </div>
+                    </div>
+
+                    {/* Metadata Selection */}
+                    <div className="space-y-6 pt-4 border-t border-slate-50">
+                      {/* Lokasi */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Lokasi Aset</label>
+                        <div className="flex gap-2">
+                          <select className="flex-1 p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.lokasi} onChange={e => setEditFormData({...editFormData, lokasi: e.target.value})}>
+                            <option value="">Pilih Lokasi</option>
+                            {locations.map(loc => <option key={loc.id} value={loc.label}>{loc.label}</option>)}
+                          </select>
+                          <button type="button" onClick={() => setShowNewLocInput(!showNewLocInput)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl"><Plus size={20} /></button>
+                        </div>
+                        {showNewLocInput && (
+                          <div className="flex gap-2 animate-in slide-in-from-top-2">
+                            <input className="flex-1 p-4 bg-white border border-blue-100 rounded-2xl text-sm outline-none" placeholder="Label lokasi baru..." value={newLocLabel} onChange={e => setNewLocLabel(e.target.value)} />
+                            <button type="button" onClick={handleAddNewLoc} className="px-6 bg-blue-600 text-white rounded-2xl text-xs font-bold">Simpan</button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Status & Prioritas */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Status Aset</label>
+                          <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.status} onChange={e => setEditFormData({...editFormData, status: e.target.value})}>
+                            {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                          </select>
+                        </div>
+                        <div className="space-y-2">
+                          <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prioritas</label>
+                          <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.prioritas} onChange={e => setEditFormData({...editFormData, prioritas: e.target.value})}>
+                            {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Maintenance Interval */}
+                    <div className="p-6 bg-blue-50/50 rounded-[24px] space-y-4">
+                       <div className="flex items-center gap-2">
+                         <Clock size={16} className="text-blue-500" />
+                         <span className="text-[11px] font-black text-blue-700 uppercase">Interval Maintenance</span>
+                       </div>
+                       <div className="grid grid-cols-2 gap-4">
+                         <div className="space-y-1">
+                           <label className="text-[9px] font-bold text-blue-400 ml-1">Hari</label>
+                           <input type="number" className="w-full p-4 bg-white border-none rounded-2xl text-sm outline-none" value={maintInput.days} onChange={e => handleMaintenanceInput('days', e.target.value)} />
+                         </div>
+                         <div className="space-y-1">
+                           <label className="text-[9px] font-bold text-blue-400 ml-1">Jam</label>
+                           <input type="number" className="w-full p-4 bg-white border-none rounded-2xl text-sm outline-none" value={maintInput.hours} onChange={e => handleMaintenanceInput('hours', e.target.value)} />
+                         </div>
+                       </div>
+                       <p className="text-[10px] text-blue-400 font-medium italic">Total: {editFormData.maintenance_hours} jam operasional.</p>
+                    </div>
+
+                    {/* Photos Upload Section */}
+                    <div className="space-y-3">
+                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Dokumentasi Aset ({editFormData.lampiran.length}/5)</label>
+                       <div className="flex flex-wrap gap-3">
+                          {editFormData.lampiran.map((img, idx) => (
+                            <div key={idx} className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                              <img src={img} className="w-full h-full object-cover" />
+                              <button type="button" onClick={() => setEditFormData({...editFormData, lampiran: editFormData.lampiran.filter((_, i) => i !== idx)})} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={12} /></button>
+                            </div>
+                          ))}
+                          {editFormData.lampiran.length < 5 && (
+                            <label className="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 transition-all">
+                              <Camera size={24} />
+                              <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                            </label>
+                          )}
+                       </div>
+                    </div>
+
+                    {/* Catatan Section */}
+                    <div className="space-y-2">
+                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catatan Tambahan</label>
+                       <textarea className="w-full p-5 bg-slate-50 border-none rounded-3xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none min-h-[100px]" value={editFormData.catatan} onChange={e => setEditFormData({...editFormData, catatan: e.target.value})} placeholder="Informasi tambahan tentang unit ini..." />
+                    </div>
+                  </form>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="px-8 py-6 border-t border-slate-50 flex gap-4 shrink-0">
+                  <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[14px]">Batal</button>
+                  <button type="button" onClick={handleUpdate} disabled={isUpdating} className="flex-1 py-4 bg-[#0095E8] text-white rounded-2xl font-black text-[14px] shadow-xl shadow-blue-100 flex items-center justify-center gap-2">
+                    {isUpdating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 size={18} />}
+                    <span>Simpan Perubahan</span>
+                  </button>
+                </div>
+             </motion.div>
+           </div>
+         )}
+       </AnimatePresence>
 
         {/* Local Confirmation Modal for Toggle */}
         <AnimatePresence>
