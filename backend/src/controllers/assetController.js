@@ -31,11 +31,14 @@ const assetController = {
       const company_id = req.user.company_id;
       const user_id = req.user.id;
 
+      console.log(`[DEBUG] Creating asset for company ${company_id}, user ${user_id}:`, { nama_mesin, brand });
+
       const [result] = await pool.query(
         'INSERT INTO assets (company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, user_pendaftar_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, user_id]
       );
 
+      console.log(`[DEBUG] Asset created with ID: ${result.insertId}`);
       res.status(201).json({ id: result.insertId, message: 'Asset registered successfully' });
     } catch (error) {
       console.error('Create asset error:', error);
