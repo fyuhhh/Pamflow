@@ -1539,6 +1539,35 @@ const MonitoringAset = () => {
           )}
         </AnimatePresence>
 
+        {/* Global Image Zoom Modal */}
+        <AnimatePresence>
+          {zoomedImage && (
+            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10">
+              <motion.div 
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+                onClick={() => setZoomedImage(null)}
+              />
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+                className="relative max-w-full max-h-full flex items-center justify-center"
+              >
+                <img 
+                  src={zoomedImage} 
+                  className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" 
+                  alt="Zoomed View"
+                />
+                <button 
+                  onClick={() => setZoomedImage(null)}
+                  className="absolute -top-12 right-0 md:-right-12 md:top-0 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all"
+                >
+                  <X size={24} />
+                </button>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
