@@ -472,6 +472,8 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
+      // 10.3 Asset Statuses
+      await pool.query(`
       CREATE TABLE IF NOT EXISTS asset_statuses (
         id INT AUTO_INCREMENT PRIMARY KEY,
         company_id INT,
