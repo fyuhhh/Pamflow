@@ -802,17 +802,6 @@ const MonitoringAset = () => {
                 </motion.button>
               </div>
 
-              {/* Edit Button Mobile */}
-              {hasPerm('aset_register', 'Edit') && (
-                <motion.button
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => openEditModal(activeMobileAsset)}
-                  className="w-full mt-6 py-4 bg-slate-50 text-slate-500 rounded-[24px] font-black text-[14px] flex items-center justify-center gap-2 border border-slate-100"
-                >
-                  <Edit2 size={16} />
-                  <span>Edit Data Teknikal</span>
-                </motion.button>
-              )}
 
               {/* Team Notes Section Mobile (Max 3) */}
               <div className="space-y-4">
