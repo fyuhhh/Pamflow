@@ -112,8 +112,10 @@ const MonitoringAset = () => {
           setSelectedAsset(prev => ({ ...prev, ...data }));
         }
       };
-      socket.on('asset-status-updated', handleAssetUpdate);
-      return () => socket.off('asset-status-updated', handleAssetUpdate);
+      socket.on('asset-status-updated', (data) => {
+        handleAssetUpdate(data);
+      });
+      return () => socket.off('asset-status-updated');
     }
   }, []);
 
@@ -385,14 +387,11 @@ const MonitoringAset = () => {
     return (
       <div className="min-h-full bg-[#F8FAFC] pb-24">
         {/* Header Section */}
-        <div className="bg-white px-6 pt-6 pb-6 rounded-b-[40px] shadow-sm border-b border-slate-100">
+        <div className="bg-white px-6 pb-6 rounded-b-[40px] shadow-sm border-b border-slate-100" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between mb-6">
             <div>
               <h1 className="text-[20px] font-black text-[#1B3B6F] tracking-tight">Monitoring Mesin</h1>
               <p className="text-slate-400 text-[12px] font-bold">Pilih aset untuk kontrol operasional</p>
-            </div>
-            <div className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-[#1B3B6F]">
-              <Settings size={20} />
             </div>
           </div>
 
@@ -454,7 +453,11 @@ const MonitoringAset = () => {
                 </div>
                 <div className={`px-4 py-2 rounded-xl flex items-center gap-2 border ${activeMobileAsset.is_running ? 'bg-green-50 border-green-100 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
                   <div className={`w-2 h-2 rounded-full ${activeMobileAsset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
-                  <span className="text-[12px] font-black uppercase tracking-wide">{activeMobileAsset.is_running ? 'Running' : 'Standby'}</span>
+                  <span className="text-[12px] font-black uppercase tracking-wide">
+                    {activeMobileAsset.is_running 
+                      ? `Running - ${activeMobileAsset.operatorName || activeMobileAsset.operatorFirstName || 'System'}` 
+                      : 'Standby'}
+                  </span>
                 </div>
               </div>
 
@@ -517,18 +520,29 @@ const MonitoringAset = () => {
                 </motion.button>
               </div>
 
-              {/* Latest Team Note Preview */}
-              {activeMobileAsset.catatan && (
-                <div className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-3">
-                    <MessageSquare size={16} className="text-slate-100" />
-                  </div>
-                  <h4 className="text-[12px] font-black text-slate-400 uppercase tracking-wider mb-3">Update Terakhir</h4>
-                  <p className="text-[14px] text-slate-700 font-medium leading-relaxed italic">
-                    "{activeMobileAsset.catatan}"
-                  </p>
+              {/* Team Notes Section Mobile (Max 3) */}
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-[12px] font-black text-slate-400 uppercase tracking-wider">Catatan Tim Terkini</h4>
+                  <button onClick={() => setSelectedAsset(activeMobileAsset)} className="text-[11px] font-black text-[#0095E8]">Lihat Semua</button>
                 </div>
-              )}
+                <div className="space-y-3">
+                  {assetLogs.filter(l => l.action === 'NOTE').slice(0, 3).map((note, idx) => (
+                    <div key={idx} className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm relative overflow-hidden">
+                      <div className="flex items-center justify-between mb-2">
+                         <span className="text-[11px] font-black text-slate-700">{note.firstName}</span>
+                         <span className="text-[9px] font-bold text-slate-400">{formatDateTime(note.created_at).time}</span>
+                      </div>
+                      <p className="text-[13px] text-slate-600 font-medium leading-relaxed italic">
+                        "{note.details}"
+                      </p>
+                    </div>
+                  ))}
+                  {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
+                    <div className="py-8 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-center text-slate-400 text-[11px] font-bold italic">Belum ada catatan tim untuk unit ini.</div>
+                  )}
+                </div>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -544,7 +558,10 @@ const MonitoringAset = () => {
                 style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}
               >
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
-                <h3 className="text-[18px] font-black text-slate-800 mb-4">Tambah Catatan Tim</h3>
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-[18px] font-black text-slate-800">Tambah Catatan Tim</h3>
+                  <button onClick={() => setIsNoteModalOpen(false)} className="text-slate-400"><X size={24} /></button>
+                </div>
                 <textarea 
                   className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all min-h-[150px]"
                   placeholder="Ketik pesan atau informasi tentang unit ini untuk tim lain..."
@@ -568,8 +585,8 @@ const MonitoringAset = () => {
         {/* Asset Detail Modal for Mobile */}
         <AnimatePresence>
           {selectedAsset && isMobile && (
-            <div className="fixed inset-0 z-[2000] bg-white overflow-y-auto">
-              <div className="px-6 pt-6 pb-6 border-b border-slate-50 flex items-center justify-between sticky top-0 bg-white z-10" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}>
+            <div className="fixed inset-0 z-[2000] bg-white overflow-y-auto pb-10">
+              <div className="px-6 pb-6 border-b border-slate-50 flex items-center justify-between sticky top-0 bg-white z-10" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}>
                 <button onClick={() => setSelectedAsset(null)} className="p-2 bg-slate-50 rounded-xl text-slate-500"><ChevronLeft size={24} /></button>
                 <h3 className="text-[16px] font-black text-slate-800">Detail Lengkap Aset</h3>
                 <div className="w-10" />
@@ -584,6 +601,10 @@ const MonitoringAset = () => {
                   <div>
                     <h2 className="text-[20px] font-black text-slate-800 leading-tight">{selectedAsset.nama_mesin}</h2>
                     <p className="text-slate-400 text-[13px] font-bold mt-1 uppercase">{selectedAsset.brand}</p>
+                    <div className="mt-2 flex items-center gap-2">
+                       <div className={`w-2 h-2 rounded-full ${selectedAsset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+                       <span className="text-[11px] font-black text-slate-500 uppercase">{selectedAsset.is_running ? 'Running' : 'Standby'}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -603,6 +624,25 @@ const MonitoringAset = () => {
                   ))}
                 </div>
 
+                {/* Catatan Tim Section in Detail */}
+                <div className="space-y-4">
+                   <h4 className="text-[14px] font-black text-slate-800">Catatan Khusus Tim</h4>
+                   <div className="space-y-3">
+                      {assetLogs.filter(l => l.action === 'NOTE').map((note, idx) => (
+                        <div key={idx} className="p-4 bg-amber-50/30 border border-amber-100 rounded-2xl">
+                           <div className="flex justify-between items-center mb-2">
+                              <span className="text-[11px] font-black text-amber-700">{note.firstName} {note.lastName}</span>
+                              <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
+                           </div>
+                           <p className="text-[13px] text-slate-700 font-medium italic">"{note.details}"</p>
+                        </div>
+                      ))}
+                      {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
+                        <div className="text-center py-6 text-slate-400 text-[12px] font-bold">Belum ada catatan tim.</div>
+                      )}
+                   </div>
+                </div>
+
                 {/* Media Section */}
                 <div>
                   <h4 className="text-[14px] font-black text-slate-800 mb-4">Dokumentasi Foto</h4>
@@ -620,7 +660,7 @@ const MonitoringAset = () => {
 
                 {/* Log Section */}
                 <div className="space-y-4">
-                  <h4 className="text-[14px] font-black text-slate-800">Riwayat Operasional</h4>
+                  <h4 className="text-[14px] font-black text-slate-800">Riwayat & Log Tim</h4>
                   <div className="space-y-3">
                     {assetLogs.map((log, idx) => (
                       <div key={idx} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
@@ -657,7 +697,7 @@ const MonitoringAset = () => {
     );
   }
 
-  // --- PC VIEW COMPONENTS (EXISTING) ---
+  // --- PC VIEW COMPONENTS ---
   return (
     <div className="p-6 md:p-8 max-w-[1400px] mx-auto min-h-screen bg-[#FBFBFB]">
       {/* Header */}
@@ -803,15 +843,14 @@ const MonitoringAset = () => {
                 <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Informasi Aset</th>
                 <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Timer & Status</th>
                 <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
-                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Input Oleh</th>
                 <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F1F4]">
               {loading ? (
-                [1,2,3,4,5].map(i => <tr key={i} className="animate-pulse"><td colSpan="6" className="px-6 py-8"><div className="h-4 bg-slate-100 rounded w-full"></div></td></tr>)
+                [1,2,3,4,5].map(i => <tr key={i} className="animate-pulse"><td colSpan="5" className="px-6 py-8"><div className="h-4 bg-slate-100 rounded w-full"></div></td></tr>)
               ) : paginatedAssets.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-20 text-center text-[#A1A5B7] text-sm font-light">Data aset tidak ditemukan.</td></tr>
+                <tr><td colSpan="5" className="px-6 py-20 text-center text-[#A1A5B7] text-sm font-light">Data aset tidak ditemukan.</td></tr>
               ) : (
                 paginatedAssets.map((asset, index) => {
                   // Live Timer Calculation for PC Table
@@ -824,7 +863,7 @@ const MonitoringAset = () => {
                   }
 
                   return (
-                    <tr key={asset.id} className="hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer" onClick={() => { setSelectedAsset(asset); fetchAssetLogs(asset.id); }}>
+                    <tr key={asset.id} className="hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer">
                       <td className="px-6 py-5 text-sm font-light text-[#7E8299]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                       <td className="px-6 py-5">
                         <p className="text-sm font-normal text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
@@ -837,7 +876,9 @@ const MonitoringAset = () => {
                             <p className={`text-sm font-black tabular-nums ${asset.is_running ? 'text-[#0095E8]' : 'text-slate-700'}`}>
                               {formatTime(liveTime)}
                             </p>
-                            <p className="text-[9px] text-[#A1A5B7] font-bold uppercase tracking-wider">Remaining</p>
+                            <p className="text-[9px] text-[#A1A5B7] font-bold uppercase tracking-wider">
+                               {asset.is_running ? `RUNNING - ${asset.operatorName || asset.operatorFirstName || 'SYS'}` : 'STANDBY'}
+                            </p>
                           </div>
                         </div>
                       </td>
@@ -848,14 +889,10 @@ const MonitoringAset = () => {
                           <span className={`px-2 py-0.5 rounded text-[9px] font-normal uppercase ${asset.prioritas?.toLowerCase() === 'kritis' ? 'bg-red-50 text-red-600' : 'bg-slate-50 text-slate-600'}`}>{asset.prioritas}</span>
                         </div>
                       </td>
-                      <td className="px-6 py-5">
-                        <p className="text-[11px] font-normal text-[#3F4254]">{asset.firstName} {asset.lastName}</p>
-                        <p className="text-[10px] text-[#A1A5B7] font-light">{formatDateTime(asset.created_at).date}</p>
-                      </td>
                       <td className="px-6 py-5 text-right">
                         <div className="flex justify-end gap-2" onClick={e => e.stopPropagation()}>
-                          <button onClick={() => handleToggleStatus(asset.id)} className={`p-2 rounded-lg border transition-all ${asset.is_running ? 'bg-red-50 border-red-100 text-red-500' : 'bg-blue-50 border-blue-100 text-blue-500'}`}>
-                            <Power size={14} />
+                          <button className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-[#0095E8] hover:border-[#0095E8]/30 rounded-lg transition-all" onClick={() => { setSelectedAsset(asset); fetchAssetLogs(asset.id); }}>
+                             <Maximize2 size={14} />
                           </button>
                           {hasPerm('aset_register', 'Edit') && (
                             <button onClick={() => openEditModal(asset)} className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-[#0095E8] hover:border-[#0095E8]/30 rounded-lg transition-all"><Edit2 size={14} /></button>
@@ -869,11 +906,9 @@ const MonitoringAset = () => {
             </tbody>
           </table>
         </div>
-
-        {/* Pagination omitted for brevity but remains same as before */}
       </div>
 
-      {/* Detail & Edit Modals remain same but use formatTime(timeLeft) for display */}
+      {/* Detail Modal PC */}
       <AnimatePresence>
         {selectedAsset && !isMobile && (
           <div className="fixed inset-0 z-[1000] flex items-center justify-center p-4">
@@ -904,18 +939,9 @@ const MonitoringAset = () => {
                       {formatTime(timeLeft)}
                     </h3>
                     <div className="flex items-center gap-4">
-                      <button 
-                        onClick={() => handleToggleStatus(selectedAsset.id)}
-                        className={`px-8 py-3 rounded-xl font-bold text-sm transition-all ${selectedAsset.is_running ? 'bg-red-500 hover:bg-red-600' : 'bg-[#0095E8] hover:bg-blue-600'}`}
-                      >
-                        {selectedAsset.is_running ? 'Stop Mesin' : 'Nyalakan Mesin'}
-                      </button>
-                      <button 
-                        onClick={() => setIsNoteModalOpen(true)}
-                        className="px-8 py-3 bg-white/10 hover:bg-white/20 rounded-xl font-bold text-sm transition-all flex items-center gap-2"
-                      >
-                        <MessageSquare size={16} /> Tambah Catatan
-                      </button>
+                       <div className={`px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest ${selectedAsset.is_running ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/40'}`}>
+                          {selectedAsset.is_running ? `Operational - Started by ${selectedAsset.operatorName || selectedAsset.operatorFirstName || 'System'}` : 'Standby Mode'}
+                       </div>
                     </div>
                   </div>
 
@@ -938,12 +964,34 @@ const MonitoringAset = () => {
                     </div>
                   </div>
 
+                  {/* PC Detail: Team Notes */}
+                  <div className="space-y-4">
+                     <div className="flex items-center gap-2">
+                        <MessageSquare size={16} className="text-amber-500" />
+                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Catatan Khusus Tim</h4>
+                     </div>
+                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {assetLogs.filter(l => l.action === 'NOTE').slice(0, 6).map((note, idx) => (
+                          <div key={idx} className="p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
+                             <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] font-black text-amber-700">{note.firstName} {note.lastName}</span>
+                                <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
+                             </div>
+                             <p className="text-[12px] text-slate-600 italic">"{note.details}"</p>
+                          </div>
+                        ))}
+                        {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
+                          <div className="col-span-2 py-6 text-center text-slate-300 text-xs font-bold">Tidak ada catatan tim.</div>
+                        )}
+                     </div>
+                  </div>
+
                   {/* Logs Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <History size={16} className="text-[#0095E8]" />
-                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat & Log Tim</h4>
+                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Operasional</h4>
                       </div>
                     </div>
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -970,11 +1018,11 @@ const MonitoringAset = () => {
 
                 <div className="lg:col-span-4 space-y-6">
                    <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Media & Lampiran</h4>
-                   <div className="grid grid-cols-2 gap-3">
-                    {safeLampiran(selectedAsset.lampiran).map((img, idx) => (
-                      <img key={idx} src={img} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
-                    ))}
-                   </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {safeLampiran(selectedAsset.lampiran).map((img, idx) => (
+                        <img key={idx} src={img} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                      ))}
+                    </div>
                 </div>
               </div>
             </motion.div>
@@ -982,7 +1030,7 @@ const MonitoringAset = () => {
         )}
       </AnimatePresence>
 
-      {/* Note Modal for both PC/Mobile */}
+      {/* Note Modal for PC */}
       <AnimatePresence>
         {isNoteModalOpen && !isMobile && (
           <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
@@ -1004,7 +1052,6 @@ const MonitoringAset = () => {
         )}
       </AnimatePresence>
 
-      {/* Edit Modal (Form Register Style) - Remains largely same, but ensures it can be used for Maintenance Hours update */}
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
