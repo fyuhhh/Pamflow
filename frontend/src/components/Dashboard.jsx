@@ -102,7 +102,6 @@ const Dashboard = ({ children, onLogout }) => {
         ...(deptRelations.isSource || isSuperAdmin ? [
           { label: 'Checklist Harian', path: '/tugas-departemen/checklist-harian', alwaysShow: true },
           { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true },
-          { label: 'Monitor WO', path: '/tugas-departemen/monitor-wo', alwaysShow: true },
         ] : []),
         { label: 'Buat Checklist', path: '/tugas-departemen/buat', permission: 'tugas_dept_buat_checklist' },
         { label: 'Buat WO', path: '/tugas-departemen/buat-wo', permission: 'tugas_dept_buat_wo' },

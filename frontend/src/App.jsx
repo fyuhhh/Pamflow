@@ -43,7 +43,6 @@ import AuditLog from './components/AuditLog';
 import PasswordResetRequests from './components/PasswordResetRequests';
 import RelasiDepartemen from './components/RelasiDepartemen';
 import ChecklistHarian from './components/ChecklistHarian';
-import MonitorRelasiWO from './components/MonitorRelasiWO';
 import { trackPageView, trackLogout } from './services/activityTracker';
 
 import DashboardHome from './components/DashboardHome';
@@ -234,7 +233,6 @@ function App() {
 
               <Route path="/tugas-departemen/checklist-harian" element={<PrivateRoute><Dashboard onLogout={logout}><ChecklistHarian /></Dashboard></PrivateRoute>} />
               <Route path="/tugas-departemen/checklist-riwayat" element={<PrivateRoute><Dashboard onLogout={logout}><ChecklistHarian /></Dashboard></PrivateRoute>} />
-              <Route path="/tugas-departemen/monitor-wo" element={<PrivateRoute><Dashboard onLogout={logout}><MonitorRelasiWO /></Dashboard></PrivateRoute>} />
 
               <Route path="/pengaturan/ubah-password" element={<Dashboard onLogout={logout}><ChangePassword /></Dashboard>} />
               <Route path="/profile/user" element={<Dashboard onLogout={logout}><Profile /></Dashboard>} />
@@ -245,7 +243,6 @@ function App() {
               <Route path="/demo/mobile/checklist" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/checklist/buat-wo" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/checklist-riwayat" element={<MobileDemo onLogout={logout} />} />
-              <Route path="/demo/mobile/monitor-wo" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/notifications" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/profile" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/task/:taskId" element={<MobileDemo onLogout={logout} />} />

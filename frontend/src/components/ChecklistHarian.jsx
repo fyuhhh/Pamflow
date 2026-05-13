@@ -632,9 +632,8 @@ const ChecklistHarian = () => {
                   <div className="flex items-start gap-4 p-5 bg-[#FFF8F0] border border-[#FFE2C5] rounded-2xl">
                     <Info size={20} className="text-[#FFA800] mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-[13px] font-bold text-[#845E2D] mb-1">Semua item sudah dalam WO aktif</p>
                       <p className="text-[12px] text-[#A07050] leading-relaxed">
-                        Tidak ada item baru yang perlu dibuatkan WO. Pantau progres perbaikan di menu <strong>Monitor WO</strong> dan tunggu hingga WO aktif diselesaikan oleh departemen terkait.
+                        Tidak ada item baru yang perlu dibuatkan WO. Seluruh temuan audit sebelumnya sudah dalam proses perbaikan.
                       </p>
                     </div>
                   </div>
@@ -653,7 +652,7 @@ const ChecklistHarian = () => {
                 Tutup
               </button>
 
-              {safeNames.length > 0 ? (
+              {safeNames.length > 0 && (
                 <button
                   onClick={() => {
                     const safeItemObjects = brokenItems.filter(i => selectedSafeItems.includes(i.name));
@@ -668,13 +667,6 @@ const ChecklistHarian = () => {
                 >
                   <Send size={18} />
                   <span>Buat WO Satu per satu ({selectedSafeItems.length} Item)</span>
-                </button>
-              ) : (
-                <button
-                  onClick={() => { setDupeModal(false); navigate(isMobile ? '/demo/mobile/monitor-wo' : '/tugas-departemen/monitor-wo'); }}
-                  className="flex-[2] py-3 bg-[#181C32] text-white rounded-xl text-[13px] font-bold hover:bg-[#3F4254] transition-all flex items-center justify-center gap-2"
-                >
-                  <AlertTriangle size={15} /> Buka Monitor WO
                 </button>
               )}
             </div>
@@ -703,14 +695,6 @@ const ChecklistHarian = () => {
               <p className="text-[12px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Audit {dept_name}</p>
             </div>
             <div className="flex gap-2.5">
-              <motion.button 
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate(`${basePath}/monitor-wo`)}
-                className="w-11 h-11 bg-white border border-slate-200 text-[#0095E8] rounded-2xl flex items-center justify-center shadow-sm hover:bg-blue-50 transition-all"
-                title="Monitor WO"
-              >
-                <AlertTriangle size={20} />
-              </motion.button>
               <motion.button 
                 whileTap={{ scale: 0.95 }}
                 onClick={() => { setStep('setup'); navigate(`${basePath}/checklist${isMobile ? '' : '-harian'}`); }}

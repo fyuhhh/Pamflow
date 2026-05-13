@@ -35,7 +35,6 @@ const MODULES = [
     isHeader: true,
     submodules: [
       { id: 'checklist_harian', label: 'Checklist Harian & Riwayat', actions: ['Buat', 'Lihat'] },
-      { id: 'monitor_wo', label: 'Monitor WO Relasi', actions: ['Lihat'] },
       { id: 'tugas_dept_buat_checklist', label: 'Buat Checklist (Lama)', actions: ['Buat', 'Lihat', 'Edit', 'Hapus'] },
       { id: 'tugas_dept_buat_wo', label: 'Buat WO (Lama)', actions: ['Lihat'] },
       { id: 'tugas_dept_diterima', label: 'Diterima', actions: ['Lihat', 'Edit', 'Hapus', 'Download'] },

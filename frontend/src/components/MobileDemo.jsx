@@ -11,7 +11,6 @@ import MobileDeptTaskDetail from './MobileDeptTaskDetail';
 import MobileApprovalList from './MobileApprovalList';
 import MobileApprovalDetail from './MobileApprovalDetail';
 import ChecklistHarian from './ChecklistHarian';
-import MobileMonitorWO from './MobileMonitorWO';
 import BuatTugasDepartemen from './BuatTugasDepartemen';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
@@ -87,8 +86,6 @@ const MobileDemo = ({ onLogout }) => {
       case '/demo/mobile/checklist':
       case '/demo/mobile/checklist-riwayat':
         return <ChecklistHarian />;
-      case '/demo/mobile/monitor-wo':
-        return <MobileMonitorWO />;
       case '/demo/mobile/checklist/buat-wo':
         return <BuatTugasDepartemen taskType="wo" />;
       case '/demo/mobile/notifications':
