@@ -470,9 +470,9 @@ const MobileHome = () => {
 
           <div className="grid grid-cols-1 gap-3">
             {[
-              { id: 'hak-akses', label: 'Hak Akses Aset', icon: <Lock size={20} />, color: 'text-blue-500', bg: 'bg-blue-50', path: '/aset/hak-akses' },
-              { id: 'register', label: 'Register Aset', icon: <Database size={20} />, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/aset/register' },
-              { id: 'monitoring', label: 'Monitoring Aset', icon: <Activity size={20} />, color: 'text-purple-500', bg: 'bg-purple-50', path: '/aset/monitoring' },
+              { id: 'hak-akses', label: 'Hak Akses Aset', icon: <Lock size={20} />, color: 'text-blue-500', bg: 'bg-blue-50', path: '/demo/mobile/aset/hak-akses' },
+              { id: 'register', label: 'Register Aset', icon: <Database size={20} />, color: 'text-emerald-500', bg: 'bg-emerald-50', path: '/demo/mobile/aset/register' },
+              { id: 'monitoring', label: 'Monitoring Aset', icon: <Activity size={20} />, color: 'text-purple-500', bg: 'bg-purple-50', path: '/demo/mobile/aset/monitoring' },
             ].map(item => (
               <motion.div 
                 whileTap={{ scale: 0.98 }}

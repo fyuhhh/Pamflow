@@ -257,6 +257,11 @@ function App() {
               <Route path="/demo/mobile/dept-task/:id" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/approvals" element={<MobileDemo onLogout={logout} />} />
               <Route path="/demo/mobile/approval/:taskId" element={<MobileDemo onLogout={logout} />} />
+              
+              {/* Mobile Asset Routes */}
+              <Route path="/demo/mobile/aset/hak-akses" element={<MobileDemo onLogout={logout} />} />
+              <Route path="/demo/mobile/aset/register" element={<MobileDemo onLogout={logout} />} />
+              <Route path="/demo/mobile/aset/monitoring" element={<MobileDemo onLogout={logout} />} />
             </>
           ) : (
             /* If no user, all paths redirect to / */
