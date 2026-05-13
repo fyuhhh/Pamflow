@@ -47,16 +47,16 @@ export const ModalProvider = ({ children }) => {
     setModalConfig(prev => ({ ...prev, loading }));
   }, []);
 
-  const success = (title, message) => {
-    showModal({ type: 'success', title, message });
+  const success = (title, message, onClose = null) => {
+    showModal({ type: 'success', title, message, onClose });
   };
 
-  const error = (title, message) => {
-    showModal({ type: 'error', title, message });
+  const error = (title, message, onClose = null) => {
+    showModal({ type: 'error', title, message, onClose });
   };
 
-  const warning = (title, message) => {
-    showModal({ type: 'warning', title, message });
+  const warning = (title, message, onClose = null) => {
+    showModal({ type: 'warning', title, message, onClose });
   };
 
   const confirm = (title, message, onConfirm, options = {}) => {

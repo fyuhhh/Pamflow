@@ -175,20 +175,21 @@ const RegisterAset = () => {
       });
 
       if (response.ok) {
-        success('Berhasil', 'Aset berhasil didaftarkan');
-        setShowModal(false);
-        setFormData({
-          nama_mesin: '',
-          brand: '',
-          model_tipe: '',
-          serial_number: '',
-          lokasi: '',
-          prioritas: 'Sedang',
-          status: 'Baik',
-          catatan: '',
-          lampiran: []
+        success('Berhasil', 'Aset berhasil didaftarkan', () => {
+          setShowModal(false);
+          setFormData({
+            nama_mesin: '',
+            brand: '',
+            model_tipe: '',
+            serial_number: '',
+            lokasi: '',
+            prioritas: 'Sedang',
+            status: 'Baik',
+            catatan: '',
+            lampiran: []
+          });
+          fetchAssets();
         });
-        fetchAssets();
       } else {
         const data = await response.json();
         showError('Gagal', data.message || 'Gagal mendaftarkan aset');
