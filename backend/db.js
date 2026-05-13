@@ -454,6 +454,7 @@ async function initializeDB(retries = 5, delay = 5000) {
         prioritas VARCHAR(100),
         status VARCHAR(100),
         catatan TEXT,
+        lampiran LONGTEXT,
         user_pendaftar_id INT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
