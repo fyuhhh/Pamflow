@@ -11,7 +11,10 @@ import {
   ChevronRight,
   ChevronDown,
   Camera,
-  Maximize2
+  Maximize2,
+  Clock,
+  User,
+  Calendar
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
@@ -28,15 +31,22 @@ const RegisterAset = () => {
   // Dynamic Dropdowns
   const [priorities, setPriorities] = useState([]);
   const [statuses, setStatuses] = useState([]);
+  const [locations, setLocations] = useState([]);
   
   const [showNewPriorityInput, setShowNewPriorityInput] = useState(false);
   const [newPriorityLabel, setNewPriorityLabel] = useState('');
   
   const [showNewStatusInput, setShowNewStatusInput] = useState(false);
   const [newStatusLabel, setNewStatusLabel] = useState('');
+
+  const [showNewLocationInput, setShowNewLocationInput] = useState(false);
+  const [newLocationLabel, setNewLocationLabel] = useState('');
   
   const { success, error: showError, confirm } = useModal();
   const fileInputRef = useRef(null);
+
+  // Maintenance conversion state
+  const [maintInput, setMaintInput] = useState({ days: 0, hours: 0 });
 
   const [formData, setFormData] = useState({
     nama_mesin: '',
@@ -47,7 +57,8 @@ const RegisterAset = () => {
     prioritas: 'Sedang',
     status: 'Baik',
     catatan: '',
-    lampiran: []
+    lampiran: [],
+    maintenance_hours: 0
   });
 
   const [submitting, setSubmitting] = useState(false);
@@ -56,11 +67,13 @@ const RegisterAset = () => {
     fetchAssets();
     fetchPriorities();
     fetchStatuses();
+    fetchLocations();
   }, []);
 
   const fetchAssets = async () => {
     try {
-      const response = await authFetch('/api/assets');
+      // Only fetch latest 5
+      const response = await authFetch('/api/assets?limit=5');
       if (response.ok) {
         const data = await response.json();
         setAssets(data);
@@ -93,6 +106,18 @@ const RegisterAset = () => {
       }
     } catch (err) {
       console.error('Fetch statuses error:', err);
+    }
+  };
+
+  const fetchLocations = async () => {
+    try {
+      const response = await authFetch('/api/assets/locations');
+      if (response.ok) {
+        const data = await response.json();
+        setLocations(data);
+      }
+    } catch (err) {
+      console.error('Fetch locations error:', err);
     }
   };
 
@@ -132,6 +157,24 @@ const RegisterAset = () => {
     }
   };
 
+  const handleAddLocation = async () => {
+    if (!newLocationLabel.trim()) return;
+    try {
+      const response = await authFetch('/api/assets/locations', {
+        method: 'POST',
+        body: JSON.stringify({ label: newLocationLabel })
+      });
+      if (response.ok) {
+        await fetchLocations();
+        setFormData({ ...formData, lokasi: newLocationLabel });
+        setNewLocationLabel('');
+        setShowNewLocationInput(false);
+      }
+    } catch (err) {
+      showError('Error', 'Gagal menambah lokasi baru');
+    }
+  };
+
   const handleFileChange = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -165,6 +208,14 @@ const RegisterAset = () => {
     }));
   };
 
+  const handleMaintenanceInput = (type, val) => {
+    const num = parseInt(val) || 0;
+    const newInput = { ...maintInput, [type]: num };
+    setMaintInput(newInput);
+    const totalHours = (newInput.days * 24) + newInput.hours;
+    setFormData(prev => ({ ...prev, maintenance_hours: totalHours }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -186,8 +237,10 @@ const RegisterAset = () => {
             prioritas: 'Sedang',
             status: 'Baik',
             catatan: '',
-            lampiran: []
+            lampiran: [],
+            maintenance_hours: 0
           });
+          setMaintInput({ days: 0, hours: 0 });
           fetchAssets();
         });
       } else {
@@ -221,6 +274,14 @@ const RegisterAset = () => {
     if (sLow === 'maintenance' || sLow === 'perbaikan') return 'text-[#FFC700]';
     if (sLow === 'rusak' || sLow === 'breakdown') return 'text-[#F1416C]';
     return 'text-[#A1A5B7]';
+  };
+
+  const formatDateTime = (dateStr) => {
+    if (!dateStr) return '-';
+    const d = new Date(dateStr);
+    const date = d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+    const time = d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+    return { date, time };
   };
 
   return (
@@ -261,7 +322,7 @@ const RegisterAset = () => {
       {/* Asset List Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-2 h-8 bg-[#0095E8] rounded-full"></div>
-        <h2 className="text-[20px] font-bold text-[#181C32] tracking-tight">Data yang baru saja ditambahkan</h2>
+        <h2 className="text-[20px] font-bold text-[#181C32] tracking-tight">5 Data Terbaru</h2>
       </div>
 
       {/* Asset List */}
@@ -271,10 +332,10 @@ const RegisterAset = () => {
             <thead>
               <tr className="bg-[#F9F9F9] border-b border-[#F1F1F4]">
                 <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Info Mesin</th>
-                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Spesifikasi</th>
                 <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
-                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Prioritas</th>
-                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Monitoring</th>
+                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Jadwal Maintenance</th>
+                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider">Audit Pendaftaran</th>
+                <th className="px-6 py-4 text-[12px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F1F4]">
@@ -299,13 +360,7 @@ const RegisterAset = () => {
                     <td className="px-6 py-5">
                       <div>
                         <p className="text-[14px] font-medium text-[#181C32]">{asset.nama_mesin}</p>
-                        <p className="text-[12px] text-[#A1A5B7]">{asset.brand || '-'}</p>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      <div>
-                        <p className="text-[13px] font-medium text-[#4B5563]">{asset.model_tipe || '-'}</p>
-                        <p className="text-[12px] text-[#A1A5B7]">S/N: <span className="font-mono text-[#0095E8]">{asset.serial_number || 'N/A'}</span></p>
+                        <p className="text-[12px] text-[#A1A5B7]">{asset.brand || '-'} • <span className="font-mono text-[11px] text-[#0095E8]">{asset.serial_number || 'N/A'}</span></p>
                       </div>
                     </td>
                     <td className="px-6 py-5">
@@ -314,15 +369,35 @@ const RegisterAset = () => {
                           <MapPin size={14} className="text-[#A1A5B7]" />
                           {asset.lokasi || '-'}
                         </div>
-                        <div className="text-[12px] text-[#A1A5B7] font-medium flex items-center gap-1">
-                          Kondisi: <span className={`${getStatusColor(asset.status)}`}>{asset.status || 'Baik'}</span>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[12px] font-bold ${getStatusColor(asset.status)}`}>{asset.status}</span>
+                          <span className={`px-2 py-0.5 rounded-md border text-[10px] font-bold uppercase ${getPriorityColor(asset.prioritas)}`}>
+                            {asset.prioritas}
+                          </span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <span className={`px-3 py-1.5 rounded-lg border text-[11px] font-semibold uppercase tracking-tight ${getPriorityColor(asset.prioritas)}`}>
-                        {asset.prioritas}
-                      </span>
+                      <div className="flex items-center gap-2 text-[13px] font-bold text-[#181C32]">
+                        <Clock size={14} className="text-[#A1A5B7]" />
+                        {asset.maintenance_hours > 0 ? (
+                          <span>Tiap {asset.maintenance_hours} Jam</span>
+                        ) : (
+                          <span className="text-[#A1A5B7] font-normal">N/A</span>
+                        )}
+                      </div>
+                    </td>
+                    <td className="px-6 py-5">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-1.5 text-[12px] font-bold text-[#3F4254]">
+                          <User size={13} className="text-[#A1A5B7]" />
+                          {asset.firstName} {asset.lastName}
+                        </div>
+                        <div className="flex items-center gap-1.5 text-[11px] text-[#A1A5B7] font-medium">
+                          <Calendar size={13} />
+                          {formatDateTime(asset.created_at).date}, {formatDateTime(asset.created_at).time}
+                        </div>
+                      </div>
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end">
@@ -423,18 +498,37 @@ const RegisterAset = () => {
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-[13px] font-bold text-[#3F4254]">Lokasi</label>
-                      <input 
-                        type="text"
-                        className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-semibold"
-                        placeholder="Lantai 3 / Rooftop"
-                        value={formData.lokasi}
-                        onChange={(e) => setFormData({...formData, lokasi: e.target.value})}
-                      />
+                      <label className="text-[13px] font-bold text-[#3F4254]">Lokasi / Ruangan</label>
+                      {!showNewLocationInput ? (
+                        <div className="relative">
+                          <select 
+                            className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-semibold appearance-none pr-10 cursor-pointer"
+                            value={formData.lokasi}
+                            onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewLocationInput(true) : setFormData({...formData, lokasi: e.target.value})}
+                          >
+                            <option value="">Pilih Lokasi</option>
+                            {locations.map(l => <option key={l.id} value={l.label}>{l.label}</option>)}
+                            <option value="ADD_NEW">+ Tambah Lokasi Baru...</option>
+                          </select>
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7] pointer-events-none" size={18} />
+                        </div>
+                      ) : (
+                        <div className="flex gap-2">
+                          <input 
+                            autoFocus
+                            className="flex-1 px-4 py-3 bg-[#F1FAFF] border border-[#0095E8]/20 rounded-xl text-[14px] font-bold"
+                            placeholder="Nama lokasi baru..."
+                            value={newLocationLabel}
+                            onChange={(e) => setNewLocationLabel(e.target.value)}
+                          />
+                          <button type="button" onClick={handleAddLocation} className="px-4 py-2 bg-[#0095E8] text-white text-[12px] font-bold rounded-xl">OK</button>
+                          <button type="button" onClick={() => setShowNewLocationInput(false)} className="px-4 py-2 bg-slate-100 text-slate-500 text-[12px] font-bold rounded-xl">Batal</button>
+                        </div>
+                      )}
                     </div>
                   </div>
 
-                  {/* Right Column: Dropdowns & Notes */}
+                  {/* Right Column: Dropdowns & Maintenance */}
                   <div className="space-y-6">
                     <div className="grid grid-cols-2 gap-4">
                       {/* Priority */}
@@ -502,10 +596,54 @@ const RegisterAset = () => {
                       </div>
                     </div>
 
+                    {/* Maintenance Input Section */}
+                    <div className="space-y-3 p-5 bg-[#F9F9F9] rounded-[24px] border border-[#E4E6EF]/50">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Clock size={16} className="text-[#0095E8]" />
+                        <label className="text-[13px] font-bold text-[#181C32]">Interval Maintenance</label>
+                      </div>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-[#A1A5B7] uppercase">Hari</label>
+                          <input 
+                            type="number" 
+                            min="0"
+                            className="w-full px-4 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold"
+                            placeholder="0"
+                            value={maintInput.days}
+                            onChange={(e) => handleMaintenanceInput('days', e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <label className="text-[11px] font-bold text-[#A1A5B7] uppercase">Jam</label>
+                          <input 
+                            type="number" 
+                            min="0"
+                            max="23"
+                            className="w-full px-4 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold"
+                            placeholder="0"
+                            value={maintInput.hours}
+                            onChange={(e) => handleMaintenanceInput('hours', e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      {(maintInput.days > 0 || maintInput.hours > 0) && (
+                        <div className="mt-2 p-3 bg-[#E8FFF3] rounded-xl border border-[#50CD89]/20">
+                          <p className="text-[12px] text-[#50CD89] font-bold flex items-center gap-2">
+                            <CheckCircle2 size={14} />
+                            Terkonversi: <span className="text-[14px]">{formData.maintenance_hours} Jam Operasional</span>
+                          </p>
+                        </div>
+                      )}
+                      <p className="text-[11px] text-[#A1A5B7] font-medium leading-relaxed">
+                        Input ini menentukan kapan sistem akan memberikan peringatan maintenance berdasarkan total jam operasional mesin.
+                      </p>
+                    </div>
+
                     <div className="space-y-2">
                       <label className="text-[13px] font-bold text-[#3F4254]">Catatan Tambahan</label>
                       <textarea 
-                        rows="6"
+                        rows="4"
                         className="w-full px-5 py-4 bg-[#F9F9F9] border-none rounded-2xl text-[14px] font-medium resize-none placeholder:text-[#A1A5B7] placeholder:font-normal"
                         placeholder="Spesifikasi teknis, riwayat, dll..."
                         value={formData.catatan}
