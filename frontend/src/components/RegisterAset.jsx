@@ -283,11 +283,11 @@ const RegisterAset = () => {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
           <h1 className="text-2xl font-bold text-[#181C32] mb-1">Registrasi Aset</h1>
-          <p className="text-[#A1A5B7] text-sm font-medium">Kelola dan daftar aset baru perusahaan dengan mudah.</p>
+          <p className="text-[#A1A5B7] text-sm font-light">Kelola dan daftar aset baru perusahaan dengan mudah.</p>
         </div>
         <button 
           onClick={() => setShowModal(true)}
-          className="flex items-center gap-2 px-6 py-3 bg-[#0095E8] text-white rounded-xl text-sm font-semibold hover:bg-[#0084CC] transition-all shadow-sm"
+          className="flex items-center gap-2 px-6 py-3 bg-[#0095E8] text-white rounded-xl text-sm font-normal hover:bg-[#0084CC] transition-all shadow-sm"
         >
           <Plus size={18} />
           <span>Tambah Aset</span>
@@ -301,12 +301,12 @@ const RegisterAset = () => {
           <input 
             type="text" 
             placeholder="Cari nama mesin atau merk..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm outline-none focus:border-[#0095E8]/30 transition-all"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <button className="flex items-center gap-2 px-6 py-3 bg-white border border-[#F1F1F4] text-[#7E8299] rounded-xl text-sm font-medium hover:bg-[#F9F9F9] transition-all">
+        <button className="flex items-center gap-2 px-6 py-3 bg-white border border-[#F1F1F4] text-[#7E8299] rounded-xl text-sm font-light hover:bg-[#F9F9F9] transition-all">
           <Filter size={16} />
           <span>Filter</span>
         </button>
@@ -321,51 +321,51 @@ const RegisterAset = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F9F9F9]/30 border-b border-[#F1F1F4]">
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Aset / Mesin</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-center">Masa Pakai</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Pendaftar</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Detail</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Aset / Mesin</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider text-center">Masa Pakai</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Pendaftar</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider text-right">Detail</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F1F4]">
               {loading ? (
                 [1,2,3].map(i => <tr key={i} className="animate-pulse"><td colSpan="5" className="px-6 py-8"><div className="h-4 bg-slate-100 rounded w-full"></div></td></tr>)
               ) : filteredAssets.length === 0 ? (
-                <tr><td colSpan="5" className="px-6 py-12 text-center text-[#A1A5B7] text-sm">Belum ada data tersedia.</td></tr>
+                <tr><td colSpan="5" className="px-6 py-12 text-center text-[#A1A5B7] text-sm font-light">Belum ada data tersedia.</td></tr>
               ) : (
                 filteredAssets.map((asset) => (
                   <tr key={asset.id} className="hover:bg-[#F9F9F9]/50 transition-all group">
                     <td className="px-6 py-5">
                       <div>
-                        <p className="text-sm font-semibold text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
-                        <p className="text-xs text-[#A1A5B7]">{asset.brand || 'No Brand'} • <span className="font-mono text-[#0095E8]">{asset.serial_number || 'N/A'}</span></p>
+                        <p className="text-sm font-normal text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
+                        <p className="text-xs text-[#A1A5B7] font-light">{asset.brand || 'No Brand'} • <span className="font-mono text-[#0095E8] font-normal">{asset.serial_number || 'N/A'}</span></p>
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="space-y-1.5">
-                        <div className="flex items-center gap-1.5 text-xs text-[#7E8299]">
+                        <div className="flex items-center gap-1.5 text-xs text-[#7E8299] font-light">
                           <MapPin size={13} />
                           {asset.lokasi || '-'}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className={`text-[11px] font-bold ${getStatusColor(asset.status)}`}>{asset.status}</span>
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase ${getPriorityColor(asset.prioritas)}`}>
+                          <span className={`text-[11px] font-normal ${getStatusColor(asset.status)}`}>{asset.status}</span>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-normal uppercase ${getPriorityColor(asset.prioritas)}`}>
                             {asset.prioritas}
                           </span>
                         </div>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-center">
-                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F9F9F9] rounded-lg text-xs font-semibold text-[#3F4254]">
+                      <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-[#F9F9F9] rounded-lg text-xs font-normal text-[#3F4254]">
                         <Clock size={14} className="text-[#0095E8]" />
                         {asset.maintenance_hours > 0 ? `${asset.maintenance_hours} Jam` : '-'}
                       </div>
                     </td>
                     <td className="px-6 py-5">
                       <div className="space-y-1">
-                        <p className="text-xs font-semibold text-[#3F4254]">{asset.firstName} {asset.lastName}</p>
-                        <p className="text-[10px] text-[#A1A5B7]">{formatDateTime(asset.created_at).date} | {formatDateTime(asset.created_at).time}</p>
+                        <p className="text-xs font-normal text-[#3F4254]">{asset.firstName} {asset.lastName}</p>
+                        <p className="text-[10px] text-[#A1A5B7] font-light">{formatDateTime(asset.created_at).date} | {formatDateTime(asset.created_at).time}</p>
                       </div>
                     </td>
                     <td className="px-6 py-5 text-right">
@@ -412,31 +412,31 @@ const RegisterAset = () => {
                 {/* Left Side */}
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Nama Mesin / Aset <span className="text-red-500">*</span></label>
-                    <input required type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Input nama aset..." value={formData.nama_mesin} onChange={(e) => setFormData({...formData, nama_mesin: e.target.value})} />
+                    <label className="text-sm font-normal text-[#3F4254]">Nama Mesin / Aset <span className="text-red-500">*</span></label>
+                    <input required type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Input nama aset..." value={formData.nama_mesin} onChange={(e) => setFormData({...formData, nama_mesin: e.target.value})} />
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Brand</label>
-                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Merk..." value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} />
+                      <label className="text-sm font-normal text-[#3F4254]">Brand</label>
+                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Merk..." value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Model/Tipe</label>
-                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Tipe..." value={formData.model_tipe} onChange={(e) => setFormData({...formData, model_tipe: e.target.value})} />
+                      <label className="text-sm font-normal text-[#3F4254]">Model/Tipe</label>
+                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Tipe..." value={formData.model_tipe} onChange={(e) => setFormData({...formData, model_tipe: e.target.value})} />
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Serial Number</label>
-                    <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-mono focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="SN..." value={formData.serial_number} onChange={(e) => setFormData({...formData, serial_number: e.target.value})} />
+                    <label className="text-sm font-normal text-[#3F4254]">Serial Number</label>
+                    <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-mono font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="SN..." value={formData.serial_number} onChange={(e) => setFormData({...formData, serial_number: e.target.value})} />
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Lokasi / Ruangan</label>
+                    <label className="text-sm font-normal text-[#3F4254]">Lokasi / Ruangan</label>
                     {!showNewLocationInput ? (
                       <div className="relative">
-                        <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.lokasi} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewLocationInput(true) : setFormData({...formData, lokasi: e.target.value})}>
+                        <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.lokasi} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewLocationInput(true) : setFormData({...formData, lokasi: e.target.value})}>
                           <option value="">Pilih Lokasi</option>
                           {locations.map(l => <option key={l.id} value={l.label}>{l.label}</option>)}
                           <option value="ADD_NEW">+ Tambah Baru...</option>
@@ -445,8 +445,8 @@ const RegisterAset = () => {
                       </div>
                     ) : (
                       <div className="flex gap-2 p-1.5 bg-[#F1FAFF] rounded-xl">
-                        <input autoFocus className="flex-1 px-3 py-1.5 bg-transparent border-none text-sm outline-none" placeholder="Lokasi baru..." value={newLocationLabel} onChange={(e) => setNewLocationLabel(e.target.value)} />
-                        <button type="button" onClick={handleAddLocation} className="px-3 py-1.5 bg-[#0095E8] text-white text-xs font-bold rounded-lg">OK</button>
+                        <input autoFocus className="flex-1 px-3 py-1.5 bg-transparent border-none text-sm font-light outline-none" placeholder="Lokasi baru..." value={newLocationLabel} onChange={(e) => setNewLocationLabel(e.target.value)} />
+                        <button type="button" onClick={handleAddLocation} className="px-3 py-1.5 bg-[#0095E8] text-white text-xs font-normal rounded-lg">OK</button>
                         <button type="button" onClick={() => setShowNewLocationInput(false)} className="px-2 text-[#A1A5B7]"><X size={16} /></button>
                       </div>
                     )}
@@ -457,10 +457,10 @@ const RegisterAset = () => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Prioritas</label>
+                      <label className="text-sm font-normal text-[#3F4254]">Prioritas</label>
                       {!showNewPriorityInput ? (
                         <div className="relative">
-                          <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.prioritas} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewPriorityInput(true) : setFormData({...formData, prioritas: e.target.value})}>
+                          <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.prioritas} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewPriorityInput(true) : setFormData({...formData, prioritas: e.target.value})}>
                             {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
                             <option value="ADD_NEW">+ Baru...</option>
                           </select>
@@ -468,17 +468,17 @@ const RegisterAset = () => {
                         </div>
                       ) : (
                         <div className="flex gap-2 p-1 bg-[#F1FAFF] rounded-xl">
-                          <input autoFocus className="flex-1 px-3 py-1.5 bg-transparent border-none text-sm outline-none" value={newPriorityLabel} onChange={(e) => setNewPriorityLabel(e.target.value)} />
+                          <input autoFocus className="flex-1 px-3 py-1.5 bg-transparent border-none text-sm font-light outline-none" value={newPriorityLabel} onChange={(e) => setNewPriorityLabel(e.target.value)} />
                           <button type="button" onClick={handleAddPriority} className="p-2 text-[#0095E8]"><CheckCircle2 size={18} /></button>
                           <button type="button" onClick={() => setShowNewPriorityInput(false)} className="p-2 text-red-500"><X size={18} /></button>
                         </div>
                       )}
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Kondisi</label>
+                      <label className="text-sm font-normal text-[#3F4254]">Kondisi</label>
                       {!showNewStatusInput ? (
                         <div className="relative">
-                          <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.status} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewStatusInput(true) : setFormData({...formData, status: e.target.value})}>
+                          <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.status} onChange={(e) => e.target.value === 'ADD_NEW' ? setShowNewStatusInput(true) : setFormData({...formData, status: e.target.value})}>
                             {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
                             <option value="ADD_NEW">+ Baru...</option>
                           </select>
@@ -486,7 +486,7 @@ const RegisterAset = () => {
                         </div>
                       ) : (
                         <div className="flex gap-2 p-1 bg-[#F1FAFF] rounded-xl">
-                          <input autoFocus className="flex-1 px-3 py-1.5 bg-transparent border-none text-sm outline-none" value={newStatusLabel} onChange={(e) => setNewStatusLabel(e.target.value)} />
+                          <input autoFocus className="flex-1 px-3 py-1.5 bg-transparent border-none text-sm font-light outline-none" value={newStatusLabel} onChange={(e) => setNewStatusLabel(e.target.value)} />
                           <button type="button" onClick={handleAddStatus} className="p-2 text-[#0095E8]"><CheckCircle2 size={18} /></button>
                           <button type="button" onClick={() => setShowNewStatusInput(false)} className="p-2 text-red-500"><X size={18} /></button>
                         </div>
@@ -498,20 +498,20 @@ const RegisterAset = () => {
                   <div className="p-5 bg-[#F9F9F9] rounded-2xl border border-[#F1F1F4] space-y-4">
                     <div className="flex items-center gap-2">
                       <Clock size={16} className="text-[#0095E8]" />
-                      <p className="text-xs font-bold text-[#181C32] uppercase">Jadwal Maintenance (Jam)</p>
+                      <p className="text-xs font-normal text-[#181C32] uppercase">Jadwal Maintenance (Jam)</p>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[#A1A5B7]">HARI</label>
-                        <input type="number" min="0" className="w-full px-3 py-2 bg-white border border-[#F1F1F4] rounded-lg text-sm text-center" value={maintInput.days} onChange={(e) => handleMaintenanceInput('days', e.target.value)} />
+                        <label className="text-[10px] font-normal text-[#A1A5B7]">HARI</label>
+                        <input type="number" min="0" className="w-full px-3 py-2 bg-white border border-[#F1F1F4] rounded-lg text-sm font-light text-center" value={maintInput.days} onChange={(e) => handleMaintenanceInput('days', e.target.value)} />
                       </div>
                       <div className="space-y-1">
-                        <label className="text-[10px] font-bold text-[#A1A5B7]">JAM</label>
-                        <input type="number" min="0" className="w-full px-3 py-2 bg-white border border-[#F1F1F4] rounded-lg text-sm text-center" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
+                        <label className="text-[10px] font-normal text-[#A1A5B7]">JAM</label>
+                        <input type="number" min="0" className="w-full px-3 py-2 bg-white border border-[#F1F1F4] rounded-lg text-sm font-light text-center" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
                       </div>
                     </div>
                     {formData.maintenance_hours > 0 && (
-                      <div className="flex items-center justify-between text-xs font-bold text-[#50CD89] px-2">
+                      <div className="flex items-center justify-between text-xs font-normal text-[#50CD89] px-2">
                         <span>Konversi:</span>
                         <span>{formData.maintenance_hours} Jam Operasional</span>
                       </div>
@@ -519,14 +519,14 @@ const RegisterAset = () => {
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Catatan</label>
-                    <textarea rows="3" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all resize-none" placeholder="..." value={formData.catatan} onChange={(e) => setFormData({...formData, catatan: e.target.value})} />
+                    <label className="text-sm font-normal text-[#3F4254]">Catatan</label>
+                    <textarea rows="3" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all resize-none" placeholder="..." value={formData.catatan} onChange={(e) => setFormData({...formData, catatan: e.target.value})} />
                   </div>
                 </div>
 
                 {/* Full Width Photo Upload */}
                 <div className="md:col-span-2 pt-4">
-                  <label className="text-sm font-semibold text-[#3F4254] block mb-4">Lampiran Foto</label>
+                  <label className="text-sm font-normal text-[#3F4254] block mb-4">Lampiran Foto</label>
                   <div className="flex flex-wrap gap-4">
                     {formData.lampiran.map((img, idx) => (
                       <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#F1F1F4] group">
@@ -540,7 +540,7 @@ const RegisterAset = () => {
                     {formData.lampiran.length < 5 && (
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="w-20 h-20 rounded-xl border-2 border-dashed border-[#E4E6EF] flex flex-col items-center justify-center text-[#A1A5B7] hover:border-[#0095E8] hover:text-[#0095E8] transition-all">
                         <Camera size={20} />
-                        <span className="text-[9px] font-bold mt-1">FOTO</span>
+                        <span className="text-[9px] font-normal mt-1">FOTO</span>
                         <input type="file" multiple accept="image/*" className="hidden" ref={fileInputRef} onChange={handleFileChange} />
                       </button>
                     )}
@@ -549,8 +549,8 @@ const RegisterAset = () => {
 
                 {/* Footer Buttons */}
                 <div className="md:col-span-2 flex gap-4 pt-8 border-t border-[#F1F1F4]">
-                  <button type="button" disabled={submitting} onClick={() => setShowModal(false)} className="flex-1 py-3 text-sm font-bold text-[#7E8299] hover:bg-[#F9F9F9] rounded-xl transition-all">Batal</button>
-                  <button type="submit" disabled={submitting} className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl text-sm font-bold shadow-lg shadow-[#0095E8]/20 flex items-center justify-center gap-2 disabled:opacity-50">
+                  <button type="button" disabled={submitting} onClick={() => setShowModal(false)} className="flex-1 py-3 text-sm font-normal text-[#7E8299] hover:bg-[#F9F9F9] rounded-xl transition-all">Batal</button>
+                  <button type="submit" disabled={submitting} className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl text-sm font-normal shadow-lg shadow-[#0095E8]/20 flex items-center justify-center gap-2 disabled:opacity-50">
                     {submitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><span>Simpan Aset</span></>}
                   </button>
                 </div>

@@ -289,7 +289,7 @@ const MonitoringAset = () => {
       {/* Analytics Section */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-10">
         <div className="bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm flex flex-col justify-center">
-          <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest mb-2">Total Aset</p>
+          <p className="text-xs font-normal text-[#A1A5B7] uppercase tracking-widest mb-2">Total Aset</p>
           <h2 className="text-4xl font-bold text-[#181C32]">{analyticsData.total}</h2>
           <div className="mt-4 h-1 w-full bg-[#F1F1F4] rounded-full overflow-hidden">
             <div className="h-full bg-[#0095E8]" style={{ width: '100%' }}></div>
@@ -299,13 +299,13 @@ const MonitoringAset = () => {
         {/* Status Chart */}
         <div className="lg:col-span-2 bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm h-[200px]">
           <div className="flex justify-between items-center mb-4">
-            <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest">Distribusi Kondisi Aset</p>
+            <p className="text-xs font-normal text-[#A1A5B7] uppercase tracking-widest">Distribusi Kondisi Aset</p>
           </div>
           <div className="w-full h-[120px]">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={analyticsData.statusChart} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
-                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 'bold', fill: '#A1A5B7' }} />
+                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '400', fill: '#A1A5B7' }} />
                 <YAxis hide />
                 <Tooltip 
                   cursor={{ fill: '#F9F9F9' }}
@@ -315,7 +315,7 @@ const MonitoringAset = () => {
                   {analyticsData.statusChart.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
-                  <LabelList dataKey="value" position="top" style={{ fontSize: '10px', fontWeight: 'bold', fill: '#181C32' }} />
+                  <LabelList dataKey="value" position="top" style={{ fontSize: '10px', fontWeight: '400', fill: '#181C32' }} />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -324,7 +324,7 @@ const MonitoringAset = () => {
 
         {/* Priority Pie */}
         <div className="bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm h-[200px] flex flex-col">
-          <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest mb-2">Level Prioritas</p>
+          <p className="text-xs font-normal text-[#A1A5B7] uppercase tracking-widest mb-2">Level Prioritas</p>
           <div className="flex-1 w-full h-full min-h-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -349,7 +349,7 @@ const MonitoringAset = () => {
                   iconType="circle" 
                   formatter={(value, entry) => {
                     const item = analyticsData.priorityChart.find(p => p.name === value);
-                    return <span className="text-[10px] font-bold text-[#3F4254]">{value} ({item?.value || 0})</span>;
+                    return <span className="text-[10px] font-normal text-[#3F4254]">{value} ({item?.value || 0})</span>;
                   }}
                 />
               </PieChart>
@@ -365,14 +365,14 @@ const MonitoringAset = () => {
           <input 
             type="text" 
             placeholder="Cari aset..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm outline-none focus:border-[#0095E8]/30 transition-all shadow-sm"
+            className="w-full pl-12 pr-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all shadow-sm"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
           />
         </div>
         <button 
           onClick={() => setIsFilterOpen(!isFilterOpen)}
-          className={`flex items-center gap-2 px-6 py-3 border rounded-xl text-sm font-medium transition-all ${isFilterOpen ? 'bg-[#F1FAFF] border-[#0095E8] text-[#0095E8]' : 'bg-white border-[#F1F1F4] text-[#7E8299] hover:bg-[#F9F9F9]'}`}
+          className={`flex items-center gap-2 px-6 py-3 border rounded-xl text-sm font-light transition-all ${isFilterOpen ? 'bg-[#F1FAFF] border-[#0095E8] text-[#0095E8]' : 'bg-white border-[#F1F1F4] text-[#7E8299] hover:bg-[#F9F9F9]'}`}
         >
           <Filter size={16} />
           <span>Filter</span>
@@ -385,28 +385,28 @@ const MonitoringAset = () => {
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden mb-6">
             <div className="bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#7E8299] uppercase tracking-wider">Status</label>
-                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.status} onChange={(e) => setActiveFilters({...activeFilters, status: e.target.value})}>
+                <label className="text-xs font-normal text-[#7E8299] uppercase tracking-wider">Status</label>
+                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.status} onChange={(e) => setActiveFilters({...activeFilters, status: e.target.value})}>
                   <option value="">Semua Status</option>
                   {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#7E8299] uppercase tracking-wider">Prioritas</label>
-                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.prioritas} onChange={(e) => setActiveFilters({...activeFilters, prioritas: e.target.value})}>
+                <label className="text-xs font-normal text-[#7E8299] uppercase tracking-wider">Prioritas</label>
+                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.prioritas} onChange={(e) => setActiveFilters({...activeFilters, prioritas: e.target.value})}>
                   <option value="">Semua Prioritas</option>
                   {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
-                <label className="text-xs font-bold text-[#7E8299] uppercase tracking-wider">Lokasi</label>
-                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.lokasi} onChange={(e) => setActiveFilters({...activeFilters, lokasi: e.target.value})}>
+                <label className="text-xs font-normal text-[#7E8299] uppercase tracking-wider">Lokasi</label>
+                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.lokasi} onChange={(e) => setActiveFilters({...activeFilters, lokasi: e.target.value})}>
                   <option value="">Semua Lokasi</option>
                   {locations.map(l => <option key={l.id} value={l.label}>{l.label}</option>)}
                 </select>
               </div>
               <div className="md:col-span-3 flex justify-end">
-                <button onClick={() => setActiveFilters({ status: '', prioritas: '', lokasi: '' })} className="text-xs font-bold text-[#0095E8] hover:underline">Reset Filter</button>
+                <button onClick={() => setActiveFilters({ status: '', prioritas: '', lokasi: '' })} className="text-xs font-normal text-[#0095E8] hover:underline">Reset Filter</button>
               </div>
             </div>
           </motion.div>
@@ -419,41 +419,41 @@ const MonitoringAset = () => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-[#F9F9F9]/50 border-b border-[#F1F1F4]">
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider w-16">No</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Informasi Aset</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Spesifikasi</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Input Oleh</th>
-                <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider w-16">No</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Informasi Aset</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Spesifikasi</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Lokasi & Kondisi</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider">Input Oleh</th>
+                <th className="px-6 py-4 text-[11px] font-normal text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[#F1F1F4]">
               {loading ? (
                 [1,2,3,4,5].map(i => <tr key={i} className="animate-pulse"><td colSpan="6" className="px-6 py-8"><div className="h-4 bg-slate-100 rounded w-full"></div></td></tr>)
               ) : paginatedAssets.length === 0 ? (
-                <tr><td colSpan="6" className="px-6 py-20 text-center text-[#A1A5B7] text-sm font-medium">Data aset tidak ditemukan.</td></tr>
+                <tr><td colSpan="6" className="px-6 py-20 text-center text-[#A1A5B7] text-sm font-light">Data aset tidak ditemukan.</td></tr>
               ) : (
                 paginatedAssets.map((asset, index) => (
                   <tr key={asset.id} className="hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer" onClick={() => { setSelectedAsset(asset); fetchAssetLogs(asset.id); }}>
-                    <td className="px-6 py-5 text-sm font-bold text-[#7E8299]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
+                    <td className="px-6 py-5 text-sm font-light text-[#7E8299]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                     <td className="px-6 py-5">
-                      <p className="text-sm font-bold text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
-                      <p className="text-[11px] text-[#A1A5B7] font-bold uppercase">{asset.brand || '-'}</p>
+                      <p className="text-sm font-normal text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
+                      <p className="text-[11px] text-[#A1A5B7] font-normal uppercase">{asset.brand || '-'}</p>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-[11px] font-bold text-[#3F4254] mb-1">SN: <span className="font-mono text-[#0095E8]">{asset.serial_number || 'N/A'}</span></p>
-                      <p className="text-[10px] text-[#7E8299]">{asset.model_tipe || '-'}</p>
+                      <p className="text-[11px] font-normal text-[#3F4254] mb-1">SN: <span className="font-mono text-[#0095E8]">{asset.serial_number || 'N/A'}</span></p>
+                      <p className="text-[10px] text-[#7E8299] font-light">{asset.model_tipe || '-'}</p>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-[11px] font-bold text-[#3F4254] mb-1">{asset.lokasi || '-'}</p>
+                      <p className="text-[11px] font-normal text-[#3F4254] mb-1">{asset.lokasi || '-'}</p>
                       <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold ${getStatusColor(asset.status)}`}>{asset.status}</span>
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase ${getPriorityColor(asset.prioritas)}`}>{asset.prioritas}</span>
+                        <span className={`text-[10px] font-normal ${getStatusColor(asset.status)}`}>{asset.status}</span>
+                        <span className={`px-2 py-0.5 rounded text-[9px] font-normal uppercase ${getPriorityColor(asset.prioritas)}`}>{asset.prioritas}</span>
                       </div>
                     </td>
                     <td className="px-6 py-5">
-                      <p className="text-[11px] font-bold text-[#3F4254]">{asset.firstName} {asset.lastName}</p>
-                      <p className="text-[10px] text-[#A1A5B7]">{formatDateTime(asset.created_at).date}</p>
+                      <p className="text-[11px] font-normal text-[#3F4254]">{asset.firstName} {asset.lastName}</p>
+                      <p className="text-[10px] text-[#A1A5B7] font-light">{formatDateTime(asset.created_at).date}</p>
                     </td>
                     <td className="px-6 py-5 text-right">
                       <div className="flex justify-end gap-2" onClick={e => e.stopPropagation()}>
@@ -471,7 +471,7 @@ const MonitoringAset = () => {
         {/* Pagination */}
         {totalPages > 1 && (
           <div className="px-6 py-4 border-t border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]/30">
-            <p className="text-xs font-bold text-[#A1A5B7]">Halaman {currentPage} dari {totalPages}</p>
+            <p className="text-xs font-normal text-[#A1A5B7]">Halaman {currentPage} dari {totalPages}</p>
             <div className="flex gap-2">
               <button disabled={currentPage === 1} onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => prev - 1); }} className="p-2 border border-[#F1F1F4] rounded-lg disabled:opacity-30 hover:bg-white transition-all"><ChevronLeft size={16} /></button>
               <button disabled={currentPage === totalPages} onClick={(e) => { e.stopPropagation(); setCurrentPage(prev => prev + 1); }} className="p-2 border border-[#F1F1F4] rounded-lg disabled:opacity-30 hover:bg-white transition-all"><ChevronRight size={16} /></button>
@@ -489,7 +489,7 @@ const MonitoringAset = () => {
               <div className="px-8 py-6 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]/50">
                 <div>
                   <h2 className="text-lg font-bold text-[#181C32]">{selectedAsset.nama_mesin}</h2>
-                  <p className="text-xs font-bold text-[#A1A5B7] uppercase tracking-widest">{selectedAsset.brand || '-'}</p>
+                  <p className="text-xs font-normal text-[#A1A5B7] uppercase tracking-widest">{selectedAsset.brand || '-'}</p>
                 </div>
                 <button onClick={() => setSelectedAsset(null)} className="p-2 hover:bg-white border border-transparent hover:border-[#F1F1F4] rounded-xl text-[#A1A5B7] transition-all"><X size={20} /></button>
               </div>
@@ -499,27 +499,27 @@ const MonitoringAset = () => {
                   {/* Info Grid */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#A1A5B7] uppercase tracking-wider">Model</label>
-                      <p className="text-sm font-bold text-[#3F4254]">{selectedAsset.model_tipe || '-'}</p>
+                      <label className="text-[9px] font-normal text-[#A1A5B7] uppercase tracking-wider">Model</label>
+                      <p className="text-sm font-normal text-[#3F4254]">{selectedAsset.model_tipe || '-'}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#A1A5B7] uppercase tracking-wider">SN</label>
-                      <p className="text-sm font-bold font-mono text-[#0095E8]">{selectedAsset.serial_number || '-'}</p>
+                      <label className="text-[9px] font-normal text-[#A1A5B7] uppercase tracking-wider">SN</label>
+                      <p className="text-sm font-normal font-mono text-[#0095E8]">{selectedAsset.serial_number || '-'}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#A1A5B7] uppercase tracking-wider">Lokasi</label>
-                      <p className="text-sm font-bold text-[#3F4254]">{selectedAsset.lokasi || '-'}</p>
+                      <label className="text-[9px] font-normal text-[#A1A5B7] uppercase tracking-wider">Lokasi</label>
+                      <p className="text-sm font-normal text-[#3F4254]">{selectedAsset.lokasi || '-'}</p>
                     </div>
                     <div className="space-y-1">
-                      <label className="text-[9px] font-black text-[#A1A5B7] uppercase tracking-wider">Servis</label>
-                      <p className="text-sm font-bold text-[#3F4254]">{selectedAsset.maintenance_hours > 0 ? `${selectedAsset.maintenance_hours} Jam` : 'N/A'}</p>
+                      <label className="text-[9px] font-normal text-[#A1A5B7] uppercase tracking-wider">Servis</label>
+                      <p className="text-sm font-normal text-[#3F4254]">{selectedAsset.maintenance_hours > 0 ? `${selectedAsset.maintenance_hours} Jam` : 'N/A'}</p>
                     </div>
                   </div>
 
                   {/* Catatan */}
                   <div className="p-6 bg-[#F9F9F9] rounded-2xl border border-[#F1F1F4]">
                     <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider mb-3">Catatan Spesifikasi</h4>
-                    <p className="text-sm text-[#7E8299] leading-relaxed whitespace-pre-wrap">{selectedAsset.catatan || 'Tidak ada catatan.'}</p>
+                    <p className="text-sm text-[#7E8299] font-light leading-relaxed whitespace-pre-wrap">{selectedAsset.catatan || 'Tidak ada catatan.'}</p>
                   </div>
 
                   {/* Edit History (Audit Trail) */}
@@ -532,20 +532,20 @@ const MonitoringAset = () => {
                       {assetLogs.length > 0 ? (
                         assetLogs.map((log, idx) => (
                           <div key={idx} className="p-4 bg-white border border-[#F1F1F4] rounded-xl flex items-start gap-4 shadow-sm">
-                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${log.action === 'CREATE' ? 'bg-[#E8FFF3] text-[#50CD89]' : 'bg-[#FFF5F8] text-[#F1416C]'}`}>
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-normal ${log.action === 'CREATE' ? 'bg-[#E8FFF3] text-[#50CD89]' : 'bg-[#FFF5F8] text-[#F1416C]'}`}>
                               {log.action === 'CREATE' ? 'C' : 'U'}
                             </div>
                             <div className="flex-1">
                               <div className="flex items-center justify-between mb-1">
-                                <p className="text-xs font-bold text-[#3F4254]">{log.firstName} {log.lastName}</p>
-                                <p className="text-[10px] font-bold text-[#A1A5B7]">{formatDateTime(log.created_at).date} | {formatDateTime(log.created_at).time}</p>
+                                <p className="text-xs font-normal text-[#3F4254]">{log.firstName} {log.lastName}</p>
+                                <p className="text-[10px] font-normal text-[#A1A5B7]">{formatDateTime(log.created_at).date} | {formatDateTime(log.created_at).time}</p>
                               </div>
-                              <p className="text-[11px] text-[#7E8299] italic">{log.details}</p>
+                              <p className="text-[11px] text-[#7E8299] font-light italic">{log.details}</p>
                             </div>
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-[#A1A5B7] italic">Belum ada riwayat perubahan.</p>
+                        <p className="text-xs text-[#A1A5B7] font-light italic">Belum ada riwayat perubahan.</p>
                       )}
                     </div>
                   </div>
@@ -560,14 +560,14 @@ const MonitoringAset = () => {
                       </div>
                     ))}
                     {safeLampiran(selectedAsset.lampiran).length === 0 && (
-                      <div className="col-span-2 py-10 bg-[#F9F9F9] rounded-xl border border-dashed border-[#E4E6EF] text-center text-[#A1A5B7] text-[10px] font-bold uppercase tracking-wider">No Media</div>
+                      <div className="col-span-2 py-10 bg-[#F9F9F9] rounded-xl border border-dashed border-[#E4E6EF] text-center text-[#A1A5B7] text-[10px] font-normal uppercase tracking-wider">No Media</div>
                     )}
                   </div>
                 </div>
               </div>
 
               <div className="px-8 py-6 border-t border-[#F1F1F4] bg-[#F9F9F9]/50 flex justify-end">
-                <button onClick={() => setSelectedAsset(null)} className="px-8 py-3 bg-white border border-[#F1F1F4] text-[#3F4254] rounded-xl text-sm font-bold hover:bg-[#F9F9F9] transition-all">Tutup</button>
+                <button onClick={() => setSelectedAsset(null)} className="px-8 py-3 bg-white border border-[#F1F1F4] text-[#3F4254] rounded-xl text-sm font-normal hover:bg-[#F9F9F9] transition-all">Tutup</button>
               </div>
             </motion.div>
           </div>
@@ -592,26 +592,26 @@ const MonitoringAset = () => {
               <div className="p-8 overflow-y-auto no-scrollbar grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div className="space-y-6">
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Nama Mesin / Aset</label>
-                    <input required type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" value={editFormData.nama_mesin} onChange={(e) => setEditFormData({...editFormData, nama_mesin: e.target.value})} />
+                    <label className="text-sm font-normal text-[#3F4254]">Nama Mesin / Aset</label>
+                    <input required type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" value={editFormData.nama_mesin} onChange={(e) => setEditFormData({...editFormData, nama_mesin: e.target.value})} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Brand</label>
-                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm outline-none transition-all" value={editFormData.brand} onChange={(e) => setEditFormData({...editFormData, brand: e.target.value})} />
+                      <label className="text-sm font-normal text-[#3F4254]">Brand</label>
+                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light outline-none transition-all" value={editFormData.brand} onChange={(e) => setEditFormData({...editFormData, brand: e.target.value})} />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Model/Tipe</label>
-                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm outline-none transition-all" value={editFormData.model_tipe} onChange={(e) => setEditFormData({...editFormData, model_tipe: e.target.value})} />
+                      <label className="text-sm font-normal text-[#3F4254]">Model/Tipe</label>
+                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light outline-none transition-all" value={editFormData.model_tipe} onChange={(e) => setEditFormData({...editFormData, model_tipe: e.target.value})} />
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Serial Number</label>
-                    <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-mono outline-none transition-all" value={editFormData.serial_number} onChange={(e) => setEditFormData({...editFormData, serial_number: e.target.value})} />
+                    <label className="text-sm font-normal text-[#3F4254]">Serial Number</label>
+                    <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-mono font-light outline-none transition-all" value={editFormData.serial_number} onChange={(e) => setEditFormData({...editFormData, serial_number: e.target.value})} />
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Lokasi / Ruangan</label>
-                    <select className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm outline-none transition-all" value={editFormData.lokasi} onChange={(e) => setEditFormData({...editFormData, lokasi: e.target.value})}>
+                    <label className="text-sm font-normal text-[#3F4254]">Lokasi / Ruangan</label>
+                    <select className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light outline-none transition-all" value={editFormData.lokasi} onChange={(e) => setEditFormData({...editFormData, lokasi: e.target.value})}>
                       {locations.map(l => <option key={l.id} value={l.label}>{l.label}</option>)}
                     </select>
                   </div>
@@ -620,28 +620,28 @@ const MonitoringAset = () => {
                 <div className="space-y-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Prioritas</label>
-                      <select className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm outline-none transition-all" value={editFormData.prioritas} onChange={(e) => setEditFormData({...editFormData, prioritas: e.target.value})}>
+                      <label className="text-sm font-normal text-[#3F4254]">Prioritas</label>
+                      <select className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light outline-none transition-all" value={editFormData.prioritas} onChange={(e) => setEditFormData({...editFormData, prioritas: e.target.value})}>
                         {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
                       </select>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-semibold text-[#3F4254]">Kondisi</label>
-                      <select className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm outline-none transition-all" value={editFormData.status} onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}>
+                      <label className="text-sm font-normal text-[#3F4254]">Kondisi</label>
+                      <select className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light outline-none transition-all" value={editFormData.status} onChange={(e) => setEditFormData({...editFormData, status: e.target.value})}>
                         {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
                       </select>
                     </div>
                   </div>
                   <div className="p-4 bg-[#F9F9F9] rounded-2xl border border-[#F1F1F4] space-y-3">
-                    <p className="text-[10px] font-bold text-[#181C32] uppercase">Jadwal Maintenance</p>
+                    <p className="text-[10px] font-normal text-[#181C32] uppercase">Jadwal Maintenance</p>
                     <div className="grid grid-cols-2 gap-3">
-                      <input type="number" min="0" placeholder="Hari" className="px-3 py-2 bg-white rounded-lg text-sm border border-[#F1F1F4]" value={maintInput.days} onChange={(e) => handleMaintenanceInput('days', e.target.value)} />
-                      <input type="number" min="0" placeholder="Jam" className="px-3 py-2 bg-white rounded-lg text-sm border border-[#F1F1F4]" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
+                      <input type="number" min="0" placeholder="Hari" className="px-3 py-2 bg-white rounded-lg text-sm font-light border border-[#F1F1F4]" value={maintInput.days} onChange={(e) => handleMaintenanceInput('days', e.target.value)} />
+                      <input type="number" min="0" placeholder="Jam" className="px-3 py-2 bg-white rounded-lg text-sm font-light border border-[#F1F1F4]" value={maintInput.hours} onChange={(e) => handleMaintenanceInput('hours', e.target.value)} />
                     </div>
-                    <p className="text-[10px] text-[#50CD89] font-bold">Total: {editFormData.maintenance_hours} Jam Operasional</p>
+                    <p className="text-[10px] text-[#50CD89] font-normal">Total: {editFormData.maintenance_hours} Jam Operasional</p>
                   </div>
                   <div className="space-y-2">
-                    <label className="text-sm font-semibold text-[#3F4254]">Foto Lampiran</label>
+                    <label className="text-sm font-normal text-[#3F4254]">Foto Lampiran</label>
                     <div className="flex flex-wrap gap-2">
                       {editFormData.lampiran.map((img, idx) => (
                         <div key={idx} className="relative w-16 h-16 rounded-lg overflow-hidden border border-[#F1F1F4]">
@@ -659,8 +659,8 @@ const MonitoringAset = () => {
               </div>
 
               <div className="px-8 py-6 border-t border-[#F1F1F4] bg-[#F9F9F9]/50 flex justify-end gap-3">
-                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-8 py-3 text-sm font-bold text-[#7E8299] hover:bg-white rounded-xl transition-all">Batal</button>
-                <button type="submit" className="px-10 py-3 bg-[#0095E8] text-white text-sm font-bold rounded-xl shadow-lg shadow-[#0095E8]/20 hover:bg-[#0084ce] transition-all">Update Aset</button>
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="px-8 py-3 text-sm font-normal text-[#7E8299] hover:bg-white rounded-xl transition-all">Batal</button>
+                <button type="submit" className="px-10 py-3 bg-[#0095E8] text-white text-sm font-normal rounded-xl shadow-lg shadow-[#0095E8]/20 hover:bg-[#0084ce] transition-all">Update Aset</button>
               </div>
             </motion.form>
           </div>
