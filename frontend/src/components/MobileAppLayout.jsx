@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Home, ClipboardList, UserCircle, ShieldCheck, ClipboardCheck } from 'lucide-react';
+import { Home, ClipboardList, UserCircle, ShieldCheck, ClipboardCheck, Package } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 
@@ -41,16 +41,23 @@ const MobileAppLayout = ({ children }) => {
     return () => clearInterval(interval);
   }, [canApprove]);
 
+  const hasPerm = (moduleId, action = 'Lihat') => {
+    if (!user) return false;
+    if (user.role?.toLowerCase() === 'super admin') return true;
+    return user.permissions?.[moduleId]?.includes(action);
+  };
+
   const navItems = [
     { icon: Home, label: 'Beranda', path: '/demo/mobile' },
     { icon: ClipboardList, label: 'Tugas', path: '/demo/mobile/tasks' },
     { icon: ClipboardCheck, label: 'Checklist', path: '/demo/mobile/checklist' },
+    ...(hasPerm('aset_menu', 'Lihat') ? [{ icon: Package, label: 'Aset', path: '/demo/mobile/aset' }] : []),
     ...(canApprove ? [{ icon: ShieldCheck, label: 'Approval', path: '/demo/mobile/approvals' }] : []),
     { icon: UserCircle, label: 'Profil', path: '/demo/mobile/profile' },
   ];
 
   // Only show bottom nav on main tab pages — hide everywhere else
-  const mainPaths = ['/demo/mobile', '/demo/mobile/tasks', '/demo/mobile/profile', '/demo/mobile/approvals', '/demo/mobile/checklist', '/demo/mobile/checklist-riwayat'];
+  const mainPaths = ['/demo/mobile', '/demo/mobile/tasks', '/demo/mobile/profile', '/demo/mobile/approvals', '/demo/mobile/checklist', '/demo/mobile/checklist-riwayat', '/demo/mobile/aset'];
   const showNav = mainPaths.includes(location.pathname);
 
   return (

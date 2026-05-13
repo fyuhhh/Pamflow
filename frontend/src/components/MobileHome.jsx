@@ -390,6 +390,20 @@ const MobileHome = () => {
               <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Checklist Harian</p>
             </motion.div>
 
+            {(user?.role?.toLowerCase() === 'super admin' || user?.permissions?.['aset_menu']?.includes('Lihat')) && (
+              <motion.div 
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/demo/mobile/aset')}
+                className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden group cursor-pointer"
+              >
+                <div className="absolute top-0 right-0 w-24 h-24 bg-[#50CD89]/5 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500" />
+                <div className="w-12 h-12 bg-emerald-50 text-[#50CD89] rounded-2xl flex items-center justify-center mb-6 shadow-sm group-active:bg-[#50CD89] group-active:text-white transition-colors">
+                  <Package size={24} />
+                </div>
+                <h4 className="text-[15px] font-black text-slate-800 leading-tight">Monitoring Aset</h4>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Data & Log Aset</p>
+              </motion.div>
+            )}
           </div>
         </motion.section>
 
