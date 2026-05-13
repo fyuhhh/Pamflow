@@ -104,12 +104,15 @@ const MonitoringAset = () => {
     const socket = getSocket();
     if (socket) {
       const handleAssetUpdate = (data) => {
-        setAssets(prev => prev.map(a => a.id === data.id ? { ...a, ...data } : a));
-        if (activeMobileAsset?.id === data.id) {
-          setActiveMobileAsset(prev => ({ ...prev, ...data }));
+        const cleanData = { ...data, id: parseInt(data.id) };
+        setAssets(prev => prev.map(a => a.id === cleanData.id ? { ...a, ...cleanData } : a));
+        
+        // Update active views
+        if (activeMobileAsset?.id === cleanData.id) {
+          setActiveMobileAsset(prev => prev ? { ...prev, ...cleanData } : null);
         }
-        if (selectedAsset?.id === data.id) {
-          setSelectedAsset(prev => ({ ...prev, ...data }));
+        if (selectedAsset?.id === cleanData.id) {
+          setSelectedAsset(prev => prev ? { ...prev, ...cleanData } : null);
         }
       };
       socket.on('asset-status-updated', (data) => {
@@ -206,19 +209,19 @@ const MonitoringAset = () => {
       const res = await authFetch(`/api/assets/${assetId}/toggle`, { method: 'POST' });
       if (res.ok) {
         const data = await res.json();
-        // Ensure ID is number
-        if (data.id) data.id = parseInt(data.id);
+        const cleanData = { ...data, id: parseInt(data.id) };
         
-        setAssets(prev => {
-          const newState = prev.map(a => a.id === assetId ? { ...a, ...data } : a);
-          
-          // Update active views immediately from the new state
-          const updatedAsset = newState.find(a => a.id === assetId);
-          if (activeMobileAsset?.id === assetId) setActiveMobileAsset(updatedAsset);
-          if (selectedAsset?.id === assetId) setSelectedAsset(updatedAsset);
-          
-          return newState;
-        });
+        // Update the main list
+        setAssets(prev => prev.map(a => a.id === assetId ? { ...a, ...cleanData } : a));
+        
+        // Update current views AFTER the main list update is scheduled
+        // We find the existing asset and merge it ourselves to be safe
+        const currentAsset = assets.find(a => a.id === assetId);
+        if (currentAsset) {
+          const updated = { ...currentAsset, ...cleanData };
+          if (activeMobileAsset?.id === assetId) setActiveMobileAsset(updated);
+          if (selectedAsset?.id === assetId) setSelectedAsset(updated);
+        }
       } else {
         showError('Gagal mengubah status aset di server');
       }
