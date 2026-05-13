@@ -441,6 +441,43 @@ async function initializeDB(retries = 5, delay = 5000) {
       )
     `);
 
+      // 10.1 Assets
+      await pool.query(`
+      CREATE TABLE IF NOT EXISTS assets (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT,
+        nama_mesin VARCHAR(255) NOT NULL,
+        brand VARCHAR(255),
+        model_tipe VARCHAR(255),
+        serial_number VARCHAR(255),
+        lokasi VARCHAR(255),
+        prioritas VARCHAR(100),
+        kondisi TEXT,
+        user_pendaftar_id INT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      )
+    `);
+
+      // 10.2 Asset Priorities
+      await pool.query(`
+      CREATE TABLE IF NOT EXISTS asset_priorities (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        company_id INT,
+        label VARCHAR(100) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+      // Seed Default Asset Priorities
+      const [prioCheck] = await pool.query('SELECT * FROM asset_priorities LIMIT 1');
+      if (prioCheck.length === 0) {
+        const defaults = ['Rendah', 'Sedang', 'Tinggi'];
+        for (const label of defaults) {
+          await pool.query('INSERT INTO asset_priorities (label) VALUES (?)', [label]);
+        }
+      }
+
       // Migration: Add jenis_template to task_templates
       try {
         const [cols] = await pool.query("SHOW COLUMNS FROM task_templates LIKE 'jenis_template'");
