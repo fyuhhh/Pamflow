@@ -1023,6 +1023,12 @@ const MonitoringAset = () => {
                              <div>
                                 <p className="text-[14px] font-black text-slate-800 leading-tight">{log.reason}</p>
                                 <p className="text-[12px] text-slate-500 font-medium mt-1">{log.actions_taken}</p>
+                                <div className="mt-2 flex items-center gap-2">
+                                   <Clock size={12} className="text-blue-500" />
+                                   <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                                      Interval Reset: {Math.floor(log.old_remaining_seconds / 3600)}h → {Math.floor(log.new_remaining_seconds / 3600)}h
+                                   </span>
+                                </div>
                              </div>
                              <div className="flex items-center gap-2 pt-2 border-t border-slate-50">
                                 <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
@@ -1462,6 +1468,12 @@ const MonitoringAset = () => {
                                    <span className="text-[9px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
                                 </div>
                                 <p className="text-[11px] text-slate-600 leading-relaxed">{log.actions_taken}</p>
+                                <div className="flex items-center gap-1.5 py-1 px-2 bg-blue-50/50 rounded-lg w-fit">
+                                   <Clock size={10} className="text-blue-500" />
+                                   <span className="text-[9px] font-black text-blue-600 uppercase">
+                                      {Math.floor(log.old_remaining_seconds / 3600)}h → {Math.floor(log.new_remaining_seconds / 3600)}h
+                                   </span>
+                                </div>
                                 <p className="text-[9px] font-bold text-[#0095E8]">PIC: {log.responsible_person}</p>
                                 {log.photos && safeParseJSON(log.photos).length > 0 && (
                                   <div className="grid grid-cols-4 gap-2 mt-2">
