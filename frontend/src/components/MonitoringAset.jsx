@@ -63,7 +63,22 @@ const MonitoringAset = () => {
   const [timeLeft, setTimeLeft] = useState(0);
   const [isToggling, setIsToggling] = useState(false);
   const [toggleConfirm, setToggleConfirm] = useState({ show: false, assetId: null, action: '' });
+  const [isMaintModalOpen, setIsMaintModalOpen] = useState(false);
+  const [maintFormData, setMaintFormData] = useState({
+    reason: '', responsible_person: '', actions_taken: '', photos: [],
+    days: 0, hours: 0
+  });
+  const [maintLogs, setMaintLogs] = useState([]);
+  const [isSubmittingMaint, setIsSubmittingMaint] = useState(false);
   const timerRef = useRef(null);
+
+  const assetsNeedingMaint = useMemo(() => {
+    return assets.filter(a => a.remaining_seconds > 0 && a.remaining_seconds <= 172800);
+  }, [assets]);
+
+  const assetsLockout = useMemo(() => {
+    return assets.filter(a => a.remaining_seconds <= 0);
+  }, [assets]);
 
   // App Mode Detection
   const appMode = import.meta.env.MODE; // 'pc' or 'mobile'
@@ -115,6 +130,12 @@ const MonitoringAset = () => {
       return () => socket.off('asset-status-updated');
     }
   }, []);
+
+  useEffect(() => {
+    if (selectedAsset && !isMobile) {
+      fetchMaintLogs(selectedAsset.id);
+    }
+  }, [selectedAsset, isMobile]);
 
   // Timer Effect
   useEffect(() => {
@@ -188,6 +209,13 @@ const MonitoringAset = () => {
     const assetId = parseInt(id);
     const asset = assets.find(a => a.id === assetId);
     if (!asset) return;
+
+    // Lockout logic: cannot start if remaining time is 0
+    if (!asset.is_running && asset.remaining_seconds <= 0) {
+      showError('Unit membutuhkan maintenance segera. Tidak dapat dinyalakan.');
+      return;
+    }
+
     setToggleConfirm({ 
       show: true, 
       assetId, 
@@ -216,6 +244,69 @@ const MonitoringAset = () => {
       showError('Terjadi kesalahan saat mengubah status');
     } finally {
       setIsToggling(false);
+    }
+  };
+
+  const fetchMaintLogs = async (id) => {
+    try {
+      const res = await authFetch(`/api/assets/${id}/maintenance-logs`);
+      if (res.ok) {
+        setMaintLogs(await res.json());
+      }
+    } catch (err) {
+      console.error('Fetch maint logs error:', err);
+    }
+  };
+
+  const handleSubmitMaintenance = async () => {
+    const { reason, responsible_person, actions_taken, photos, days, hours } = maintFormData;
+    if (!reason || !responsible_person || !actions_taken) {
+      showError('Mohon lengkapi data maintenance');
+      return;
+    }
+
+    const totalHours = parseInt(days || 0) * 24 + parseInt(hours || 0);
+    if (totalHours <= 0) {
+      showError('Interval maintenance baru harus lebih dari 0');
+      return;
+    }
+
+    setIsSubmittingMaint(true);
+    try {
+      const assetId = isMobile ? activeMobileAsset?.id : selectedAsset?.id;
+      const res = await authFetch(`/api/assets/${assetId}/maintenance`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reason,
+          responsible_person,
+          actions_taken,
+          photos,
+          new_maintenance_hours: totalHours
+        })
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        success('Data maintenance berhasil disimpan');
+        setIsMaintModalOpen(false);
+        setMaintFormData({ reason: '', responsible_person: '', actions_taken: '', photos: [], days: 0, hours: 0 });
+        
+        setAssets(prev => prev.map(a => a.id === assetId ? { 
+          ...a, 
+          remaining_seconds: data.remaining_seconds, 
+          maintenance_hours: data.maintenance_hours,
+          is_running: 0,
+          last_started_at: null
+        } : a));
+        
+        fetchMaintLogs(assetId);
+        fetchAssetLogs(assetId);
+      }
+    } catch (err) {
+      showError('Gagal menyimpan data maintenance');
+    } finally {
+      setIsSubmittingMaint(false);
     }
   };
 
@@ -429,6 +520,37 @@ const MonitoringAset = () => {
             </div>
           </div>
 
+          {/* Maintenance Alerts Notification */}
+          {(assetsNeedingMaint.length > 0 || assetsLockout.length > 0) && (
+            <motion.div 
+              initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
+              className="mb-6 bg-amber-50 border border-amber-100 rounded-2xl p-4 overflow-hidden"
+            >
+              <div className="flex items-start gap-3">
+                <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center shrink-0">
+                  <AlertTriangle className="text-amber-600" size={20} />
+                </div>
+                <div>
+                  <h4 className="text-[13px] font-black text-amber-900 leading-tight">Perhatian: Maintenance Unit</h4>
+                  <p className="text-[11px] text-amber-700/80 font-bold mt-1 leading-relaxed">
+                    {assetsLockout.length > 0 && `${assetsLockout.length} unit butuh maintenance segera (Lockout). `}
+                    {assetsNeedingMaint.length > 0 && `${assetsNeedingMaint.length} unit mendekati batas maintenance.`}
+                  </p>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {[...assetsLockout, ...assetsNeedingMaint].slice(0, 3).map(a => (
+                      <span key={a.id} className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${a.remaining_seconds <= 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
+                        {a.nama_mesin}
+                      </span>
+                    ))}
+                    {(assetsNeedingMaint.length + assetsLockout.length) > 3 && (
+                      <span className="text-[9px] font-bold text-amber-400">+{assetsNeedingMaint.length + assetsLockout.length - 3} lagi</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
           {/* Asset Selection Area */}
           <div className="relative">
             <select 
@@ -437,12 +559,17 @@ const MonitoringAset = () => {
               onChange={(e) => {
                 const asset = assets.find(a => a.id === parseInt(e.target.value));
                 setActiveMobileAsset(asset);
-                if (asset) fetchAssetLogs(asset.id);
+                if (asset) {
+                  fetchAssetLogs(asset.id);
+                  fetchMaintLogs(asset.id);
+                }
               }}
             >
               <option value="" disabled>Pilih Unit Mesin / Aset...</option>
               {assets.map(a => (
-                <option key={a.id} value={a.id}>{a.nama_mesin} - {a.brand}</option>
+                <option key={a.id} value={a.id} className={a.remaining_seconds <= 0 ? 'text-red-500' : ''}>
+                  {a.nama_mesin} - {a.brand} {a.remaining_seconds <= 0 ? '(MAINTENANCE)' : ''}
+                </option>
               ))}
             </select>
             <Zap className="absolute left-4 top-1/2 -translate-y-1/2 text-[#0095E8]" size={20} />
@@ -497,24 +624,35 @@ const MonitoringAset = () => {
 
               {/* GIANT ON/OFF BUTTON & TIMER */}
               <div className="flex flex-col items-center justify-center gap-8 py-4">
-                {/* Big Round Toggle */}
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  disabled={isToggling}
-                  onClick={() => handleToggleStatus(activeMobileAsset.id)}
-                  className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${
-                    isToggling ? 'opacity-70 grayscale' : ''
-                  } ${
-                    activeMobileAsset.is_running 
-                      ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
-                      : 'bg-white border-slate-50 shadow-slate-200 text-slate-300'
-                  }`}
-                >
-                  <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
-                  <span className="text-[18px] font-black uppercase tracking-widest">
-                    {isToggling ? 'Wait...' : (activeMobileAsset.is_running ? 'Stop' : 'Start')}
-                  </span>
-                </motion.button>
+                {/* Big Round Toggle or Maintenance Required */}
+                {activeMobileAsset.remaining_seconds <= 0 ? (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    onClick={() => setIsMaintModalOpen(true)}
+                    className="w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 bg-amber-500 border-amber-100 shadow-amber-200 text-white"
+                  >
+                    <AlertTriangle size={48} strokeWidth={2.5} className="animate-pulse" />
+                    <span className="text-[14px] font-black uppercase tracking-widest text-center px-4">Maintenance Required</span>
+                  </motion.button>
+                ) : (
+                  <motion.button
+                    whileTap={{ scale: 0.9 }}
+                    disabled={isToggling}
+                    onClick={() => handleToggleStatus(activeMobileAsset.id)}
+                    className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${
+                      isToggling ? 'opacity-70 grayscale' : ''
+                    } ${
+                      activeMobileAsset.is_running 
+                        ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
+                        : 'bg-white border-slate-50 shadow-slate-200 text-slate-300'
+                    }`}
+                  >
+                    <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
+                    <span className="text-[18px] font-black uppercase tracking-widest">
+                      {isToggling ? 'Wait...' : (activeMobileAsset.is_running ? 'Stop' : 'Start')}
+                    </span>
+                  </motion.button>
+                )}
 
                 {/* COUNTDOWN TIMER */}
                 <div className="text-center">
@@ -583,6 +721,143 @@ const MonitoringAset = () => {
                 </div>
               </div>
             </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Maintenance Submission Modal for Mobile */}
+        <AnimatePresence>
+          {isMaintModalOpen && (
+            <div className="fixed inset-0 z-[3000] flex items-end justify-center">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsMaintModalOpen(false)} />
+              <motion.div 
+                initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
+                className="relative bg-white w-full rounded-t-[40px] p-6 pb-12 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
+                style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}
+              >
+                <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
+                <div className="flex items-center justify-between mb-8">
+                   <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center">
+                         <Settings size={20} />
+                      </div>
+                      <h3 className="text-[18px] font-black text-slate-800">Submit Maintenance</h3>
+                   </div>
+                   <button onClick={() => setIsMaintModalOpen(false)} className="text-slate-400 p-2"><X size={24} /></button>
+                </div>
+
+                <div className="space-y-6">
+                  {/* Form Fields */}
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Alasan Maintenance / Kerusakan</label>
+                    <textarea 
+                      className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-amber-400/30 transition-all min-h-[100px]"
+                      placeholder="Contoh: Penggantian oli berkala atau perbaikan rantai..."
+                      value={maintFormData.reason}
+                      onChange={(e) => setMaintFormData({...maintFormData, reason: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Penanggung Jawab (PIC)</label>
+                    <input 
+                      type="text"
+                      className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-black text-slate-700 outline-none focus:bg-white focus:border-amber-400/30 transition-all"
+                      placeholder="Nama lengkap teknisi..."
+                      value={maintFormData.responsible_person}
+                      onChange={(e) => setMaintFormData({...maintFormData, responsible_person: e.target.value})}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Tindakan Yang Dilakukan</label>
+                    <textarea 
+                      className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-amber-400/30 transition-all min-h-[100px]"
+                      placeholder="Detail perbaikan yang dikerjakan..."
+                      value={maintFormData.actions_taken}
+                      onChange={(e) => setMaintFormData({...maintFormData, actions_taken: e.target.value})}
+                    />
+                  </div>
+
+                  {/* Photo Upload for Maintenance */}
+                  <div className="space-y-3">
+                    <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Foto Bukti (Maks 5)</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {maintFormData.photos.map((img, idx) => (
+                        <div key={idx} className="relative aspect-square">
+                          <img src={img} className="w-full h-full object-cover rounded-2xl border border-slate-100" />
+                          <button 
+                            onClick={() => setMaintFormData({...maintFormData, photos: maintFormData.photos.filter((_, i) => i !== idx)})}
+                            className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white"
+                          >
+                            <X size={12} />
+                          </button>
+                        </div>
+                      ))}
+                      {maintFormData.photos.length < 5 && (
+                        <label className="aspect-square bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-slate-100 transition-all">
+                          <Camera size={24} className="text-slate-300" />
+                          <span className="text-[10px] font-black text-slate-400">Upload</span>
+                          <input 
+                            type="file" accept="image/*" multiple className="hidden" 
+                            onChange={async (e) => {
+                              const files = Array.from(e.target.files).slice(0, 5 - maintFormData.photos.length);
+                              for (const file of files) {
+                                const reader = new FileReader();
+                                reader.onloadend = () => {
+                                  setMaintFormData(prev => ({ ...prev, photos: [...prev.photos, reader.result] }));
+                                };
+                                reader.readAsDataURL(file);
+                              }
+                            }} 
+                          />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* New Interval Setting */}
+                  <div className="bg-blue-50/50 rounded-[32px] p-6 space-y-4">
+                    <div className="flex items-center gap-3 mb-2">
+                       <Clock size={18} className="text-[#0095E8]" />
+                       <h4 className="text-[14px] font-black text-slate-800">Atur Interval Selanjutnya</h4>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-slate-400 uppercase">Hari</label>
+                         <input 
+                           type="number" className="w-full p-4 bg-white rounded-2xl text-center font-black text-slate-700 outline-none focus:ring-2 focus:ring-[#0095E8]/20"
+                           value={maintFormData.days} onChange={(e) => setMaintFormData({...maintFormData, days: e.target.value})}
+                         />
+                      </div>
+                      <div className="space-y-2">
+                         <label className="text-[10px] font-black text-slate-400 uppercase">Jam</label>
+                         <input 
+                           type="number" className="w-full p-4 bg-white rounded-2xl text-center font-black text-slate-700 outline-none focus:ring-2 focus:ring-[#0095E8]/20"
+                           value={maintFormData.hours} onChange={(e) => setMaintFormData({...maintFormData, hours: e.target.value})}
+                         />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-center text-slate-400 font-bold italic">Waktu akan dikonversi menjadi total jam operasional baru.</p>
+                  </div>
+
+                  <motion.button
+                    whileTap={{ scale: 0.98 }}
+                    disabled={isSubmittingMaint}
+                    onClick={handleSubmitMaintenance}
+                    className="w-full py-4 bg-amber-500 text-white rounded-[24px] font-black text-[16px] shadow-xl shadow-amber-100 flex items-center justify-center gap-2 disabled:opacity-50 mt-4"
+                  >
+                    {isSubmittingMaint ? (
+                      <div className="w-6 h-6 border-4 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 size={20} />
+                        <span>Selesaikan & Reset Timer</span>
+                      </>
+                    )}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </div>
           )}
         </AnimatePresence>
 
@@ -695,6 +970,45 @@ const MonitoringAset = () => {
                       <div className="col-span-2 py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 text-center text-slate-400 text-[12px] font-bold">Tidak ada foto lampiran</div>
                     )}
                   </div>
+                </div>
+
+                {/* Maintenance History Section in Detail */}
+                <div className="space-y-4">
+                   <div className="flex items-center justify-between">
+                     <h4 className="text-[14px] font-black text-slate-800">Riwayat Maintenance</h4>
+                     <Zap size={16} className="text-amber-500" />
+                   </div>
+                   <div className="space-y-4">
+                      {maintLogs.length === 0 ? (
+                        <div className="py-6 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-center text-slate-400 text-[11px] font-bold italic">Belum ada riwayat maintenance.</div>
+                      ) : (
+                        maintLogs.map((log, idx) => (
+                          <div key={idx} className="p-5 bg-white border border-slate-100 rounded-[28px] shadow-sm space-y-3">
+                             <div className="flex justify-between items-center">
+                                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase">Service Done</span>
+                                <span className="text-[10px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
+                             </div>
+                             <div>
+                                <p className="text-[14px] font-black text-slate-800 leading-tight">{log.reason}</p>
+                                <p className="text-[12px] text-slate-500 font-medium mt-1">{log.actions_taken}</p>
+                             </div>
+                             <div className="flex items-center gap-2 pt-2 border-t border-slate-50">
+                                <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                                   <Settings size={12} />
+                                </div>
+                                <span className="text-[11px] font-bold text-slate-600">PIC: {log.responsible_person}</span>
+                             </div>
+                             {log.photos && JSON.parse(log.photos).length > 0 && (
+                               <div className="grid grid-cols-3 gap-2 mt-2">
+                                  {JSON.parse(log.photos).map((img, i) => (
+                                    <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-slate-100" onClick={() => setZoomedImage(img)} />
+                                  ))}
+                               </div>
+                             )}
+                          </div>
+                        )
+                      ))}
+                   </div>
                 </div>
 
                 {/* Log Section */}
@@ -1090,13 +1404,45 @@ const MonitoringAset = () => {
                   </div>
                 </div>
 
-                <div className="lg:col-span-4 space-y-6">
-                   <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Media & Lampiran</h4>
-                    <div className="grid grid-cols-2 gap-3">
-                      {safeLampiran(selectedAsset.lampiran).map((img, idx) => (
-                        <img key={idx} src={img} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
-                      ))}
-                    </div>
+                <div className="lg:col-span-4 space-y-8">
+                   <div>
+                     <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider mb-4">Media & Lampiran</h4>
+                     <div className="grid grid-cols-2 gap-3">
+                       {safeLampiran(selectedAsset.lampiran).map((img, idx) => (
+                         <img key={idx} src={img} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                       ))}
+                     </div>
+                   </div>
+
+                   <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Maintenance</h4>
+                        <Settings size={14} className="text-amber-500" />
+                      </div>
+                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                         {maintLogs.length === 0 ? (
+                           <p className="text-[11px] text-slate-400 italic">Belum ada data maintenance.</p>
+                         ) : (
+                           maintLogs.map((log, idx) => (
+                             <div key={idx} className="p-4 bg-slate-50 rounded-2xl space-y-2">
+                                <div className="flex justify-between items-start">
+                                   <span className="text-[10px] font-black text-[#181C32] uppercase">{log.reason}</span>
+                                   <span className="text-[9px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
+                                </div>
+                                <p className="text-[11px] text-slate-600 leading-relaxed">{log.actions_taken}</p>
+                                <p className="text-[9px] font-bold text-[#0095E8]">PIC: {log.responsible_person}</p>
+                                {log.photos && JSON.parse(log.photos).length > 0 && (
+                                  <div className="grid grid-cols-4 gap-2 mt-2">
+                                     {JSON.parse(log.photos).map((img, i) => (
+                                       <img key={i} src={img} className="w-full aspect-square object-cover rounded-lg cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                                     ))}
+                                  </div>
+                                )}
+                             </div>
+                           ))
+                         )}
+                      </div>
+                   </div>
                 </div>
               </div>
             </motion.div>
