@@ -496,10 +496,10 @@ const MonitoringAset = () => {
                       <History size={16} className="text-[#0095E8]" />
                       <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Perubahan & Audit</h4>
                     </div>
-                    <div className="space-y-3">
+                    <div className="max-h-[400px] overflow-y-auto pr-2 space-y-3 custom-scrollbar">
                       {assetLogs.length > 0 ? (
                         assetLogs.map((log, idx) => (
-                          <div key={idx} className="p-4 bg-white border border-[#F1F1F4] rounded-xl flex items-start gap-4">
+                          <div key={idx} className="p-4 bg-white border border-[#F1F1F4] rounded-xl flex items-start gap-4 shadow-sm">
                             <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold ${log.action === 'CREATE' ? 'bg-[#E8FFF3] text-[#50CD89]' : 'bg-[#FFF5F8] text-[#F1416C]'}`}>
                               {log.action === 'CREATE' ? 'C' : 'U'}
                             </div>
@@ -649,6 +649,10 @@ const MonitoringAset = () => {
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #F9F9F9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #E4E6EF; border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #D1D3E0; }
       `}</style>
     </div>
   );
