@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Info, MapPin, ChevronDown, CheckCircle, ChevronRight, X, FileText, Image, AlertTriangle, Send } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
+
 import { motion } from 'framer-motion';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
@@ -468,7 +470,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
                           className="w-28 h-20 rounded-xl overflow-hidden border border-[#E4E6EF] shadow-sm cursor-pointer group/photo relative"
                           onClick={() => setZoomedImage(photo)}
                         >
-                          <img src={photo} className="w-full h-full object-cover transition-transform group-hover/photo:scale-110" alt={`Temuan ${pIdx + 1}`} />
+                          <img src={getImageUrl(photo)} className="w-full h-full object-cover transition-transform group-hover/photo:scale-110" alt={`Temuan ${pIdx + 1}`} />
                           <div className="absolute inset-0 bg-black/0 group-hover/photo:bg-black/20 transition-colors flex items-center justify-center">
                             <Image size={16} className="text-white opacity-0 group-hover/photo:opacity-100 transition-opacity" />
                           </div>
@@ -880,7 +882,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
         <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-8">
           <div className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setZoomedImage(null)} />
           <div className="relative max-w-5xl w-full max-h-[90vh] flex flex-col items-center justify-center pointer-events-none">
-            <img src={zoomedImage} className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto" alt="Zoomed Temuan" />
+            <img src={getImageUrl(zoomedImage)} className="max-w-full max-h-[85vh] object-contain rounded-xl shadow-2xl pointer-events-auto" alt="Zoomed Temuan" />
             <button 
               onClick={() => setZoomedImage(null)}
               className="absolute -top-4 -right-4 sm:top-0 sm:-right-12 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center backdrop-blur-md transition-all pointer-events-auto border border-white/20"

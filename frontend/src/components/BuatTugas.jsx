@@ -7,6 +7,7 @@ import { useModal } from '../context/ModalContext';
 import CustomDatePicker from './CustomDatePicker';
 import CustomTimePicker from './CustomTimePicker';
 import SearchableSelect from './SearchableSelect';
+import { getImageUrl } from '../utils/imageUrl';
 import API_URL from '../config';
 
 const InfoTooltip = ({ text }) => (
@@ -1079,7 +1080,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                           className="w-28 h-20 rounded-xl overflow-hidden border border-[#F1416C]/15 bg-white cursor-pointer hover:opacity-80 transition-opacity shadow-sm"
                           onClick={() => setZoomedImage(photo)}
                         >
-                          <img src={photo} className="w-full h-full object-cover" alt={`Temuan ${pIdx + 1}`} />
+                          <img src={getImageUrl(photo)} className="w-full h-full object-cover" alt={`Temuan ${pIdx + 1}`} />
                         </div>
                       ))}
                     </div>
@@ -1121,7 +1122,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                             <div className="mt-3 flex flex-wrap gap-2">
                               {item.original_photos.map((photo, pIdx) => (
                                 <div key={pIdx} className="w-32 h-20 rounded-lg overflow-hidden border border-[#F1416C]/20 bg-white cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(photo)}>
-                                  <img src={photo} className="w-full h-full object-cover" alt={`Temuan ${pIdx + 1}`} />
+                                  <img src={getImageUrl(photo)} className="w-full h-full object-cover" alt={`Temuan ${pIdx + 1}`} />
                                 </div>
                               ))}
                             </div>
@@ -1941,7 +1942,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
       {zoomedImage && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setZoomedImage(null)}>
           <div className="relative max-w-[90vw] max-h-[90vh]">
-            <img src={zoomedImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
+            <img src={getImageUrl(zoomedImage)} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
             <button 
               className="absolute -top-4 -right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-lg hover:bg-gray-200"
               onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}

@@ -3,6 +3,8 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { ArrowLeft, FileText, Image, Download, CheckCircle2, XCircle, RotateCcw, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
+import { getImageUrl } from '../utils/imageUrl';
+
 import API_URL from '../config';
 
 const safeArr = (val) => {
@@ -205,7 +207,7 @@ const TerkirimDetail = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg border border-[#E4E6EF] overflow-hidden flex-shrink-0">
                           <img 
-                            src={`${API_URL}${task.lampiran}`} 
+                            src={getImageUrl(task.lampiran)} 
                             alt="Lampiran" 
                             className="w-full h-full object-cover"
                           />
@@ -307,7 +309,7 @@ const TerkirimDetail = () => {
                     <div className="mt-1.5 flex flex-wrap gap-2">
                       {_photos.map((photo, pIdx) => (
                         <div key={pIdx} className="w-20 h-14 rounded border border-[#E4E6EF] overflow-hidden">
-                          <img src={photo} className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity cursor-pointer" alt={`Original ${pIdx + 1}`} onClick={() => setZoomedImage(photo)} />
+                          <img src={getImageUrl(photo)} className="w-full h-full object-cover opacity-70 hover:opacity-100 transition-opacity cursor-pointer" alt={`Original ${pIdx + 1}`} onClick={() => setZoomedImage(photo)} />
                         </div>
                       ))}
                     </div>
@@ -428,7 +430,7 @@ const TerkirimDetail = () => {
       {zoomedImage && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setZoomedImage(null)}>
           <div className="relative max-w-[90vw] max-h-[90vh]">
-            <img src={zoomedImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
+            <img src={getImageUrl(zoomedImage)} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
             <button 
               className="absolute -top-4 -right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-lg hover:bg-gray-200"
               onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}

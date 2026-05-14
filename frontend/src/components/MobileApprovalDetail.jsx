@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Check, Clock, MapPin, FileText, User, Building2, Hash, History } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
+
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
 
@@ -313,13 +315,13 @@ const MobileApprovalDetail = () => {
                               <div className="grid grid-cols-3 gap-2">
                                 {value.map((img, idx) => (
                                   <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-200">
-                                    <img src={img} className="w-full h-full object-cover" alt={`Lampiran ${idx + 1}`} />
+                                    <img src={getImageUrl(img)} className="w-full h-full object-cover" alt={`Lampiran ${idx + 1}`} />
                                   </div>
                                 ))}
                               </div>
                             ) : (
                               <div className="w-[200px] rounded-lg overflow-hidden border border-slate-200">
-                                <img src={value} className="w-full object-cover" alt="Lampiran" />
+                                <img src={getImageUrl(value)} className="w-full object-cover" alt="Lampiran" />
                               </div>
                             )
                           ) : (

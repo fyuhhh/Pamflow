@@ -28,3 +28,8 @@ Checklist NVR_Ordered.xlsx
 restored_controller.js
 restored_dashboard.jsx
 step260.json
+run.txt
+backend/migrate_base64_to_files.js
+
+# Uploads
+backend/uploads/

@@ -4,6 +4,8 @@ import { ChevronLeft, Info, MapPin, ExternalLink, Clock, Calendar, CheckCircle2,
 import { authFetch } from '../services/api';
 import { generateTaskPDF } from '../utils/pdfGenerator';
 import { Download } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
+
 
 const TaskDetail = () => {
   const { taskId } = useParams();
@@ -632,13 +634,13 @@ const TaskDetail = () => {
                                       <div className="grid grid-cols-2 gap-3 w-full max-w-[500px]">
                                         {value.map((img, idx) => (
                                           <div key={idx} className="aspect-square border border-slate-200 rounded-xl overflow-hidden shadow-sm bg-slate-50 group hover:shadow-md transition-all">
-                                            <img src={img} className="w-full h-full object-cover" alt={`Lampiran ${idx + 1}`} />
+                                            <img src={getImageUrl(img)} className="w-full h-full object-cover" alt={`Lampiran ${idx + 1}`} />
                                           </div>
                                         ))}
                                       </div>
                                     ) : (
                                       <div className="w-[300px] max-w-full border border-slate-200 rounded-2xl overflow-hidden shadow-sm bg-slate-50 group transition-all hover:shadow-md">
-                                        <img src={value} className="w-full object-cover" alt="Lampiran" />
+                                        <img src={getImageUrl(value)} className="w-full object-cover" alt="Lampiran" />
                                       </div>
                                     )
                                   ) : (

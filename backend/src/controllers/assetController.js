@@ -1,14 +1,6 @@
-const mysql = require('mysql2/promise');
-require('dotenv').config();
+const pool = require('../config/db');
+const { saveBase64Image } = require('../utils/fileHelper');
 
-const dbConfig = {
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASSWORD || '',
-  database: process.env.DB_NAME || 'clone_optera'
-};
-
-const pool = mysql.createPool(dbConfig);
 
 const assetController = {
   getAllAssets: async (req, res) => {
@@ -43,10 +35,17 @@ const assetController = {
       const maintHours = parseInt(maintenance_hours) || 0;
       const remainingSecs = maintHours * 3600;
 
+      // Process base64 images to files
+      let processedLampiran = null;
+      if (Array.isArray(lampiran)) {
+        processedLampiran = lampiran.map(img => saveBase64Image(img, 'assets'));
+      }
+
       const [result] = await pool.query(
         'INSERT INTO assets (company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours, remaining_seconds, user_pendaftar_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran ? JSON.stringify(lampiran) : null, maintHours, remainingSecs, user_id]
+        [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, processedLampiran ? JSON.stringify(processedLampiran) : null, maintHours, remainingSecs, user_id]
       );
+
 
       // Log the creation
       await pool.query(
@@ -199,10 +198,17 @@ const assetController = {
       if (oldRows.length === 0) return res.status(404).json({ message: 'Asset not found' });
       const old = oldRows[0];
 
+      // Process base64 images to files
+      let processedLampiran = null;
+      if (Array.isArray(lampiran)) {
+        processedLampiran = lampiran.map(img => saveBase64Image(img, 'assets'));
+      }
+
       await pool.query(
         'UPDATE assets SET nama_mesin = ?, brand = ?, model_tipe = ?, serial_number = ?, lokasi = ?, prioritas = ?, status = ?, catatan = ?, lampiran = ?, maintenance_hours = ?, remaining_seconds = ? WHERE id = ? AND company_id = ?',
-        [nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran ? JSON.stringify(lampiran) : null, maintenance_hours || 0, (maintenance_hours || 0) * 3600, id, company_id]
+        [nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, processedLampiran ? JSON.stringify(processedLampiran) : null, maintenance_hours || 0, (maintenance_hours || 0) * 3600, id, company_id]
       );
+
 
       // Track what changed
       let changes = [];
@@ -364,10 +370,17 @@ const assetController = {
         return res.status(400).json({ message: 'Note or photos are required' });
       }
 
+      // Process base64 images to files
+      let processedPhotos = null;
+      if (Array.isArray(photos)) {
+        processedPhotos = photos.map(img => saveBase64Image(img, 'logs'));
+      }
+
       await pool.query(
         'INSERT INTO asset_audit_logs (asset_id, action, user_id, details, photos) VALUES (?, ?, ?, ?, ?)',
-        [id, 'NOTE', user_id, note || '', photos ? JSON.stringify(photos) : null]
+        [id, 'NOTE', user_id, note || '', processedPhotos ? JSON.stringify(processedPhotos) : null]
       );
+
 
       // Update the main asset's catatan as well (latest note)
       await pool.query('UPDATE assets SET catatan = ? WHERE id = ?', [note, id]);
@@ -392,10 +405,17 @@ const assetController = {
       const oldRemaining = asset.remaining_seconds;
       const newRemaining = parseInt(new_maintenance_hours) * 3600;
 
+      // Process base64 images to files
+      let processedPhotos = null;
+      if (Array.isArray(photos)) {
+        processedPhotos = photos.map(img => saveBase64Image(img, 'logs'));
+      }
+
       await pool.query(
         'INSERT INTO asset_maintenance_logs (asset_id, user_id, reason, responsible_person, actions_taken, photos, old_remaining_seconds, new_remaining_seconds) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [id, user_id, reason, responsible_person, actions_taken, photos ? JSON.stringify(photos) : null, oldRemaining, newRemaining]
+        [id, user_id, reason, responsible_person, actions_taken, processedPhotos ? JSON.stringify(processedPhotos) : null, oldRemaining, newRemaining]
       );
+
 
       await pool.query(
         'UPDATE assets SET remaining_seconds = ?, maintenance_hours = ?, is_running = 0, last_started_at = NULL WHERE id = ?',

@@ -1,5 +1,7 @@
 const db = require('../config/db');
 const { calculateNextDate } = require('../../recurrenceService');
+const { processBase64InObject } = require('../utils/fileHelper');
+
 
 const getAllTasks = async (filters) => {
   const { company_id, agent_id, departemen } = filters;
@@ -360,25 +362,30 @@ const updateMaterialNote = async (id, { catatan_material }) => {
 
 
 const submitTask = async (id, { submission_data, nama_agen, agent_id }) => {
+  // Process base64 images in submission_data to files
+  const processedData = processBase64InObject(submission_data, 'tasks');
+  const submissionJson = JSON.stringify(processedData || []);
+
   await db.query(
     'UPDATE tasks SET submission_data = ?, waktu_dikirim = CURRENT_TIMESTAMP WHERE id = ?',
-    [JSON.stringify(submission_data), id]
+    [submissionJson, id]
   );
 
   if (nama_agen) {
     const [historyRows] = await db.query(
       'UPDATE task_history SET waktu_selesai = CURRENT_TIMESTAMP, submission_data = ? WHERE task_id = ? AND nama_agen = ? AND progres = ? AND waktu_selesai IS NULL',
-      [JSON.stringify(submission_data), id, nama_agen, 'Berlangsung']
+      [submissionJson, id, nama_agen, 'Berlangsung']
     );
 
     if (historyRows.affectedRows === 0) {
       const [taskData] = await db.query('SELECT waktu_dimulai FROM tasks WHERE id = ?', [id]);
       await db.query(
         'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai, waktu_selesai, submission_data) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)',
-        [id, nama_agen, 'Berlangsung', taskData[0]?.waktu_dimulai || null, JSON.stringify(submission_data)]
+        [id, nama_agen, 'Berlangsung', taskData[0]?.waktu_dimulai || null, submissionJson]
       );
     }
   }
+
 
   const [rows] = await db.query('SELECT waktu_dikirim FROM tasks WHERE id = ?', [id]);
   return rows[0]?.waktu_dikirim;

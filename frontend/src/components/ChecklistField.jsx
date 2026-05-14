@@ -1,6 +1,8 @@
 import React, { useRef } from 'react';
 import { Camera, X, Check, CheckCircle2, XCircle } from 'lucide-react';
 import { compressImage } from '../utils/imageOptimizer';
+import { getImageUrl } from '../utils/imageUrl';
+
 
 const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, notes, onNotesChange, photoUrls, onPhotoChange }) => {
   const fileInputRef = useRef(null);
@@ -102,7 +104,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
             <input type="file" accept="image/*" ref={fileInputRef} onChange={(e) => handleFileChange(e, false)} className="hidden" />
             {value ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-[#E4E6EF]">
-                <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                <img src={getImageUrl(value)} alt="Preview" className="w-full h-full object-cover" />
                 <button type="button" onClick={() => onValueChange('')} className="absolute top-2 right-2 p-1.5 bg-black/50 text-white rounded-full backdrop-blur-sm">
                   <X size={14} />
                 </button>
@@ -120,7 +122,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
           <div className="grid grid-cols-3 gap-3">
             {Array.isArray(value) && value.map((img, idx) => (
               <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-[#E4E6EF]">
-                <img src={img} className="w-full h-full object-cover" alt="Preview" />
+                <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="Preview" />
                 <button type="button" onClick={() => onValueChange(value.filter((_, i) => i !== idx))} className="absolute top-1 right-1 p-1 bg-black/50 text-white rounded-full">
                   <X size={10} />
                 </button>
@@ -211,7 +213,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
                 <div className="flex flex-wrap gap-2 mt-1">
                   {photoUrls.map((url, idx) => (
                     <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#F1416C]/20 bg-white shadow-sm">
-                      <img src={url} className="w-full h-full object-cover" alt={`Foto kerusakan ${idx + 1}`} />
+                      <img src={getImageUrl(url)} className="w-full h-full object-cover" alt={`Foto kerusakan ${idx + 1}`} />
                       <button 
                         type="button" 
                         onClick={() => {

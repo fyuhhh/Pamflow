@@ -4,7 +4,9 @@ import { ArrowLeft, FileText, Download, CheckCircle2, AlertTriangle } from 'luci
 import { hasPermission } from '../utils/permissions';
 import { useModal } from '../context/ModalContext';
 import { authFetch } from '../services/api';
+import { getImageUrl } from '../utils/imageUrl';
 import API_URL from '../config';
+
 
 const safeArr = (val) => {
   if (!val) return [];
@@ -337,7 +339,7 @@ const DiterimaDetail = () => {
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg border border-[#E4E6EF] overflow-hidden flex-shrink-0">
                           <img 
-                            src={`${API_URL}${task.lampiran}`} 
+                            src={getImageUrl(task.lampiran)} 
                             alt="Lampiran" 
                             className="w-full h-full object-cover"
                           />
@@ -459,7 +461,7 @@ const DiterimaDetail = () => {
                     <div className="mt-2 flex flex-wrap gap-2">
                       {_photos.map((photo, pIdx) => (
                         <div key={pIdx} className="w-24 h-16 rounded-lg overflow-hidden border border-[#E4E6EF]">
-                          <img src={photo} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" alt={`Original ${pIdx + 1}`} onClick={() => setZoomedImage(photo)} />
+                          <img src={getImageUrl(photo)} className="w-full h-full object-cover cursor-pointer hover:opacity-80 transition-opacity" alt={`Original ${pIdx + 1}`} onClick={() => setZoomedImage(photo)} />
                         </div>
                       ))}
                     </div>
@@ -609,7 +611,7 @@ const DiterimaDetail = () => {
       {zoomedImage && (
         <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setZoomedImage(null)}>
           <div className="relative max-w-[90vw] max-h-[90vh]">
-            <img src={zoomedImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
+            <img src={getImageUrl(zoomedImage)} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
             <button 
               className="absolute -top-4 -right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-lg hover:bg-gray-200"
               onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}

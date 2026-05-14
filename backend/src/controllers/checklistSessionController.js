@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const socketService = require('../services/socketService');
 const { notifyUsers } = require('../services/pushService');
+const { processBase64InObject } = require('../utils/fileHelper');
 
 // ================================================================
 // POST /api/checklist-sessions
@@ -26,6 +27,9 @@ const submitSession = async (req, res) => {
     const ok_count     = item_results.filter(i => i.status === 'ok').length;
     const broken_count = item_results.filter(i => i.status === 'rusak').length;
 
+    // Process base64 images in item_results
+    const processedResults = processBase64InObject(item_results, 'checklists');
+    
     const [result] = await db.query(
       `INSERT INTO checklist_sessions
         (company_id, dept_id, dept_name, template_id, template_name,
@@ -35,7 +39,7 @@ const submitSession = async (req, res) => {
       [
         company_id, dept_id, dept_name || null, template_id || null, template_name || null,
         session_date, session_time || null, session_shift || 'pagi', total_items, ok_count, broken_count,
-        JSON.stringify(item_results),
+        JSON.stringify(processedResults),
         submitted_by_id || null, submitted_by_name || null
       ]
     );
@@ -201,6 +205,9 @@ const generateWO = async (req, res) => {
       fix_photo_url: ''
     }));
 
+    // Process base64 in lampiran if any (though usually it's already path from checklist)
+    const processedLampiran = processBase64InObject(lampiran, 'dept-tasks');
+
     // Insert department_task (WO ke Engineering)
     const [taskResult] = await db.query(
       `INSERT INTO department_tasks 
@@ -215,7 +222,7 @@ const generateWO = async (req, res) => {
         departemen_asal || session.dept_name, nama_peminta || '',
         departemen_tujuan,
         nama_wo, deskripsi || '',
-        lampiran || null,
+        processedLampiran ? (typeof processedLampiran === 'string' ? processedLampiran : JSON.stringify(processedLampiran)) : null,
         tanggal_mulai || null, tanggal_selesai || null, urgensi,
         JSON.stringify(woItems),
         JSON.stringify([]),                // partial_submissions kosong awal

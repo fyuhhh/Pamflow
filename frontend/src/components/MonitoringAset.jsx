@@ -26,7 +26,9 @@ import {
   Zap,
   Activity
 } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
 import { authFetch } from '../services/api';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { compressImage } from '../utils/imageOptimizer';
 import { 
@@ -898,7 +900,7 @@ const MonitoringAset = () => {
                     <div className="grid grid-cols-3 gap-3">
                       {maintFormData.photos.map((img, idx) => (
                         <div key={idx} className="relative aspect-square">
-                          <img src={img} className="w-full h-full object-cover rounded-2xl border border-slate-100" />
+                          <img src={getImageUrl(img)} className="w-full h-full object-cover rounded-2xl border border-slate-100" />
                           <button 
                             onClick={() => setMaintFormData({...maintFormData, photos: maintFormData.photos.filter((_, i) => i !== idx)})}
                             className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white"
@@ -1013,7 +1015,7 @@ const MonitoringAset = () => {
                   <div className="flex flex-wrap gap-2">
                     {notePhotos.map((img, idx) => (
                       <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
-                        <img src={img} className="w-full h-full object-cover" />
+                        <img src={getImageUrl(img)} className="w-full h-full object-cover" />
                         <button 
                           onClick={() => setNotePhotos(prev => prev.filter((_, i) => i !== idx))}
                           className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md"
@@ -1121,7 +1123,7 @@ const MonitoringAset = () => {
                            {note.photos && safeParseJSON(note.photos).length > 0 && (
                              <div className="grid grid-cols-3 gap-2 mt-3">
                                 {safeParseJSON(note.photos).map((img, i) => (
-                                  <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-amber-100" onClick={() => setZoomedImage(img)} />
+                                  <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-amber-100" onClick={() => setZoomedImage(img)} />
                                 ))}
                              </div>
                            )}
@@ -1139,7 +1141,7 @@ const MonitoringAset = () => {
                   <div className="grid grid-cols-2 gap-3">
                     {safeParseJSON(selectedAsset.lampiran).map((img, idx) => (
                       <div key={idx} className="aspect-square rounded-2xl overflow-hidden border border-slate-100" onClick={() => setZoomedImage(img)}>
-                        <img src={img} className="w-full h-full object-cover" />
+                        <img src={getImageUrl(img)} className="w-full h-full object-cover" />
                       </div>
                     ))}
                     {safeParseJSON(selectedAsset.lampiran).length === 0 && (
@@ -1183,7 +1185,7 @@ const MonitoringAset = () => {
                              {log.photos && safeParseJSON(log.photos).length > 0 && (
                                <div className="grid grid-cols-3 gap-2 mt-2">
                                   {safeParseJSON(log.photos).map((img, i) => (
-                                    <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-slate-100" onClick={() => setZoomedImage(img)} />
+                                    <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-slate-100" onClick={() => setZoomedImage(img)} />
                                   ))}
                                </div>
                              )}
@@ -1212,7 +1214,7 @@ const MonitoringAset = () => {
                         {log.action === 'NOTE' && log.photos && safeParseJSON(log.photos).length > 0 && (
                           <div className="grid grid-cols-3 gap-2 mt-2">
                              {safeParseJSON(log.photos).map((img, i) => (
-                               <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl" onClick={() => setZoomedImage(img)} />
+                               <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl" onClick={() => setZoomedImage(img)} />
                              ))}
                           </div>
                         )}
@@ -1230,7 +1232,7 @@ const MonitoringAset = () => {
         <AnimatePresence>
           {zoomedImage && isMobile && (
             <div className="fixed inset-0 z-[3000] bg-black flex items-center justify-center p-4" onClick={() => setZoomedImage(null)}>
-              <img src={zoomedImage} className="w-full h-auto max-h-screen object-contain" />
+              <img src={getImageUrl(zoomedImage)} className="w-full h-auto max-h-screen object-contain" />
               <button className="absolute top-10 right-6 text-white"><X size={32} /></button>
             </div>
           )}
@@ -1578,7 +1580,7 @@ const MonitoringAset = () => {
                              {note.photos && safeParseJSON(note.photos).length > 0 && (
                                <div className="grid grid-cols-4 gap-2 mt-3">
                                   {safeParseJSON(note.photos).map((img, i) => (
-                                    <img key={i} src={img} className="w-full aspect-square object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                                    <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => setZoomedImage(img)} />
                                   ))}
                                </div>
                              )}
@@ -1625,7 +1627,7 @@ const MonitoringAset = () => {
                      <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider mb-4">Media & Lampiran</h4>
                      <div className="grid grid-cols-2 gap-3">
                        {safeParseJSON(selectedAsset.lampiran).map((img, idx) => (
-                         <img key={idx} src={img} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                         <img key={idx} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
                        ))}
                      </div>
                    </div>
@@ -1656,7 +1658,7 @@ const MonitoringAset = () => {
                                 {log.photos && safeParseJSON(log.photos).length > 0 && (
                                   <div className="grid grid-cols-4 gap-2 mt-2">
                                      {safeParseJSON(log.photos).map((img, i) => (
-                                       <img key={i} src={img} className="w-full aspect-square object-cover rounded-lg cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                                       <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-lg cursor-zoom-in" onClick={() => setZoomedImage(img)} />
                                      ))}
                                   </div>
                                 )}
@@ -1777,7 +1779,7 @@ const MonitoringAset = () => {
                        <div className="flex flex-wrap gap-3">
                           {editFormData.lampiran.map((img, idx) => (
                             <div key={idx} className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-                              <img src={img} className="w-full h-full object-cover" />
+                              <img src={getImageUrl(img)} className="w-full h-full object-cover" />
                               <button type="button" onClick={() => setEditFormData({...editFormData, lampiran: editFormData.lampiran.filter((_, i) => i !== idx)})} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={12} /></button>
                             </div>
                           ))}
@@ -1860,7 +1862,7 @@ const MonitoringAset = () => {
                 className="relative max-w-full max-h-full flex items-center justify-center"
               >
                 <img 
-                  src={zoomedImage} 
+                  src={getImageUrl(zoomedImage)} 
                   className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" 
                   alt="Zoomed View"
                 />

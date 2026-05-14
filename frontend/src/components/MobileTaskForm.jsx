@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, Camera, X, Check } from 'lucide-react';
+import { getImageUrl } from '../utils/imageUrl';
+
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { saveOfflineData } from '../services/offlineDB';
@@ -394,14 +396,14 @@ const MobileTaskForm = () => {
                         <div className="grid grid-cols-2 gap-3 mt-2">
                           {value.map((img, idx) => (
                             <div key={idx} className="aspect-square rounded-xl overflow-hidden border border-slate-100 shadow-sm bg-slate-50">
-                              <img src={img} className="w-full h-full object-cover" alt="Review" />
+                              <img src={getImageUrl(img)} className="w-full h-full object-cover" alt="Review" />
                             </div>
                           ))}
                         </div>
                       ) : (
                         value ? (
                           <div className="w-full aspect-video rounded-2xl overflow-hidden border border-slate-100 shadow-sm mt-2">
-                            <img src={value} className="w-full h-full object-cover" alt="Review" />
+                            <img src={getImageUrl(value)} className="w-full h-full object-cover" alt="Review" />
                           </div>
                         ) : <p className="text-slate-400 font-normal italic">-</p>
                       )
@@ -511,7 +513,7 @@ const MobileTaskForm = () => {
                       {formData[fieldKey] ? (
                         <div className="relative w-full aspect-video rounded-2xl overflow-hidden border border-slate-200 shadow-md">
                           <img
-                            src={formData[fieldKey]}
+                            src={getImageUrl(formData[fieldKey])}
                             alt="Preview"
                             className="w-full h-full object-cover"
                           />
@@ -554,7 +556,7 @@ const MobileTaskForm = () => {
                       <div className="grid grid-cols-2 gap-3">
                         {Array.isArray(formData[fieldKey]) && formData[fieldKey].map((img, idx) => (
                           <div key={idx} className="relative aspect-square rounded-xl overflow-hidden border border-slate-200 shadow-sm">
-                            <img src={img} className="w-full h-full object-cover" alt={`Preview ${idx + 1}`} />
+                            <img src={getImageUrl(img)} className="w-full h-full object-cover" alt={`Preview ${idx + 1}`} />
                             <button
                               type="button"
                               onClick={() => {

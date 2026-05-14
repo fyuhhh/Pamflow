@@ -1,6 +1,7 @@
 const db = require('../config/db');
 const socketService = require('../services/socketService');
 const { notifyUsers } = require('../services/pushService');
+const { processBase64InObject } = require('../utils/fileHelper');
 
 // Helper: format Date to local YYYY-MM-DD string to prevent timezone shift
 const formatLocalDate = (d) => {
@@ -96,6 +97,9 @@ const createDeptTask = async (req, res) => {
     const woItemsJson = Array.isArray(wo_items) ? JSON.stringify(wo_items) : '[]';
     const totalWoItems = Array.isArray(wo_items) ? wo_items.length : 0;
 
+    // Process base64 in lampiran
+    const processedLampiran = processBase64InObject(lampiran, 'dept-tasks');
+
     const [result] = await db.query(
       `INSERT INTO department_tasks (
         perusahaan, company_id, departemen_asal, nama_peminta, departemen_tujuan, template, template_id,
@@ -105,7 +109,8 @@ const createDeptTask = async (req, res) => {
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?)`,
       [
         perusahaan, company_id, departemen_asal, nama_peminta, departemen_tujuan, template || null, template_id || null,
-        nama_wo, jenis_tugas || 'wo', deskripsi || null, lokasi || null, detail_alamat || null, lampiran || null,
+        nama_wo, jenis_tugas || 'wo', deskripsi || null, lokasi || null, detail_alamat || null, 
+        processedLampiran ? (typeof processedLampiran === 'string' ? processedLampiran : JSON.stringify(processedLampiran)) : null,
         tanggal_mulai || null, tanggal_selesai || null, urgensi,
         woItemsJson, totalWoItems, checklist_session_id || null
       ]
@@ -301,6 +306,9 @@ const submitPartial = async (req, res) => {
     const fixedCount = woItems.filter(i => i.status === 'fixed').length;
     const totalCount = woItems.length;
 
+    // Process base64 in photo_urls
+    const processedPhotos = processBase64InObject(photo_urls, 'dept-tasks');
+
     // Record partial submission ke history
     partialSubs.push({
       submitted_at: now,
@@ -308,7 +316,7 @@ const submitPartial = async (req, res) => {
       submitted_by_name: submitted_by_name || null,
       items_fixed: fixed_item_ids,
       notes: notes || '',
-      photo_urls: photo_urls || []
+      photo_urls: processedPhotos || []
     });
 
     await db.query(

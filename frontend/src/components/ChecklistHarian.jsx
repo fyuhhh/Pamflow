@@ -12,6 +12,8 @@ import CustomDatePicker from './CustomDatePicker';
 import SearchableSelect from './SearchableSelect';
 import ChecklistField from './ChecklistField';
 import CustomTimePicker from './CustomTimePicker';
+import { getImageUrl } from '../utils/imageUrl';
+
 
 // Helper: always return a proper array (handles JSON strings from API)
 const safeArr = (val) => {
@@ -1070,7 +1072,7 @@ const ChecklistHarian = () => {
         {zoomedImage && (
           <div className="fixed inset-0 z-[300] flex items-center justify-center bg-black/80 backdrop-blur-sm" onClick={() => setZoomedImage(null)}>
             <div className="relative max-w-[90vw] max-h-[90vh]">
-              <img src={zoomedImage} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
+              <img src={getImageUrl(zoomedImage)} className="max-w-full max-h-full object-contain rounded-xl shadow-2xl" alt="Zoomed" />
               <button
                 className="absolute -top-4 -right-4 w-8 h-8 bg-white text-black rounded-full flex items-center justify-center font-bold shadow-lg hover:bg-gray-200"
                 onClick={(e) => { e.stopPropagation(); setZoomedImage(null); }}
@@ -1167,13 +1169,13 @@ const ChecklistHarian = () => {
                           <div className="mt-1 text-[12px] text-[#7E8299]">
                             {item.type === 'Image' ? (
                               <div className="mt-2 w-24 h-16 rounded-lg overflow-hidden border border-[#E4E6EF]">
-                                <img src={item.value} className="w-full h-full object-cover" alt="Result" />
+                                <img src={getImageUrl(item.value)} className="w-full h-full object-cover" alt="Result" />
                               </div>
                             ) : item.type === 'Multiple Images' ? (
                               <div className="mt-2 flex gap-1 overflow-x-auto no-scrollbar">
                                 {Array.isArray(item.value) && item.value.map((img, i) => (
                                   <div key={i} className="w-16 h-12 rounded border border-[#E4E6EF] flex-shrink-0">
-                                    <img src={img} className="w-full h-full object-cover rounded" alt="Result" />
+                                    <img src={getImageUrl(img)} className="w-full h-full object-cover rounded" alt="Result" />
                                   </div>
                                 ))}
                               </div>
@@ -1195,7 +1197,7 @@ const ChecklistHarian = () => {
                               <div className="mt-1 flex flex-wrap gap-2">
                                 {_urls.map((url, i) => (
                                   <div key={i} className="w-24 h-16 rounded border border-[#F1416C]/20 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(url)}>
-                                    <img src={url} className="w-full h-full object-cover" alt="Foto kerusakan" />
+                                    <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="Foto kerusakan" />
                                   </div>
                                 ))}
                               </div>
@@ -1207,7 +1209,7 @@ const ChecklistHarian = () => {
                             <div className="flex flex-wrap gap-2">
                               {_urls.map((url, i) => (
                                 <div key={i} className="w-24 h-16 rounded border border-[#F1416C]/20 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(url)}>
-                                  <img src={url} className="w-full h-full object-cover" alt="Foto kerusakan" />
+                                  <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="Foto kerusakan" />
                                 </div>
                               ))}
                             </div>
