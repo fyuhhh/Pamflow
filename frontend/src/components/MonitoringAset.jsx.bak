@@ -48,116 +48,6 @@ import {
 import { useModal } from '../context/ModalContext';
 import { getSocket } from '../services/socket';
 
-
-const AssetAnalyticsDashboard = ({ data }) => {
-  if (!data || !data.trend || !data.asset) return (
-    <div className="h-[200px] flex items-center justify-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-      <div className="flex flex-col items-center gap-2">
-        <Activity className="text-slate-300 animate-pulse" size={32} />
-        <span className="text-[11px] font-bold text-slate-400">Menyiapkan analisis aset...</span>
-      </div>
-    </div>
-  );
-  
-  const { trend = [], asset = {} } = data;
-  
-  // Calculate health score (0-100)
-  const maintenanceCount = Array.isArray(trend) ? trend.reduce((sum, item) => sum + (item.count || 0), 0) : 0;
-  const totalSeconds = (asset.maintenance_hours || 100) * 3600;
-  const remainingPercent = asset.remaining_seconds !== undefined ? (asset.remaining_seconds / totalSeconds) * 100 : 0;
-  
-  let healthScore = 100;
-  healthScore -= (maintenanceCount * 10); // Each maintenance in last 12 months costs 10 points
-  if (remainingPercent < 20) healthScore -= 30; // Heavy penalty for low timer
-  
-  healthScore = Math.max(0, Math.min(100, healthScore));
-
-  const getHealthStatus = (score) => {
-    if (score > 80) return { label: 'Sangat Baik', color: 'text-green-500', bg: 'bg-green-50' };
-    if (score > 60) return { label: 'Normal', color: 'text-blue-500', bg: 'bg-blue-50' };
-    if (score > 30) return { label: 'Perlu Perhatian', color: 'text-amber-500', bg: 'bg-amber-50' };
-    return { label: 'Rekomendasi Penggantian', color: 'text-red-500', bg: 'bg-red-50' };
-  };
-
-  const status = getHealthStatus(healthScore);
-
-  return (
-    <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2">
-            <Activity size={18} className="text-[#0095E8]" />
-            <h4 className="text-xs font-black text-[#181C32] uppercase tracking-wider">Replacement Analysis</h4>
-         </div>
-         <div className={`px-4 py-1.5 rounded-full ${status.bg} ${status.color} text-[10px] font-black uppercase tracking-widest border border-current/10`}>
-           {status.label}
-         </div>
-      </div>
-
-      <div className="grid grid-cols-3 gap-4">
-        <div className="p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Health Score</p>
-           <h5 className={`text-2xl font-black ${status.color}`}>{Math.round(healthScore)}%</h5>
-        </div>
-        <div className="p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Repair Freq (12m)</p>
-           <h5 className="text-2xl font-black text-slate-800">{maintenanceCount}x</h5>
-        </div>
-        <div className="p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Asset Status</p>
-           <h5 className="text-[13px] font-black text-slate-700">{asset.status}</h5>
-        </div>
-      </div>
-
-      <div className="h-[220px] w-full bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm relative overflow-hidden">
-         <div className="absolute top-4 left-6">
-            <span className="text-[10px] font-black text-slate-400 uppercase">Trend Frekuensi Kerusakan</span>
-         </div>
-         <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={trend} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
-              <XAxis 
-                dataKey="month" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 9, fontWeight: 900, fill: '#A1A5B7'}} 
-                dy={10}
-              />
-              <YAxis hide />
-              <Tooltip 
-                cursor={{ fill: '#F9F9F9' }}
-                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', padding: '16px' }}
-                itemStyle={{ fontSize: '11px', fontWeight: 900, color: '#181C32' }}
-              />
-              <Bar dataKey="count" fill="#0095E8" radius={[8, 8, 0, 0]} barSize={28}>
-                {trend.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.count >= 2 ? '#F1416C' : '#0095E8'} />
-                ))}
-              </Bar>
-            </BarChart>
-         </ResponsiveContainer>
-      </div>
-      <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100/50">
-         <div className="flex gap-3">
-            <div className="w-8 h-8 bg-blue-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-100">
-               <Info size={16} />
-            </div>
-            <div>
-               <p className="text-[11px] font-black text-blue-900 uppercase tracking-widest mb-1">Rekomendasi Sistem</p>
-               <p className="text-[12px] text-blue-700 font-medium leading-relaxed">
-                 {healthScore < 40 ? 
-                   "Aset ini menunjukkan tingkat degradasi yang kritis. Frekuensi maintenance yang tinggi menandakan biaya operasional akan terus membengkak. Disarankan untuk segera merencanakan pengadaan unit baru." : 
-                   healthScore < 70 ? 
-                   "Aset dalam kondisi penurunan performa. Lakukan pengecekan komponen utama lebih sering untuk mencegah kerusakan total." : 
-                   "Aset dalam kondisi optimal. Terus pertahankan jadwal maintenance rutin untuk menjaga life-cycle mesin."
-                 }
-               </p>
-            </div>
-         </div>
-      </div>
-    </div>
-  );
-};
-
 const MonitoringAset = () => {
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -184,8 +74,6 @@ const MonitoringAset = () => {
   });
   const [maintLogs, setMaintLogs] = useState([]);
   const [isSubmittingMaint, setIsSubmittingMaint] = useState(false);
-  const [specificAssetAnalytics, setSpecificAssetAnalytics] = useState(null);
-  const [isFetchingSpecificAnalytics, setIsFetchingSpecificAnalytics] = useState(false);
   const timerRef = useRef(null);
 
   const assetsNeedingMaint = useMemo(() => {
@@ -266,23 +154,9 @@ const MonitoringAset = () => {
     }
   }, []);
 
-  const fetchAssetAnalytics = async (id) => {
-    setIsFetchingSpecificAnalytics(true);
-    try {
-      const res = await authFetch(`/api/assets/${id}/analytics`);
-      if (res.ok) setSpecificAssetAnalytics(await res.json());
-    } catch (err) {
-      console.error('Fetch analytics error:', err);
-    } finally {
-      setIsFetchingSpecificAnalytics(false);
-    }
-  };
-
   useEffect(() => {
     if (selectedAsset && !isMobile) {
-      fetchAssetLogs(selectedAsset.id);
       fetchMaintLogs(selectedAsset.id);
-      fetchAssetAnalytics(selectedAsset.id);
     }
   }, [selectedAsset, isMobile]);
 
@@ -1715,13 +1589,10 @@ const MonitoringAset = () => {
                         {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
                           <div className="col-span-2 py-6 text-center text-slate-300 text-xs font-bold">Tidak ada catatan tim.</div>
                         )}
-                      </div>
-                   </div>
+                     </div>
+                  </div>
 
-                   {/* Dashboard Analytics Section */}
-                   <AssetAnalyticsDashboard data={specificAssetAnalytics} />
-
-                   {/* Logs Section */}
+                  {/* Logs Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">

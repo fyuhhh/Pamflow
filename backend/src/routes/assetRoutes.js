@@ -18,5 +18,6 @@ router.post('/:id/toggle', authMiddleware, assetController.toggleAssetStatus);
 router.post('/:id/note', authMiddleware, assetController.addAssetNote);
 router.post('/:id/maintenance', authMiddleware, assetController.submitMaintenance);
 router.get('/:id/maintenance-logs', authMiddleware, assetController.getMaintenanceLogs);
+router.get('/:id/analytics', authMiddleware, assetController.getAssetAnalytics);
 
 module.exports = router;

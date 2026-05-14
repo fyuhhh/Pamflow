@@ -455,6 +455,41 @@ const assetController = {
       console.error('Get maintenance logs error:', error);
       res.status(500).json({ message: 'Internal server error' });
     }
+  },
+
+  getAssetAnalytics: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      // 1. Get Maintenance Trend (monthly) for the last 12 months
+      const [trendRows] = await pool.query(
+        `SELECT 
+          DATE_FORMAT(created_at, '%Y-%m') as month,
+          COUNT(*) as count
+         FROM asset_maintenance_logs
+         WHERE asset_id = ?
+         GROUP BY month
+         ORDER BY month ASC
+         LIMIT 12`,
+        [id]
+      );
+
+      // 2. Get Asset Life Cycle Info
+      const [assetRows] = await pool.query(
+        'SELECT id, nama_mesin, maintenance_hours, remaining_seconds, created_at, status FROM assets WHERE id = ?',
+        [id]
+      );
+
+      if (assetRows.length === 0) return res.status(404).json({ message: 'Asset not found' });
+
+      res.json({
+        trend: trendRows,
+        asset: assetRows[0]
+      });
+    } catch (error) {
+      console.error('Get asset analytics error:', error);
+      res.status(500).json({ message: 'Internal server error' });
+    }
   }
 };
 
