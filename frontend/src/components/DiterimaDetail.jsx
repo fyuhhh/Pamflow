@@ -466,6 +466,11 @@ const DiterimaDetail = () => {
                       ))}
                     </div>
                   ); })()}
+                  {item.original_video && (
+                    <div className="mt-2 w-48 h-28 rounded-lg overflow-hidden border border-[#E4E6EF] bg-black relative flex items-center justify-center">
+                      <video src={getImageUrl(item.original_video)} className="w-full h-full object-contain" controls playsInline webkit-playsinline="true" preload="metadata" />
+                    </div>
+                  )}
                   {item.status === 'fixed' && (
                     <p className="text-[11px] text-[#50CD89] mt-0.5">
                       ✓ Diperbaiki oleh {item.fixed_by_name || '-'}

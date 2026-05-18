@@ -39,7 +39,6 @@ const Login = ({ onLogin }) => {
       const data = await response.json();
 
       if (response.ok) {
-        success('Login Berhasil!', 'Selamat datang kembali di PamFlow.');
         setShowTransition(true);
         setTimeout(() => {
           if (onLogin) onLogin(data.user, data.token, data.refreshToken);

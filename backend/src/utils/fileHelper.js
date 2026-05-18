@@ -9,9 +9,16 @@ const crypto = require('crypto');
  * @param {string} subFolder - Subfolder inside uploads (e.g., 'assets', 'tasks')
  * @returns {string|null} - The relative URL path to the saved file or null if failed
  */
-const saveBase64Image = (base64Data, subFolder = 'misc') => {
-  if (!base64Data || typeof base64Data !== 'string' || !base64Data.startsWith('data:image')) {
-    return base64Data; // Return as is if not a base64 image string
+const saveBase64Media = (base64Data, subFolder = 'misc') => {
+  if (!base64Data || typeof base64Data !== 'string') {
+    return base64Data;
+  }
+
+  const isImage = base64Data.startsWith('data:image');
+  const isVideo = base64Data.startsWith('data:video');
+
+  if (!isImage && !isVideo) {
+    return base64Data; // Return as is if not a base64 media string
   }
 
   try {
@@ -21,25 +28,33 @@ const saveBase64Image = (base64Data, subFolder = 'misc') => {
     }
 
     // Extract format and actual base64 content
-    const matches = base64Data.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+    const regex = isImage 
+      ? /^data:image\/([a-zA-Z0-9+]+);base64,(.+)$/ 
+      : /^data:video\/([a-zA-Z0-9+;=]+);base64,(.+)$/;
+    const matches = base64Data.match(regex);
     if (!matches || matches.length !== 3) {
       return base64Data;
     }
 
-    const extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+    let extension = matches[1].split(';')[0];
+    if (extension === 'jpeg') {
+      extension = 'jpg';
+    } else if (extension === 'quicktime') {
+      extension = 'mov';
+    }
+    
     const data = matches[2];
     const buffer = Buffer.from(data, 'base64');
 
     const fileName = `${crypto.randomUUID()}.${extension}`;
     const filePath = path.join(uploadsDir, fileName);
 
-
     fs.writeFileSync(filePath, buffer);
 
     // Return the relative URL path
     return `/uploads/${subFolder}/${fileName}`;
   } catch (error) {
-    console.error(`[FileHelper] Error saving base64 image to ${subFolder}:`, error.message);
+    console.error(`[FileHelper] Error saving base64 media to ${subFolder}:`, error.message);
     return base64Data; // Fallback to original if saving fails
   }
 };
@@ -57,10 +72,12 @@ const processBase64InObject = (obj, subFolder = 'tasks') => {
   if (typeof obj === 'object') {
     const newObj = { ...obj };
     for (const key in newObj) {
-      if (typeof newObj[key] === 'string' && newObj[key].startsWith('data:image')) {
-        newObj[key] = saveBase64Image(newObj[key], subFolder);
-      } else if (typeof newObj[key] === 'object') {
-        newObj[key] = processBase64InObject(newObj[key], subFolder);
+      const val = newObj[key];
+      const isMedia = typeof val === 'string' && (val.startsWith('data:image') || val.startsWith('data:video'));
+      if (isMedia) {
+        newObj[key] = saveBase64Media(val, subFolder);
+      } else if (typeof val === 'object') {
+        newObj[key] = processBase64InObject(val, subFolder);
       }
     }
     return newObj;
@@ -70,6 +87,6 @@ const processBase64InObject = (obj, subFolder = 'tasks') => {
 };
 
 module.exports = {
-  saveBase64Image,
+  saveBase64Image: saveBase64Media, // maintain backward compatibility/export name
   processBase64InObject
 };

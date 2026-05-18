@@ -197,6 +197,8 @@ const generateWO = async (req, res) => {
       name: item.name,
       original_notes: item.notes || '',
       original_photo: item.photo_url || '',
+      original_photos: item.photo_urls || (item.photo_url ? [item.photo_url] : []),
+      original_video: item.video_url || '',
       status: 'pending',      // pending | fixed | cant_fix
       fixed_at: null,
       fixed_by_id: null,

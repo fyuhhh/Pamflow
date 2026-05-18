@@ -95,6 +95,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
         isAuditTemplate: true,
         auditItemName: firstItem?.name || '',
         auditOriginalPhotos: firstItem?.photo_urls || (firstItem?.photo_url ? [firstItem.photo_url] : []),
+        auditOriginalVideo: firstItem?.video_url || '',
         auditOriginalNotes: firstItem?.notes || '',
         checklist_session_id: state.session_id,
         details: buildAuditTemplate(firstItem, 0)
@@ -332,7 +333,8 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                     wajib_diisi: true,
                     options: ['Selesai Diperbaiki'],
                     isExpanded: idx === 0,
-                    original_photos: item.original_photos || (item.original_photo ? [item.original_photo] : [])
+                    original_photos: item.original_photos || (item.original_photo ? [item.original_photo] : []),
+                    original_video: item.original_video || item.video_url || ''
                   }))
                 : (task.details || []);
             }
@@ -359,6 +361,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
               isAuditTemplate: isFromAuditWO,
               auditItemName: isFromAuditWO ? (sourceItems[0]?.name || '') : '',
               auditOriginalPhotos: isFromAuditWO ? (sourceItems[0]?.original_photos || (sourceItems[0]?.original_photo ? [sourceItems[0].original_photo] : [])) : [],
+              auditOriginalVideo: isFromAuditWO ? (sourceItems[0]?.original_video || '') : '',
               auditOriginalNotes: isFromAuditWO ? (sourceItems[0]?.original_notes || '') : '',
               checklist_session_id: isFromAuditWO ? task.checklist_session_id : null,
               details: resolvedDetails
@@ -1125,6 +1128,11 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                                   <img src={getImageUrl(photo)} className="w-full h-full object-cover" alt={`Temuan ${pIdx + 1}`} />
                                 </div>
                               ))}
+                            </div>
+                          )}
+                          {item.original_video && (
+                            <div className="mt-3 w-48 h-28 rounded-lg overflow-hidden border border-[#F1416C]/20 bg-black relative flex items-center justify-center">
+                              <video src={getImageUrl(item.original_video)} className="w-full h-full object-contain" controls playsInline webkit-playsinline="true" preload="metadata" />
                             </div>
                           )}
                         </div>

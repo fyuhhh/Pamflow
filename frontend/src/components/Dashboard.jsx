@@ -20,7 +20,8 @@ import {
   PiClipboardTextDuotone,
   PiBuildingsDuotone,
   PiGearDuotone,
-  PiPackageDuotone
+  PiPackageDuotone,
+  PiListChecksDuotone
 } from 'react-icons/pi';
 
 import Logo from './Logo';
@@ -96,18 +97,22 @@ const Dashboard = ({ children, onLogout }) => {
       id: 'tugas-dept',
       label: 'Tugas antar Departemen',
       icon: <PiBuildingsDuotone size={20} />,
-      // Parent tampil jika ada salah satu sub yang tampil
       permission: ['tugas_dept_buat_checklist', 'tugas_dept_buat_wo', 'tugas_dept_diterima', 'tugas_dept_terkirim'],
       subItems: [
-        // Menu relasi — muncul otomatis jika dept user adalah SOURCE (pengirim) dalam relasi
-        ...(deptRelations.isSource || isSuperAdmin ? [
-          { label: 'Checklist Harian', path: '/tugas-departemen/checklist-harian', alwaysShow: true },
-          { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true },
-        ] : []),
         { label: 'Buat Checklist', path: '/tugas-departemen/buat', permission: 'tugas_dept_buat_checklist' },
         { label: 'Buat WO', path: '/tugas-departemen/buat-wo', permission: 'tugas_dept_buat_wo' },
         { label: 'Diterima', path: '/tugas-departemen/diterima', permission: 'tugas_dept_diterima' },
         { label: 'Terkirim', path: '/tugas-departemen/terkirim', permission: 'tugas_dept_terkirim' },
+      ]
+    },
+    {
+      id: 'checklist',
+      label: 'Checklist',
+      icon: <PiListChecksDuotone size={20} />,
+      permission: ['tugas_dept_buat_checklist'], // Uses similar permission or alwaysShow logic
+      subItems: [
+        { label: 'Checklist Harian', path: '/tugas-departemen/checklist-harian', alwaysShow: true },
+        { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true },
       ]
     },
     {
@@ -149,12 +154,19 @@ const Dashboard = ({ children, onLogout }) => {
 
   // Filter subItem — support alwaysShow (untuk menu relasi dept otomatis)
   const filterSubItems = (subItems) => {
-    return subItems.filter(sub => sub.alwaysShow || isSuperAdmin || hasPermission(sub.permission));
+    return subItems.filter(sub => {
+      if (sub.path === '/tugas-departemen/checklist-harian') {
+        const isTargetOnly = deptRelations.isTarget && !deptRelations.isSource && !isSuperAdmin;
+        if (isTargetOnly) return false;
+      }
+      return sub.alwaysShow || isSuperAdmin || hasPermission(sub.permission);
+    });
   };
 
   // Apakah parent menu Tugas Dept visible:
   // Tampil jika ada sub yang visible ATAU dept user ada di relasi
   const isDeptMenuVisible = (item) => {
+    if (item.id === 'checklist') return deptRelations.isSource || deptRelations.isTarget || isSuperAdmin;
     if (item.id !== 'tugas-dept') return hasPermission(item.permission);
     const hasRelationMenus = deptRelations.isSource || isSuperAdmin;
     const hasPermMenus = Array.isArray(item.permission)
@@ -183,7 +195,7 @@ const Dashboard = ({ children, onLogout }) => {
             {isSidebarOpen && (
               <div className="flex flex-col">
                 <span className="text-lg font-bold leading-none tracking-tight text-[#181C32]">PamFlow</span>
-                <span className="text-[10px] font-medium text-[#A1A5B7] self-end">v1.8.2</span>
+                <span className="text-[10px] font-medium text-[#A1A5B7] self-end">v1.9.0</span>
               </div>
             )}
           </div>

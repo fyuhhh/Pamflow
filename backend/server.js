@@ -54,7 +54,17 @@ const uploadsDir = path.join(__dirname, 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
 }
-app.use('/uploads', express.static(uploadsDir));
+app.use('/uploads', express.static(uploadsDir, {
+  setHeaders: (res, path) => {
+    if (path.endsWith('.mov')) {
+      res.setHeader('Content-Type', 'video/quicktime');
+    } else if (path.endsWith('.quicktime')) {
+      res.setHeader('Content-Type', 'video/quicktime');
+    } else if (path.endsWith('.mp4')) {
+      res.setHeader('Content-Type', 'video/mp4');
+    }
+  }
+}));
 
 // API Routes
 app.use('/api', routes);

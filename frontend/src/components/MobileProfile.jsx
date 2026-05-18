@@ -269,7 +269,7 @@ const MobileProfile = ({ onLogout }) => {
               <div className="p-4 bg-[#F9F9F9] rounded-2xl border border-[#F1F1F4]">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-[13px] font-bold text-slate-700">Debug Izin Aset</span>
-                  <span className="text-[10px] font-bold text-[#0095E8] bg-[#E1F0FF] px-2 py-0.5 rounded">v1.8.2</span>
+                  <span className="text-[10px] font-bold text-[#0095E8] bg-[#E1F0FF] px-2 py-0.5 rounded">v1.9.0</span>
                 </div>
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   {['aset_menu', 'aset_register', 'aset_monitoring', 'aset_audit', 'aset_hak_akses'].map(mod => (

@@ -62,6 +62,25 @@ const ChecklistHarian = () => {
   // History list state
   const [historySessions, setHistorySessions] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterShift, setFilterShift] = useState('Semua');
+  const [filterStatus, setFilterStatus] = useState('Semua');
+  const [viewMode, setViewMode] = useState(isMobile ? 'card' : 'table'); // 'card' | 'table'
+
+
+  const filteredSessions = (historySessions || []).filter(s => {
+    const matchesSearch = !s.template_name ? true : s.template_name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesShift = filterShift === 'Semua' || s.session_shift?.toLowerCase() === filterShift.toLowerCase();
+    
+    let matchesStatus = true;
+    if (filterStatus === 'Bermasalah') {
+      matchesStatus = s.broken_count > 0;
+    } else if (filterStatus === 'OK') {
+      matchesStatus = s.broken_count === 0;
+    }
+    
+    return matchesSearch && matchesShift && matchesStatus;
+  });
 
   // WO form state
   const [woForm, setWoForm] = useState({
@@ -69,6 +88,7 @@ const ChecklistHarian = () => {
     tanggal_selesai: '', departemen_tujuan: ''
   });
   const [relations, setRelations] = useState([]);
+  const [relationsLoaded, setRelationsLoaded] = useState(false);
   const [woSaving, setWoSaving] = useState(false);
 
   // Duplicate WO check state
@@ -76,6 +96,9 @@ const ChecklistHarian = () => {
   const [dupeModal, setDupeModal] = useState(false);
   const [dupeTarget, setDupeTarget] = useState(null);    // 'dept' | 'agen'
   const [selectedSafeItems, setSelectedSafeItems] = useState([]);
+
+  const isSuperAdmin = user?.role?.toLowerCase() === 'super admin';
+  const isReadOnly = relationsLoaded && relations.length === 0 && !isSuperAdmin;
 
   const requiredStar = <span className="text-[#F1416C] ml-0.5">*</span>;
 
@@ -114,7 +137,8 @@ const ChecklistHarian = () => {
         );
         setRelations(myRels);
 
-        if (isHistoryMode) {
+        const isReadOnlyUser = myRels.length === 0 && !isSuperAdmin;
+        if (isHistoryMode || isReadOnlyUser) {
           setStep('history');
           fetchHistory();
         } else if (!saved) {
@@ -122,6 +146,8 @@ const ChecklistHarian = () => {
         }
       } catch (e) {
         console.error('Checklist load error:', e);
+      } finally {
+        setRelationsLoaded(true);
       }
     };
     load();
@@ -241,7 +267,7 @@ const ChecklistHarian = () => {
       const resolvedUrls = safeArr(item.photo_urls).length > 0
         ? safeArr(item.photo_urls)
         : (item.photo_url ? [item.photo_url] : defaultUrls);
-      return { ...item, photo_urls: resolvedUrls };
+      return { ...item, photo_urls: resolvedUrls, video_url: item.video_url || '' };
     });
   const okCount = items.filter(i => i.status === 'ok').length;
 
@@ -594,7 +620,7 @@ const ChecklistHarian = () => {
                 )}
 
                 {/* ── SAFE ITEMS SECTION ── */}
-                {safeNames.length > 0 && !isMobile && (
+                {safeNames.length > 0 && (
                   <div>
                     <div className="flex items-center gap-3 mb-5">
                       <div className="w-8 h-8 rounded-xl bg-[#E8FFF3] flex items-center justify-center">
@@ -645,7 +671,7 @@ const ChecklistHarian = () => {
           </div>
 
           {/* Footer Actions */}
-          {!isChecking && !isMobile && (
+          {!isChecking && (
             <div className="shrink-0 border-t border-[#F1F1F4] px-8 py-5 bg-[#FAFAFA] flex gap-3">
               <button
                 onClick={() => setDupeModal(false)}
@@ -688,7 +714,7 @@ const ChecklistHarian = () => {
       <div className="bg-[#F5F8FA] min-h-screen flex flex-col relative">
         {/* Sticky Header with Glassmorphism */}
         <div 
-          className={`sticky top-0 z-30 px-6 pb-6 bg-[#F5F8FA]/80 backdrop-blur-md border-b border-slate-200 shadow-sm ${isMobile ? 'pt-8' : 'pt-10'}`}
+          className={`sticky top-0 z-30 px-6 pb-4 bg-[#F5F8FA]/80 backdrop-blur-md border-b border-slate-200 shadow-sm ${isMobile ? 'pt-8' : 'pt-10'}`}
           style={isMobile ? { paddingTop: 'calc(20px + env(safe-area-inset-top))' } : {}}
         >
           <div className="flex items-center justify-between">
@@ -696,22 +722,111 @@ const ChecklistHarian = () => {
               <h2 className="text-[20px] font-black text-slate-800 tracking-tight leading-tight">Riwayat Checklist</h2>
               <p className="text-[12px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Audit {dept_name}</p>
             </div>
-            <div className="flex gap-2.5">
-              <motion.button 
-                whileTap={{ scale: 0.95 }}
-                onClick={() => { setStep('setup'); navigate(`${basePath}/checklist${isMobile ? '' : '-harian'}`); }}
-                className="px-6 py-2.5 bg-[#0095E8] text-white rounded-2xl text-[14px] font-black hover:bg-[#0084CC] transition-all flex items-center gap-2 shadow-lg shadow-blue-500/20"
-              >
-                <Plus size={18} /> {isMobile ? 'Baru' : 'Mulai Baru'}
-              </motion.button>
+            
+            <div className="flex items-center gap-2.5">
+              {/* Segmented View Mode Toggle */}
+              <div className="flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 shadow-sm shrink-0">
+                <button
+                  onClick={() => setViewMode('card')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-black transition-all ${
+                    viewMode === 'card' 
+                      ? 'bg-white text-slate-800 shadow-sm font-extrabold' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Kartu
+                </button>
+                <button
+                  onClick={() => setViewMode('table')}
+                  className={`px-3 py-1 rounded-lg text-[11px] font-black transition-all ${
+                    viewMode === 'table' 
+                      ? 'bg-white text-slate-800 shadow-sm font-extrabold' 
+                      : 'text-slate-500 hover:text-slate-800'
+                  }`}
+                >
+                  Tabel
+                </button>
+              </div>
+
+              {!isReadOnly && (
+                <motion.button 
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => { setStep('setup'); navigate(`${basePath}/checklist${isMobile ? '' : '-harian'}`); }}
+                  className="px-4 py-2 bg-[#0095E8] text-white rounded-xl text-[12px] font-black hover:bg-[#0084CC] transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
+                >
+                  <Plus size={16} /> {isMobile ? 'Baru' : 'Mulai Baru'}
+                </motion.button>
+              )}
+            </div>
+          </div>
+
+          {/* Search and Filters */}
+          <div className="mt-4 flex flex-col gap-3">
+            {/* Search Input */}
+            <div className="relative">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+              <input 
+                type="text"
+                placeholder="Cari nama template..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-2xl text-[13px] font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#0095E8] focus:ring-1 focus:ring-[#0095E8]/20 transition-all shadow-sm"
+              />
+              {searchQuery && (
+                <button 
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            {/* Filter Row */}
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {/* Shift Filter */}
+              <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shrink-0 shadow-sm">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase px-2">Shift</span>
+                {['Semua', 'Pagi', 'Siang', 'Malam'].map((sh) => (
+                  <button
+                    key={sh}
+                    onClick={() => setFilterShift(sh)}
+                    className={`px-3 py-1 rounded-xl text-[11px] font-extrabold transition-all ${
+                      filterShift === sh 
+                        ? 'bg-[#0095E8] text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {sh}
+                  </button>
+                ))}
+              </div>
+
+              {/* Status Filter */}
+              <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shrink-0 shadow-sm">
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase px-2">Temuan</span>
+                {['Semua', 'Bermasalah', 'OK'].map((st) => (
+                  <button
+                    key={st}
+                    onClick={() => setFilterStatus(st)}
+                    className={`px-3 py-1 rounded-xl text-[11px] font-extrabold transition-all ${
+                      filterStatus === st 
+                        ? 'bg-rose-500 text-white shadow-sm' 
+                        : 'text-slate-500 hover:text-slate-800'
+                    }`}
+                  >
+                    {st === 'Bermasalah' ? 'Ada Rusak' : st}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* List Content */}
         <div className={`flex-1 ${isMobile ? 'px-6 pt-6 pb-24' : 'p-8 px-10 pb-24'}`}>
-          {isMobile ? (
-            /* Mobile Card View with Staggered Animation */
+          {viewMode === 'card' ? (
+            /* Card View with Staggered Animation */
             <motion.div 
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -726,14 +841,24 @@ const ChecklistHarian = () => {
                 <div className="bg-white rounded-[32px] p-10 text-center border border-slate-100 shadow-sm">
                    <p className="text-slate-400 text-[14px] font-medium">Belum ada data riwayat.</p>
                 </div>
-              ) : historySessions.map((s, idx) => (
+              ) : filteredSessions.length === 0 ? (
+                <div className="bg-white rounded-[32px] p-10 text-center border border-slate-100 shadow-sm flex flex-col items-center gap-3">
+                   <p className="text-slate-400 text-[13px] font-medium">Tidak ada data riwayat yang cocok.</p>
+                   <button 
+                     onClick={() => { setSearchQuery(''); setFilterShift('Semua'); setFilterStatus('Semua'); }}
+                     className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all shadow-sm"
+                   >
+                     Reset Filter
+                   </button>
+                </div>
+              ) : filteredSessions.map((s, idx) => (
                 <motion.div
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: idx * 0.05 }}
                   key={s.id}
                   onClick={() => handleViewDetail(s)}
-                  className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100 active:scale-[0.98] transition-all"
+                  className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer"
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col">
@@ -764,74 +889,88 @@ const ChecklistHarian = () => {
               ))}
             </motion.div>
           ) : (
-          /* Desktop Table View */
-          <div className="bg-white rounded-xl border border-[#F1F1F4] overflow-hidden shadow-sm">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-[#F9F9F9] border-b border-[#F1F1F4]">
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Waktu & Shift</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Template</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Hasil (OK/Rusak)</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Status WO</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Pelapor</th>
-                  <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#F1F1F4]">
-                {historyLoading ? (
-                  <tr><td colSpan="6" className="py-20 text-center text-[13px] text-[#A1A5B7] italic">Memuat riwayat...</td></tr>
-                ) : historySessions.length === 0 ? (
-                  <tr><td colSpan="6" className="py-20 text-center text-[13px] text-[#A1A5B7]">Belum ada data riwayat checklist.</td></tr>
-                ) : historySessions.map((s) => (
-                  <tr key={s.id} className="hover:bg-[#FBFCFD] transition-colors">
-                    <td className="px-6 py-5">
-                      <div className="flex flex-col">
-                        <span className="text-[13px] font-bold text-[#181C32]">{new Date(s.session_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-                        <div className="flex items-center gap-2 mt-0.5">
-                          <span className="text-[11px] text-[#0095E8] font-bold uppercase flex items-center gap-1">
-                            <Clock size={10} /> {s.session_shift}
-                          </span>
-                          <span className="text-[10px] text-[#A1A5B7]">•</span>
-                          <span className="text-[11px] text-[#7E8299] font-bold uppercase">{s.session_time ? s.session_time.substring(0, 5) : '-'}</span>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-5 text-[13px] text-[#3F4254] font-medium">{s.template_name}</td>
-                    <td className="px-6 py-5">
-                      <div className="flex items-center gap-3">
-                        <span className="text-[12px] font-bold text-[#50CD89]">{s.ok_count} OK</span>
-                        {s.broken_count > 0 && <span className="text-[12px] font-bold text-[#F1416C]">{s.broken_count} Rusak</span>}
-                      </div>
-                    </td>
-                    <td className="px-6 py-5">
-                      {s.wo_id ? (
-                        <span className="px-2.5 py-1 bg-[#E8FFF3] text-[#50CD89] text-[10px] font-extrabold uppercase rounded border border-[#50CD89]/20">WO DIBUAT</span>
-                      ) : s.broken_count > 0 ? (
-                        <span className="px-2.5 py-1 bg-[#FFF5F8] text-[#F1416C] text-[10px] font-extrabold uppercase rounded border border-[#F1416C]/20">WO DIBUTUHKAN</span>
-                      ) : (
-                        <span className="text-[11px] text-[#A1A5B7] font-medium">Tidak Perlu WO</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-5 text-[12px] text-[#7E8299] font-semibold">{s.submitted_by_name}</td>
-                    <td className="px-6 py-5 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleViewDetail(s)}
-                        className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all flex items-center gap-2 ml-auto shadow-sm"
-                      >
-                        <Info size={14} /> Detail Audit
-                      </button>
-                    </td>
+            /* Table View with responsive overflow-x */
+            <div className="bg-white rounded-xl border border-[#F1F1F4] overflow-x-auto shadow-sm">
+              <table className="w-full text-left border-collapse min-w-[650px]">
+                <thead>
+                  <tr className="bg-[#F9F9F9] border-b border-[#F1F1F4]">
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Waktu & Shift</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Template</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Hasil (OK/Rusak)</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Status WO</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Pelapor</th>
+                    <th className="px-6 py-4 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                </thead>
+                <tbody className="divide-y divide-[#F1F1F4]">
+                  {historyLoading ? (
+                    <tr><td colSpan="6" className="py-20 text-center text-[13px] text-[#A1A5B7] italic">Memuat riwayat...</td></tr>
+                  ) : historySessions.length === 0 ? (
+                    <tr><td colSpan="6" className="py-20 text-center text-[13px] text-[#A1A5B7]">Belum ada data riwayat checklist.</td></tr>
+                  ) : filteredSessions.length === 0 ? (
+                    <tr>
+                      <td colSpan="6" className="py-20 text-center">
+                        <div className="flex flex-col items-center justify-center gap-3">
+                          <span className="text-[13px] text-[#A1A5B7] font-medium">Tidak ada hasil pencarian yang cocok.</span>
+                          <button 
+                            onClick={() => { setSearchQuery(''); setFilterShift('Semua'); setFilterStatus('Semua'); }}
+                            className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all shadow-sm"
+                          >
+                            Reset Filter
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ) : filteredSessions.map((s) => (
+                    <tr key={s.id} className="hover:bg-[#FBFCFD] transition-colors cursor-pointer" onClick={() => handleViewDetail(s)}>
+                      <td className="px-6 py-5">
+                        <div className="flex flex-col">
+                          <span className="text-[13px] font-bold text-[#181C32]">{new Date(s.session_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                          <div className="flex items-center gap-2 mt-0.5">
+                            <span className="text-[11px] text-[#0095E8] font-bold uppercase flex items-center gap-1">
+                              <Clock size={10} /> {s.session_shift}
+                            </span>
+                            <span className="text-[10px] text-[#A1A5B7]">•</span>
+                            <span className="text-[11px] text-[#7E8299] font-bold uppercase">{s.session_time ? s.session_time.substring(0, 5) : '-'}</span>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-5 text-[13px] text-[#3F4254] font-medium">{s.template_name}</td>
+                      <td className="px-6 py-5">
+                        <div className="flex items-center gap-3">
+                          <span className="text-[12px] font-bold text-[#50CD89]">{s.ok_count} OK</span>
+                          {s.broken_count > 0 && <span className="text-[12px] font-bold text-[#F1416C]">{s.broken_count} Rusak</span>}
+                        </div>
+                      </td>
+                      <td className="px-6 py-5">
+                        {s.wo_id ? (
+                          <span className="px-2.5 py-1 bg-[#E8FFF3] text-[#50CD89] text-[10px] font-extrabold uppercase rounded border border-[#50CD89]/20">WO DIBUAT</span>
+                        ) : s.broken_count > 0 ? (
+                          <span className="px-2.5 py-1 bg-[#FFF5F8] text-[#F1416C] text-[10px] font-extrabold uppercase rounded border border-[#F1416C]/20">WO DIBUTUHKAN</span>
+                        ) : (
+                          <span className="text-[11px] text-[#A1A5B7] font-medium">Tidak Perlu WO</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-5 text-[12px] text-[#7E8299] font-semibold">{s.submitted_by_name}</td>
+                      <td className="px-6 py-5 text-right">
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); handleViewDetail(s); }}
+                          className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all flex items-center gap-2 ml-auto shadow-sm"
+                        >
+                          <Info size={14} /> Detail
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // ─── STEP: SETUP ────────────────────────────────────────────
   if (step === 'setup') {
@@ -1037,6 +1176,8 @@ const ChecklistHarian = () => {
                 onNotesChange={(notes) => updateItemField(item.id, 'notes', notes)}
                 photoUrls={safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : [])}
                 onPhotoChange={(urls) => updateItemField(item.id, 'photo_urls', Array.isArray(urls) ? urls : [])}
+                videoUrl={item.video_url || ''}
+                onVideoChange={(url) => updateItemField(item.id, 'video_url', url)}
               />
             </motion.div>
           ))}
@@ -1187,14 +1328,16 @@ const ChecklistHarian = () => {
                           </div>
                         )}
 
-                        {item.notes && (
+                        {(item.notes || safeArr(item.photo_urls).length > 0 || item.photo_url || item.video_url) && (
                           <div className="mt-1.5 flex flex-col gap-1.5 p-2 bg-[#FFF5F8] rounded-lg border border-[#F1416C]/10">
-                            <div className="flex items-center gap-1.5">
-                              <Info size={12} className="text-[#F1416C]" />
-                              <p className="text-[11px] text-[#F1416C] font-medium">{item.notes}</p>
-                            </div>
+                            {item.notes && (
+                              <div className="flex items-center gap-1.5">
+                                <Info size={12} className="text-[#F1416C]" />
+                                <p className="text-[11px] text-[#F1416C] font-medium">{item.notes}</p>
+                              </div>
+                            )}
                             {(() => { const _urls = safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : []); return _urls.length > 0 && (
-                              <div className="mt-1 flex flex-wrap gap-2">
+                              <div className="flex flex-wrap gap-2">
                                 {_urls.map((url, i) => (
                                   <div key={i} className="w-24 h-16 rounded border border-[#F1416C]/20 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(url)}>
                                     <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="Foto kerusakan" />
@@ -1202,19 +1345,13 @@ const ChecklistHarian = () => {
                                 ))}
                               </div>
                             ); })()}
+                            {item.video_url && (
+                              <div className="mt-1.5 w-48 h-28 rounded-lg overflow-hidden border border-[#F1416C]/20 bg-black relative flex items-center justify-center">
+                                <video src={getImageUrl(item.video_url)} className="w-full h-full object-contain" controls playsInline webkit-playsinline="true" preload="metadata" />
+                              </div>
+                            )}
                           </div>
                         )}
-                        {!item.notes && (() => { const _urls = safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : []); return _urls.length > 0 && (
-                          <div className="mt-1.5 p-2 bg-[#FFF5F8] rounded-lg border border-[#F1416C]/10 inline-block">
-                            <div className="flex flex-wrap gap-2">
-                              {_urls.map((url, i) => (
-                                <div key={i} className="w-24 h-16 rounded border border-[#F1416C]/20 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(url)}>
-                                  <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="Foto kerusakan" />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ); })()}
                       </div>
                       <div>
                         {item.status === 'ok' ? (
@@ -1237,7 +1374,7 @@ const ChecklistHarian = () => {
 
             {/* Right: Actions & WO Recommendation */}
             <div className="space-y-6">
-              {!isMobile && brokenItems.length > 0 ? (
+              {brokenItems.length > 0 ? (
                 <div className="bg-[#181C32] rounded-2xl p-6 shadow-xl relative overflow-hidden text-white">
                   <div className="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
                   <div className="relative z-10">
@@ -1257,6 +1394,10 @@ const ChecklistHarian = () => {
                         >
                           <Info size={16} /> Lihat WO Aktif
                         </button>
+                      ) : isReadOnly ? (
+                        <div className="p-4 bg-white/5 border border-white/10 rounded-2xl text-[11px] text-[#A1A5B7] leading-relaxed text-center font-bold">
+                          🔒 Akses Terbatas: Hanya departemen pembuat checklist yang dapat mengirimkan Work Order.
+                        </div>
                       ) : (
                         <button
                           onClick={() => handleCheckAndNavigate()}

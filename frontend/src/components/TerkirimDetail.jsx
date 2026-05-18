@@ -314,6 +314,11 @@ const TerkirimDetail = () => {
                       ))}
                     </div>
                   ); })()}
+                  {item.original_video && (
+                    <div className="mt-1.5 w-44 h-24 rounded border border-[#E4E6EF] bg-black relative flex items-center justify-center">
+                      <video src={getImageUrl(item.original_video)} className="w-full h-full object-contain" controls playsInline webkit-playsinline="true" preload="metadata" />
+                    </div>
+                  )}
                 </div>
                 {item.status === 'fixed' && item.fixed_by_name && (
                   <span className="text-[10px] text-[#50CD89] whitespace-nowrap">oleh {item.fixed_by_name}</span>

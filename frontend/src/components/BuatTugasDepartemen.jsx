@@ -99,6 +99,7 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
           name: item.name,
           original_notes: item.notes || '',
           original_photos: safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : []),
+          original_video: item.video_url || '',
           status: 'pending'
         }))
       }));
@@ -476,6 +477,11 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
                           </div>
                         </div>
                       ))}
+                    </div>
+                  )}
+                  {item.original_video && (
+                    <div className="mt-3 w-48 h-28 rounded-xl overflow-hidden border border-[#E4E6EF] bg-black relative flex items-center justify-center">
+                      <video src={getImageUrl(item.original_video)} className="w-full h-full object-contain" controls playsInline webkit-playsinline="true" preload="metadata" />
                     </div>
                   )}
                 </div>

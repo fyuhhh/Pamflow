@@ -1,10 +1,10 @@
 import React, { useRef } from 'react';
-import { Camera, X, Check, CheckCircle2, XCircle } from 'lucide-react';
+import { Camera, Video, X, Check, CheckCircle2, XCircle } from 'lucide-react';
 import { compressImage } from '../utils/imageOptimizer';
 import { getImageUrl } from '../utils/imageUrl';
 
 
-const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, notes, onNotesChange, photoUrls, onPhotoChange }) => {
+const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, notes, onNotesChange, photoUrls, onPhotoChange, videoUrl, onVideoChange }) => {
   const fileInputRef = useRef(null);
   const reportType = field.type || field.bentuk_laporan;
   const fieldLabel = field.name || field.nama_detail;
@@ -101,7 +101,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
       case 'Image':
         return (
           <div>
-            <input type="file" accept="image/*" ref={fileInputRef} onChange={(e) => handleFileChange(e, false)} className="hidden" />
+            <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={(e) => handleFileChange(e, false)} className="hidden" />
             {value ? (
               <div className="relative w-full aspect-video rounded-xl overflow-hidden border border-[#E4E6EF]">
                 <img src={getImageUrl(value)} alt="Preview" className="w-full h-full object-cover" />
@@ -112,7 +112,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
             ) : (
               <button type="button" onClick={() => fileInputRef.current.click()} className="w-full py-8 border-2 border-dashed border-[#E4E6EF] rounded-xl flex flex-col items-center justify-center gap-2 bg-[#F9F9F9] hover:bg-[#F1FAFF] transition-all">
                 <Camera size={24} className="text-[#A1A5B7]" />
-                <span className="text-[12px] font-bold text-[#0095E8]">Ambil Foto / Unggah</span>
+                <span className="text-[12px] font-bold text-[#0095E8]">Ambil Foto Live</span>
               </button>
             )}
           </div>
@@ -131,7 +131,7 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
             {(!Array.isArray(value) || value.length < 5) && (
               <button type="button" onClick={() => fileInputRef.current.click()} className="aspect-square border-2 border-dashed border-[#E4E6EF] rounded-xl flex items-center justify-center bg-[#F9F9F9] hover:bg-[#F1FAFF]">
                 <Camera size={20} className="text-[#A1A5B7]" />
-                <input type="file" accept="image/*" multiple ref={fileInputRef} onChange={(e) => handleFileChange(e, true)} className="hidden" />
+                <input type="file" accept="image/*" capture="environment" ref={fileInputRef} onChange={(e) => handleFileChange(e, true)} className="hidden" />
               </button>
             )}
           </div>
@@ -172,11 +172,13 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
                   placeholder="Catatan kerusakan..."
                   className="flex-1 px-4 py-3 bg-white border border-[#F1416C]/30 rounded-xl text-[13px] focus:border-[#F1416C] outline-none transition-colors"
                 />
+                
+                {/* Photo Capture (Live Camera Only, Max 5) */}
                 <div className="relative">
                   <input
                     type="file"
                     accept="image/*"
-                    multiple
+                    capture="environment"
                     onChange={async (e) => {
                       const files = Array.from(e.target.files);
                       if (files.length > 0 && onPhotoChange) {
@@ -203,15 +205,70 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
                   <label
                     htmlFor={`rusak-photo-${field.id || fieldLabel}`}
                     className="flex items-center justify-center w-[46px] h-[46px] rounded-xl bg-white border border-[#F1416C]/30 text-[#F1416C] hover:bg-[#FFF5F8] cursor-pointer transition-colors shadow-sm"
-                    title="Lampirkan foto kerusakan (max 5)"
+                    title="Ambil foto kerusakan live (max 5)"
                   >
                     <Camera size={20} />
                   </label>
                 </div>
+
+                {/* Video Capture (Live Camera Only, Max 20s) */}
+                <div className="relative">
+                  <input
+                    type="file"
+                    accept="video/*"
+                    capture="environment"
+                    onChange={async (e) => {
+                      const file = e.target.files[0];
+                      if (file && onVideoChange) {
+                        try {
+                          // Check video duration
+                          const duration = await new Promise((resolve) => {
+                            const video = document.createElement('video');
+                            video.preload = 'metadata';
+                            video.onloadedmetadata = () => {
+                              window.URL.revokeObjectURL(video.src);
+                              resolve(video.duration);
+                            };
+                            video.onerror = () => resolve(0);
+                            video.src = window.URL.createObjectURL(file);
+                          });
+
+                          if (duration > 20) {
+                            alert(`Video terlalu panjang (${Math.round(duration)} detik). Maksimal durasi video adalah 20 detik.`);
+                            e.target.value = ''; // Reset input
+                            return;
+                          }
+
+                          // Convert video to base64
+                          const base64 = await new Promise((resolve) => {
+                            const reader = new FileReader();
+                            reader.readAsDataURL(file);
+                            reader.onloadend = () => resolve(reader.result);
+                          });
+
+                          onVideoChange(base64);
+                        } catch (err) {
+                          console.error('Video error:', err);
+                        }
+                      }
+                    }}
+                    className="hidden"
+                    id={`rusak-video-${field.id || fieldLabel}`}
+                  />
+                  <label
+                    htmlFor={`rusak-video-${field.id || fieldLabel}`}
+                    className="flex items-center justify-center w-[46px] h-[46px] rounded-xl bg-white border border-[#F1416C]/30 text-[#F1416C] hover:bg-[#FFF5F8] cursor-pointer transition-colors shadow-sm"
+                    title="Rekam video kerusakan live (max 20 detik)"
+                  >
+                    <Video size={20} />
+                  </label>
+                </div>
               </div>
-              {photoUrls && photoUrls.length > 0 && (
+
+              {((photoUrls && photoUrls.length > 0) || videoUrl) && (
                 <div className="flex flex-wrap gap-2 mt-1">
-                  {photoUrls.map((url, idx) => (
+                  {/* Photo Thumbnails */}
+                  {photoUrls && photoUrls.map((url, idx) => (
                     <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-[#F1416C]/20 bg-white shadow-sm">
                       <img src={getImageUrl(url)} className="w-full h-full object-cover" alt={`Foto kerusakan ${idx + 1}`} />
                       <button 
@@ -226,6 +283,20 @@ const ChecklistField = ({ field, value, status, onValueChange, onStatusChange, n
                       </button>
                     </div>
                   ))}
+                  
+                  {/* Video Player */}
+                  {videoUrl && (
+                    <div className="relative w-32 h-20 rounded-xl overflow-hidden border border-[#F1416C]/20 bg-black shadow-sm flex items-center justify-center">
+                      <video src={getImageUrl(videoUrl)} className="w-full h-full object-cover" controls playsInline webkit-playsinline="true" preload="metadata" />
+                      <button 
+                        type="button" 
+                        onClick={() => onVideoChange('')} 
+                        className="absolute top-1 right-1 p-1 bg-black/60 text-white rounded-lg hover:bg-black/80 transition-colors z-10"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
