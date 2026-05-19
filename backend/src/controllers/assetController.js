@@ -11,10 +11,12 @@ const assetController = {
       const [rows] = await pool.query(
         `SELECT a.*, 
                 u.firstName, u.lastName,
-                op.firstName as operatorFirstName, op.lastName as operatorLastName
+                op.firstName as operatorFirstName, op.lastName as operatorLastName,
+                p.nama_mesin as parent_name
          FROM assets a 
          LEFT JOIN users u ON a.user_pendaftar_id = u.id 
          LEFT JOIN users op ON a.last_operated_by = op.id
+         LEFT JOIN assets p ON a.parent_id = p.id
          WHERE (a.company_id = ? OR (? IS NULL AND a.company_id IS NULL)) 
          ORDER BY a.nama_mesin ASC LIMIT ?`,
         [company_id, company_id, limit]
@@ -28,12 +30,20 @@ const assetController = {
 
   createAsset: async (req, res) => {
     try {
-      const { nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours } = req.body;
+      const { nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours, parent_id } = req.body;
       const company_id = req.user.company_id;
       const user_id = req.user.id;
 
       const maintHours = parseInt(maintenance_hours) || 0;
       const remainingSecs = maintHours * 3600;
+      const parentId = parent_id ? parseInt(parent_id) : null;
+
+      if (parentId) {
+        const [parentRows] = await pool.query('SELECT parent_id FROM assets WHERE id = ? AND company_id = ?', [parentId, company_id]);
+        if (parentRows.length > 0 && parentRows[0].parent_id !== null) {
+          return res.status(400).json({ message: 'Aset induk tidak boleh berupa aset anak dari unit lain' });
+        }
+      }
 
       // Process base64 images to files
       let processedLampiran = null;
@@ -42,8 +52,8 @@ const assetController = {
       }
 
       const [result] = await pool.query(
-        'INSERT INTO assets (company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours, remaining_seconds, user_pendaftar_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, processedLampiran ? JSON.stringify(processedLampiran) : null, maintHours, remainingSecs, user_id]
+        'INSERT INTO assets (company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours, remaining_seconds, user_pendaftar_id, parent_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [company_id, nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, processedLampiran ? JSON.stringify(processedLampiran) : null, maintHours, remainingSecs, user_id, parentId]
       );
 
 
@@ -189,7 +199,7 @@ const assetController = {
   updateAsset: async (req, res) => {
     try {
       const { id } = req.params;
-      const { nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours } = req.body;
+      const { nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, lampiran, maintenance_hours, parent_id } = req.body;
       const company_id = req.user.company_id;
       const user_id = req.user.id;
 
@@ -198,6 +208,24 @@ const assetController = {
       if (oldRows.length === 0) return res.status(404).json({ message: 'Asset not found' });
       const old = oldRows[0];
 
+      const parentId = parent_id ? parseInt(parent_id) : null;
+
+      if (parentId) {
+        if (parseInt(id) === parentId) {
+          return res.status(400).json({ message: 'Aset tidak dapat menjadi induk bagi dirinya sendiri' });
+        }
+
+        const [childRows] = await pool.query('SELECT id FROM assets WHERE parent_id = ?', [id]);
+        if (childRows.length > 0) {
+          return res.status(400).json({ message: 'Aset yang sudah menjadi induk tidak dapat memiliki induk lain' });
+        }
+
+        const [parentRows] = await pool.query('SELECT parent_id FROM assets WHERE id = ? AND company_id = ?', [parentId, company_id]);
+        if (parentRows.length > 0 && parentRows[0].parent_id !== null) {
+          return res.status(400).json({ message: 'Aset induk tidak boleh berupa aset anak dari unit lain' });
+        }
+      }
+
       // Process base64 images to files
       let processedLampiran = null;
       if (Array.isArray(lampiran)) {
@@ -205,8 +233,8 @@ const assetController = {
       }
 
       await pool.query(
-        'UPDATE assets SET nama_mesin = ?, brand = ?, model_tipe = ?, serial_number = ?, lokasi = ?, prioritas = ?, status = ?, catatan = ?, lampiran = ?, maintenance_hours = ?, remaining_seconds = ? WHERE id = ? AND company_id = ?',
-        [nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, processedLampiran ? JSON.stringify(processedLampiran) : null, maintenance_hours || 0, (maintenance_hours || 0) * 3600, id, company_id]
+        'UPDATE assets SET nama_mesin = ?, brand = ?, model_tipe = ?, serial_number = ?, lokasi = ?, prioritas = ?, status = ?, catatan = ?, lampiran = ?, maintenance_hours = ?, remaining_seconds = ?, parent_id = ? WHERE id = ? AND company_id = ?',
+        [nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, processedLampiran ? JSON.stringify(processedLampiran) : null, maintenance_hours || 0, (maintenance_hours || 0) * 3600, parentId, id, company_id]
       );
 
 
@@ -221,6 +249,7 @@ const assetController = {
       if (old.status !== status) changes.push(`Status: ${old.status} -> ${status}`);
       if (old.maintenance_hours !== (maintenance_hours || 0)) changes.push(`Maint: ${old.maintenance_hours} -> ${maintenance_hours} jam`);
       if (old.catatan !== catatan) changes.push(`Catatan diperbarui`);
+      if (old.parent_id !== parentId) changes.push(`Parent ID: ${old.parent_id || '-'} -> ${parentId || '-'}`);
 
       const details = changes.length > 0 ? `Update: ${changes.join(' | ')}` : `Update: Data teknis diperbarui`;
 
@@ -238,7 +267,8 @@ const assetController = {
             id: parseInt(id), 
             nama_mesin, brand, model_tipe, serial_number, lokasi, prioritas, status, catatan, 
             maintenance_hours: maintenance_hours || 0,
-            remaining_seconds: (maintenance_hours || 0) * 3600
+            remaining_seconds: (maintenance_hours || 0) * 3600,
+            parent_id: parentId
           });
         }
       } catch (e) {
@@ -290,12 +320,79 @@ const assetController = {
   toggleAssetStatus: async (req, res) => {
     try {
       const { id } = req.params;
+      const { selected_ids } = req.body;
       const company_id = req.user.company_id;
       const user_id = req.user.id;
 
       const [rows] = await pool.query('SELECT * FROM assets WHERE id = ? AND company_id = ?', [id, company_id]);
       if (rows.length === 0) return res.status(404).json({ message: 'Asset not found' });
       const asset = rows[0];
+
+      // Get user name for response/socket
+      const [userRows] = await pool.query('SELECT firstName, lastName FROM users WHERE id = ?', [user_id]);
+      const opName = userRows.length > 0 ? `${userRows[0].firstName} ${userRows[0].lastName}` : 'System';
+
+      const { getIO } = require('../services/socketService');
+      const io = getIO();
+
+      // Selective Bulk Toggle Mode
+      if (Array.isArray(selected_ids)) {
+        const now = new Date();
+        const targetRunning = asset.is_running ? 0 : 1;
+
+        for (const targetId of selected_ids) {
+          const [astRows] = await pool.query('SELECT * FROM assets WHERE id = ? AND company_id = ?', [targetId, company_id]);
+          if (astRows.length === 0) continue;
+          const ast = astRows[0];
+
+          if (ast.is_running !== targetRunning) {
+            let newRemaining = ast.remaining_seconds;
+            let lastStarted = null;
+            let actionDetails = '';
+
+            if (ast.is_running) {
+              const start = new Date(ast.last_started_at);
+              const elapsed = Math.floor((now - start) / 1000);
+              newRemaining = Math.max(0, ast.remaining_seconds - elapsed);
+              actionDetails = `Status: ON -> OFF (Selektif) | Sisa waktu: ${Math.floor(newRemaining / 3600)}j ${Math.floor((newRemaining % 3600) / 60)}m ${newRemaining % 60}d`;
+              
+              await pool.query(
+                'UPDATE assets SET is_running = 0, last_started_at = NULL, remaining_seconds = ?, last_operated_by = ? WHERE id = ?',
+                [newRemaining, user_id, targetId]
+              );
+            } else {
+              lastStarted = now;
+              actionDetails = `Status: OFF -> ON (Selektif) | Memulai dari: ${Math.floor(newRemaining / 3600)}j ${Math.floor((newRemaining % 3600) / 60)}m ${newRemaining % 60}d`;
+              
+              await pool.query(
+                'UPDATE assets SET is_running = 1, last_started_at = ?, remaining_seconds = ?, last_operated_by = ? WHERE id = ?',
+                [lastStarted, newRemaining, user_id, targetId]
+              );
+            }
+
+            await pool.query(
+              'INSERT INTO asset_audit_logs (asset_id, action, user_id, details) VALUES (?, ?, ?, ?)',
+              [targetId, 'STATUS_CHANGE', user_id, actionDetails]
+            );
+
+            try {
+              if (io) {
+                io.emit('asset-status-updated', { 
+                  id: parseInt(targetId), 
+                  is_running: targetRunning, 
+                  last_started_at: lastStarted, 
+                  remaining_seconds: newRemaining,
+                  operatorName: opName
+                });
+              }
+            } catch (e) {
+              console.error('Socket emit error:', e);
+            }
+          }
+        }
+
+        return res.json({ message: 'Selected assets status updated successfully' });
+      }
 
       let newStatus = asset.is_running ? 0 : 1;
       let newRemaining = asset.remaining_seconds;
@@ -320,10 +417,6 @@ const assetController = {
         [newStatus, lastStarted, newRemaining, user_id, id]
       );
 
-      // Get user name for response/socket
-      const [userRows] = await pool.query('SELECT firstName, lastName FROM users WHERE id = ?', [user_id]);
-      const opName = userRows.length > 0 ? `${userRows[0].firstName} ${userRows[0].lastName}` : 'System';
-
       // Log status change
       await pool.query(
         'INSERT INTO asset_audit_logs (asset_id, action, user_id, details) VALUES (?, ?, ?, ?)',
@@ -332,8 +425,6 @@ const assetController = {
 
       // Emit socket event for real-time update
       try {
-        const { getIO } = require('../services/socketService');
-        const io = getIO();
         if (io) {
           io.emit('asset-status-updated', { 
             id: parseInt(id), 
@@ -345,6 +436,81 @@ const assetController = {
         }
       } catch (e) {
         console.error('Socket emit error:', e);
+      }
+
+      // Cascading logic: propagate the status to all children assets
+      const [children] = await pool.query('SELECT * FROM assets WHERE parent_id = ?', [id]);
+      if (children.length > 0) {
+        const now = new Date();
+        for (const child of children) {
+          let childNewRemaining = child.remaining_seconds;
+          let childLastStarted = null;
+          let childActionDetails = '';
+
+          if (newStatus === 1) {
+            // If parent is turned ON, turn children ON if they aren't already running
+            if (!child.is_running) {
+              childLastStarted = now;
+              childActionDetails = `Status otomatis ON (Parent ${asset.nama_mesin} dinyalakan) | Memulai dari: ${Math.floor(childNewRemaining / 3600)}j ${Math.floor((childNewRemaining % 3600) / 60)}m ${childNewRemaining % 60}d`;
+              
+              await pool.query(
+                'UPDATE assets SET is_running = ?, last_started_at = ?, remaining_seconds = ?, last_operated_by = ? WHERE id = ?',
+                [1, childLastStarted, childNewRemaining, user_id, child.id]
+              );
+              
+              await pool.query(
+                'INSERT INTO asset_audit_logs (asset_id, action, user_id, details) VALUES (?, ?, ?, ?)',
+                [child.id, 'STATUS_CHANGE', user_id, childActionDetails]
+              );
+
+              try {
+                if (io) {
+                  io.emit('asset-status-updated', { 
+                    id: parseInt(child.id), 
+                    is_running: 1, 
+                    last_started_at: childLastStarted, 
+                    remaining_seconds: childNewRemaining,
+                    operatorName: opName
+                  });
+                }
+              } catch (e) {
+                console.error('Child socket emit error:', e);
+              }
+            }
+          } else {
+            // If parent is turned OFF, turn children OFF if they are running
+            if (child.is_running) {
+              const childStart = new Date(child.last_started_at);
+              const elapsed = Math.floor((now - childStart) / 1000);
+              childNewRemaining = Math.max(0, child.remaining_seconds - elapsed);
+              childActionDetails = `Status otomatis OFF (Parent ${asset.nama_mesin} dimatikan) | Sisa waktu: ${Math.floor(childNewRemaining / 3600)}j ${Math.floor((childNewRemaining % 3600) / 60)}m ${childNewRemaining % 60}d`;
+              
+              await pool.query(
+                'UPDATE assets SET is_running = ?, last_started_at = NULL, remaining_seconds = ?, last_operated_by = ? WHERE id = ?',
+                [0, childNewRemaining, user_id, child.id]
+              );
+              
+              await pool.query(
+                'INSERT INTO asset_audit_logs (asset_id, action, user_id, details) VALUES (?, ?, ?, ?)',
+                [child.id, 'STATUS_CHANGE', user_id, childActionDetails]
+              );
+
+              try {
+                if (io) {
+                  io.emit('asset-status-updated', { 
+                    id: parseInt(child.id), 
+                    is_running: 0, 
+                    last_started_at: null, 
+                    remaining_seconds: childNewRemaining,
+                    operatorName: opName
+                  });
+                }
+              } catch (e) {
+                console.error('Child socket emit error:', e);
+              }
+            }
+          }
+        }
       }
 
       res.json({ 

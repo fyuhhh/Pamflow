@@ -57,6 +57,8 @@ const RegisterAset = () => {
 
   const [maintInput, setMaintInput] = useState({ days: 0, hours: 0 });
 
+  const [allAssets, setAllAssets] = useState([]);
+
   const [formData, setFormData] = useState({
     nama_mesin: '',
     brand: '',
@@ -67,13 +69,15 @@ const RegisterAset = () => {
     status: 'Baik',
     catatan: '',
     lampiran: [],
-    maintenance_hours: 0
+    maintenance_hours: 0,
+    parent_id: ''
   });
 
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetchAssets();
+    fetchAllAssets();
     fetchPriorities();
     fetchStatuses();
     fetchLocations();
@@ -90,6 +94,18 @@ const RegisterAset = () => {
       console.error('Fetch assets error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAllAssets = async () => {
+    try {
+      const response = await authFetch('/api/assets');
+      if (response.ok) {
+        const data = await response.json();
+        setAllAssets(data);
+      }
+    } catch (err) {
+      console.error('Fetch all assets error:', err);
     }
   };
 
@@ -239,10 +255,11 @@ const RegisterAset = () => {
           setFormData({
             nama_mesin: '', brand: '', model_tipe: '', serial_number: '',
             lokasi: '', prioritas: 'Sedang', status: 'Baik', catatan: '',
-            lampiran: [], maintenance_hours: 0
+            lampiran: [], maintenance_hours: 0, parent_id: ''
           });
           setMaintInput({ days: 0, hours: 0 });
           fetchAssets();
+          fetchAllAssets();
         });
       } else {
         const data = await response.json();
@@ -460,6 +477,17 @@ const RegisterAset = () => {
                         <button type="button" onClick={() => setShowNewLocationInput(false)} className="px-2 text-[#A1A5B7]"><X size={16} /></button>
                       </div>
                     )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-sm font-normal text-[#3F4254]">Aset Induk (Opsional)</label>
+                    <div className="relative">
+                      <select className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light appearance-none pr-10 focus:bg-white focus:border-[#0095E8]/20 outline-none cursor-pointer" value={formData.parent_id || ''} onChange={(e) => setFormData({...formData, parent_id: e.target.value ? parseInt(e.target.value) : null})}>
+                        <option value="">Tanpa Induk (Mandiri)</option>
+                        {allAssets.filter(a => !a.parent_id).map(a => <option key={a.id} value={a.id}>{a.nama_mesin} ({a.brand || 'No Brand'})</option>)}
+                      </select>
+                      <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-[#A1A5B7] pointer-events-none" size={18} />
+                    </div>
                   </div>
                 </div>
 

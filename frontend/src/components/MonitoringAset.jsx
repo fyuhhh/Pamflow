@@ -176,7 +176,14 @@ const MonitoringAset = () => {
   const [isSubmittingNote, setIsSubmittingNote] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
   const [isToggling, setIsToggling] = useState(false);
-  const [toggleConfirm, setToggleConfirm] = useState({ show: false, assetId: null, action: '' });
+  const [toggleConfirm, setToggleConfirm] = useState({ show: false, assetId: null, action: '', selectedIds: null });
+  const [toggleSelectModal, setToggleSelectModal] = useState({
+    show: false,
+    assetId: null,
+    action: '',
+    connectedAssets: [],
+    selectedIds: []
+  });
   const [isMaintModalOpen, setIsMaintModalOpen] = useState(false);
   const [maintFormData, setMaintFormData] = useState({
     reason: '', responsible_person: '', actions_taken: '', photos: [],
@@ -189,12 +196,30 @@ const MonitoringAset = () => {
   const timerRef = useRef(null);
 
   const assetsNeedingMaint = useMemo(() => {
-    return assets.filter(a => a.remaining_seconds > 0 && a.remaining_seconds <= 172800);
+    return assets.filter(a => a.remaining_seconds > 0 && a.remaining_seconds <= 604800);
   }, [assets]);
 
   const assetsLockout = useMemo(() => {
     return assets.filter(a => a.remaining_seconds <= 0);
   }, [assets]);
+
+  const sortedAlertAssets = useMemo(() => {
+    const combined = [...assetsLockout, ...assetsNeedingMaint];
+    return combined.sort((a, b) => {
+      const aLock = a.remaining_seconds <= 0;
+      const bLock = b.remaining_seconds <= 0;
+      if (aLock !== bLock) return aLock ? -1 : 1;
+      
+      const aIsChild = a.parent_id !== null && a.parent_id !== undefined;
+      const bIsChild = b.parent_id !== null && b.parent_id !== undefined;
+      
+      if (aIsChild !== bIsChild) {
+        return aIsChild ? -1 : 1;
+      }
+      
+      return a.remaining_seconds - b.remaining_seconds;
+    });
+  }, [assetsLockout, assetsNeedingMaint]);
 
   // App Mode Detection
   const appMode = import.meta.env.MODE; // 'pc' or 'mobile'
@@ -225,7 +250,7 @@ const MonitoringAset = () => {
   const [editFormData, setEditFormData] = useState({
     nama_mesin: '', brand: '', model_tipe: '', serial_number: '',
     lokasi: '', prioritas: '', status: '', catatan: '', lampiran: [],
-    maintenance_hours: 0
+    maintenance_hours: 0, parent_id: null
   });
   const [maintInput, setMaintInput] = useState({ days: 0, hours: 0 });
   const [isUpdating, setIsUpdating] = useState(false);
@@ -257,7 +282,17 @@ const MonitoringAset = () => {
     if (socket) {
       const handleAssetUpdate = (data) => {
         const cleanData = { ...data, id: parseInt(data.id) };
-        setAssets(prev => prev.map(a => a.id === cleanData.id ? { ...a, ...cleanData } : a));
+        setAssets(prev => {
+          if (cleanData.parent_id) {
+            const parent = prev.find(p => p.id === cleanData.parent_id);
+            if (parent) {
+              cleanData.parent_name = parent.nama_mesin;
+            }
+          }
+          return prev.map(a => a.id === cleanData.id ? { ...a, ...cleanData } : a);
+        });
+        setSelectedAsset(prev => prev && prev.id === cleanData.id ? { ...prev, ...cleanData } : prev);
+        setActiveMobileAsset(prev => prev && prev.id === cleanData.id ? { ...prev, ...cleanData } : prev);
       };
       socket.on('asset-status-updated', (data) => {
         handleAssetUpdate(data);
@@ -365,27 +400,50 @@ const MonitoringAset = () => {
       return;
     }
 
-    setToggleConfirm({ 
-      show: true, 
-      assetId, 
-      action: asset.is_running ? 'Mematikan' : 'Menyalakan' 
-    });
+    const parentId = asset.parent_id || asset.id;
+    const parentAsset = assets.find(a => a.id === parentId);
+    const children = assets.filter(a => a.parent_id === parentId);
+
+    const connectedGroup = [];
+    if (parentAsset) connectedGroup.push(parentAsset);
+    connectedGroup.push(...children);
+
+    const uniqueGroup = Array.from(new Map(connectedGroup.map(item => [item.id, item])).values());
+
+    if (uniqueGroup.length > 1) {
+      // Show the selective checkbox modal
+      setToggleSelectModal({
+        show: true,
+        assetId,
+        action: asset.is_running ? 'Mematikan' : 'Menyalakan',
+        connectedAssets: uniqueGroup,
+        selectedIds: uniqueGroup.map(a => a.id) // checked by default
+      });
+    } else {
+      // Standalone asset
+      setToggleConfirm({ 
+        show: true, 
+        assetId, 
+        action: asset.is_running ? 'Mematikan' : 'Menyalakan',
+        selectedIds: [assetId]
+      });
+    }
   };
 
   const executeToggleStatus = async () => {
-    const { assetId } = toggleConfirm;
+    const { assetId, selectedIds } = toggleConfirm;
     if (!assetId || isToggling) return;
 
     try {
       setIsToggling(true);
-      setToggleConfirm({ show: false, assetId: null, action: '' });
+      setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null });
       
-      const res = await authFetch(`/api/assets/${assetId}/toggle`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        const cleanData = { ...data, id: parseInt(data.id) };
-        setAssets(prev => prev.map(a => a.id === assetId ? { ...a, ...cleanData } : a));
-      } else {
+      const res = await authFetch(`/api/assets/${assetId}/toggle`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selected_ids: selectedIds })
+      });
+      if (!res.ok) {
         showError('Gagal mengubah status aset');
       }
     } catch (err) {
@@ -611,7 +669,8 @@ const MonitoringAset = () => {
       status: asset.status || '',
       catatan: asset.catatan || '',
       lampiran: safeParseJSON(asset.lampiran),
-      maintenance_hours: asset.maintenance_hours || 0
+      maintenance_hours: asset.maintenance_hours || 0,
+      parent_id: asset.parent_id || null
     });
     const d = Math.floor(asset.maintenance_hours / 24);
     const h = asset.maintenance_hours % 24;
@@ -633,17 +692,21 @@ const MonitoringAset = () => {
         fetchAssets();
         // Update selected asset if viewing detail
         if (selectedAsset && selectedAsset.id === editingAsset.id) {
+          const parentAsset = assets.find(a => a.id === editFormData.parent_id);
           const updated = { 
             ...selectedAsset, 
             ...editFormData,
+            parent_name: parentAsset ? parentAsset.nama_mesin : null,
             remaining_seconds: (editFormData.maintenance_hours || 0) * 3600
           };
           setSelectedAsset(updated);
         }
         if (activeMobileAsset && activeMobileAsset.id === editingAsset.id) {
+          const parentAsset = assets.find(a => a.id === editFormData.parent_id);
           const updated = { 
             ...activeMobileAsset, 
             ...editFormData,
+            parent_name: parentAsset ? parentAsset.nama_mesin : null,
             remaining_seconds: (editFormData.maintenance_hours || 0) * 3600
           };
           setActiveMobileAsset(updated);
@@ -743,7 +806,7 @@ const MonitoringAset = () => {
           </div>
 
           {/* Maintenance Alerts Notification */}
-          {(assetsNeedingMaint.length > 0 || assetsLockout.length > 0) && (
+          {sortedAlertAssets.length > 0 && (
             <motion.div 
               initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
               className="mb-6 bg-amber-50 border border-amber-100 rounded-2xl p-4 overflow-hidden"
@@ -755,17 +818,16 @@ const MonitoringAset = () => {
                 <div>
                   <h4 className="text-[13px] font-black text-amber-900 leading-tight">Perhatian: Maintenance Unit</h4>
                   <p className="text-[11px] text-amber-700/80 font-bold mt-1 leading-relaxed">
-                    {assetsLockout.length > 0 && `${assetsLockout.length} unit butuh maintenance segera (Lockout). `}
-                    {assetsNeedingMaint.length > 0 && `${assetsNeedingMaint.length} unit mendekati batas maintenance.`}
+                    Terdapat unit kritis teratas (Freon/Perintilan diprioritaskan paling atas):
                   </p>
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {[...assetsLockout, ...assetsNeedingMaint].slice(0, 3).map(a => (
+                    {sortedAlertAssets.slice(0, 3).map(a => (
                       <span key={a.id} className={`px-2 py-0.5 rounded text-[9px] font-black uppercase ${a.remaining_seconds <= 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'}`}>
                         {a.nama_mesin}
                       </span>
                     ))}
-                    {(assetsNeedingMaint.length + assetsLockout.length) > 3 && (
-                      <span className="text-[9px] font-bold text-amber-400">+{assetsNeedingMaint.length + assetsLockout.length - 3} lagi</span>
+                    {sortedAlertAssets.length > 3 && (
+                      <span className="text-[9px] font-bold text-amber-400">+{sortedAlertAssets.length - 3} lagi</span>
                     )}
                   </div>
                 </div>
@@ -859,7 +921,7 @@ const MonitoringAset = () => {
                       } ${
                         activeMobileAsset.is_running 
                           ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
-                          : (activeMobileAsset.remaining_seconds <= 172800 ? 'bg-amber-500 border-amber-50 shadow-amber-100 text-white' : 'bg-white border-slate-50 shadow-slate-200 text-slate-300')
+                          : (activeMobileAsset.remaining_seconds <= 604800 ? 'bg-amber-500 border-amber-50 shadow-amber-100 text-white' : 'bg-white border-slate-50 shadow-slate-200 text-slate-300')
                       }`}
                     >
                       <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
@@ -869,8 +931,8 @@ const MonitoringAset = () => {
                     </motion.button>
                   )}
 
-                  {/* Maintenance Button (Shown if <= 48h and NOT running) */}
-                  {!activeMobileAsset.is_running && activeMobileAsset.remaining_seconds <= 172800 && (
+                  {/* Maintenance Button (Shown if <= 7d and NOT running) */}
+                  {!activeMobileAsset.is_running && activeMobileAsset.remaining_seconds <= 604800 && (
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setIsMaintModalOpen(true)}
@@ -912,6 +974,66 @@ const MonitoringAset = () => {
                   </div>
                 </div>
               </div>
+
+              {/* Hubungan & Sinkronisasi Aset Induk / Anak */}
+              {activeMobileAsset.parent_id && (
+                <div className="p-5 bg-blue-50/50 border border-blue-100 rounded-[28px] flex items-start gap-4">
+                  <div className="w-10 h-10 rounded-2xl bg-blue-500 text-white flex items-center justify-center shrink-0 shadow-md">
+                    <Zap size={20} />
+                  </div>
+                  <div>
+                    <h4 className="text-[13px] font-black text-blue-900 leading-tight">Terhubung ke Induk</h4>
+                    <p className="text-[11px] text-blue-700/80 font-bold mt-1 leading-relaxed">
+                      Aset ini terhubung ke <strong>{activeMobileAsset.parent_name || 'Aset Induk'}</strong>. Timer hitung mundur berjalan otomatis menyinkronkan status induknya.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {(() => {
+                const childAssets = assets.filter(a => a.parent_id === activeMobileAsset.id);
+                if (childAssets.length > 0) {
+                  return (
+                    <div className="bg-slate-50 border border-slate-100 p-6 rounded-[28px] space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Zap size={16} className="text-[#0095E8]" />
+                        <h4 className="text-[12px] font-black text-slate-700 uppercase tracking-widest">Aset Anak Terhubung ({childAssets.length})</h4>
+                      </div>
+                      <div className="space-y-2.5">
+                        {childAssets.map(child => {
+                          let childLiveTime = child.remaining_seconds;
+                          if (child.is_running && child.last_started_at) {
+                            const start = new Date(child.last_started_at);
+                            const now = new Date();
+                            const elapsed = Math.floor((now - start) / 1000);
+                            childLiveTime = Math.max(0, child.remaining_seconds - elapsed);
+                          }
+                          return (
+                            <div key={child.id} className="p-3 bg-white rounded-2xl border border-slate-100/80 flex items-center justify-between shadow-sm">
+                              <div>
+                                <p className="text-[12px] font-black text-slate-700 leading-tight">{child.nama_mesin}</p>
+                                <p className="text-[10px] text-slate-400 font-bold uppercase mt-0.5">{child.brand || '-'}</p>
+                              </div>
+                              <div className="flex items-center gap-3">
+                                <span className={`text-[10px] font-black uppercase ${child.is_running ? 'text-green-500 animate-pulse' : 'text-slate-300'}`}>
+                                  {child.is_running ? 'ON' : 'OFF'}
+                                </span>
+                                <span className="text-[12px] font-mono font-black text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                                  {formatTime(childLiveTime)}
+                                </span>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                      <p className="text-[9px] text-blue-500 font-bold italic leading-relaxed bg-blue-50/20 p-2.5 rounded-xl border border-blue-50/50">
+                        * Mengaktifkan unit ini otomatis akan menyalakan timer seluruh aset anak di atas.
+                      </p>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
 
               {/* Action Tabs / Buttons */}
               <div className="grid grid-cols-2 gap-4">
@@ -1235,6 +1357,64 @@ const MonitoringAset = () => {
                   ))}
                 </div>
 
+                {/* Hubungan Aset Induk / Anak di Detail */}
+                <div className="p-5 bg-slate-50 rounded-[28px] border border-slate-100 space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Zap size={16} className="text-[#0095E8]" />
+                    <h4 className="text-[13px] font-black text-slate-800 tracking-wide">Hubungan Aset & Timer</h4>
+                  </div>
+                  
+                  {selectedAsset.parent_id ? (
+                    <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
+                      <p className="text-[12px] font-black text-blue-900">Aset Induk: {selectedAsset.parent_name || 'Terhubung'}</p>
+                      <p className="text-[11px] text-blue-700/80 mt-1 leading-relaxed font-bold">
+                        Aset ini terhubung ke induknya. Timer berjalan otomatis mengikuti induk.
+                      </p>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] text-slate-400 font-bold italic">Aset ini berdiri sendiri (tidak memiliki aset induk).</p>
+                  )}
+
+                  {(() => {
+                    const childAssets = assets.filter(a => a.parent_id === selectedAsset.id);
+                    if (childAssets.length > 0) {
+                      return (
+                        <div className="space-y-3 pt-2">
+                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Aset Anak Terhubung ({childAssets.length})</p>
+                          <div className="space-y-2">
+                            {childAssets.map(child => {
+                              let childLiveTime = child.remaining_seconds;
+                              if (child.is_running && child.last_started_at) {
+                                const start = new Date(child.last_started_at);
+                                const now = new Date();
+                                const elapsed = Math.floor((now - start) / 1000);
+                                childLiveTime = Math.max(0, child.remaining_seconds - elapsed);
+                              }
+                              return (
+                                <div key={child.id} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between shadow-sm">
+                                  <div>
+                                    <p className="text-[12px] font-black text-slate-700">{child.nama_mesin}</p>
+                                    <p className="text-[10px] text-slate-400 font-bold">{child.brand || '-'}</p>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    <span className={`text-[10px] font-black uppercase ${child.is_running ? 'text-green-500 animate-pulse' : 'text-slate-400'}`}>
+                                      {child.is_running ? 'ON' : 'OFF'}
+                                    </span>
+                                    <span className="text-[11px] font-mono font-bold text-slate-600">
+                                      {formatTime(childLiveTime)}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
+
                 {/* Catatan Tim Section in Detail */}
                 <div className="space-y-4">
                    <h4 className="text-[14px] font-black text-slate-800">Catatan Khusus Tim</h4>
@@ -1364,11 +1544,103 @@ const MonitoringAset = () => {
           )}
         </AnimatePresence>
         
+        {/* Selection Checkbox Modal (Mobile) */}
+        <AnimatePresence>
+          {toggleSelectModal.show && (
+            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })} />
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl"
+              >
+                <div className="text-center mb-6">
+                  <div className={`w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
+                     <Power size={28} />
+                  </div>
+                  <h3 className="text-[18px] font-black text-slate-800 leading-tight">Kontrol Multi-Aset</h3>
+                  <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Pilih unit yang ingin di{toggleSelectModal.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}</p>
+                </div>
+
+                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 mb-6 custom-scrollbar">
+                  {toggleSelectModal.connectedAssets.map(ast => {
+                    const isParent = !ast.parent_id;
+                    const isChecked = toggleSelectModal.selectedIds.includes(ast.id);
+                    return (
+                      <div 
+                        key={ast.id} 
+                        onClick={() => {
+                          const alreadySelected = toggleSelectModal.selectedIds.includes(ast.id);
+                          const newIds = alreadySelected 
+                            ? toggleSelectModal.selectedIds.filter(id => id !== ast.id)
+                            : [...toggleSelectModal.selectedIds, ast.id];
+                          setToggleSelectModal(prev => ({ ...prev, selectedIds: newIds }));
+                        }}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isChecked 
+                            ? 'bg-[#F1FAFF] border-[#0095E8]/30 shadow-sm' 
+                            : 'bg-slate-50/50 border-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            readOnly
+                            className="w-4 h-4 rounded text-[#0095E8] border-slate-300 focus:ring-[#0095E8]"
+                          />
+                          <div>
+                            <p className="text-[13px] font-black text-slate-800 leading-tight">{ast.nama_mesin}</p>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{isParent ? 'Aset Induk' : 'Aset Anak'}</span>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase ${ast.is_running ? 'text-green-500' : 'text-slate-400'}`}>
+                          {ast.is_running ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[11px] text-slate-400 font-bold italic text-center mb-6 leading-normal">
+                  * Unit yang tidak dicentang tidak akan berubah statusnya.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })}
+                    className="py-3.5 bg-slate-50 text-slate-500 rounded-2xl font-black text-[13px]"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (toggleSelectModal.selectedIds.length === 0) {
+                        showError('Mohon pilih minimal 1 unit');
+                        return;
+                      }
+                      setToggleConfirm({
+                        show: true,
+                        assetId: toggleSelectModal.assetId,
+                        action: toggleSelectModal.action,
+                        selectedIds: toggleSelectModal.selectedIds
+                      });
+                      setToggleSelectModal(prev => ({ ...prev, show: false }));
+                    }}
+                    className={`py-3.5 text-white rounded-2xl font-black text-[13px] shadow-lg ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
+                  >
+                    Lanjut
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Local Confirmation Modal for Toggle (Mobile) */}
         <AnimatePresence>
           {toggleConfirm.show && (
             <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '' })} />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })} />
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
@@ -1377,12 +1649,33 @@ const MonitoringAset = () => {
                    <Power size={40} />
                 </div>
                 <h3 className="text-[20px] font-black text-slate-800 mb-2">{toggleConfirm.action} Mesin?</h3>
-                <p className="text-[14px] text-slate-500 font-medium mb-8 leading-relaxed">
-                  Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit mesin <strong>{assets.find(a => a.id === toggleConfirm.assetId)?.nama_mesin}</strong> sekarang?
+                <p className="text-[13px] text-slate-500 font-medium mb-6 leading-relaxed">
+                  Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit berikut sekarang?
                 </p>
+
+                {toggleConfirm.selectedIds && toggleConfirm.selectedIds.length > 0 && (
+                  <div className="mb-6 p-4 bg-slate-50 rounded-2xl text-left border border-slate-100 max-h-[120px] overflow-y-auto custom-scrollbar">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Unit yang akan di{toggleConfirm.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {toggleConfirm.selectedIds.map(sid => {
+                        const targetAsset = assets.find(a => a.id === sid);
+                        return (
+                          <span key={sid} className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm border ${
+                            toggleConfirm.action === 'Mematikan' 
+                              ? 'bg-red-50 text-red-700 border-red-100' 
+                              : 'bg-blue-50 text-blue-700 border-blue-100'
+                          }`}>
+                            {targetAsset?.nama_mesin || 'Aset'}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <button 
-                    onClick={() => setToggleConfirm({ show: false, assetId: null, action: '' })}
+                    onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })}
                     className="py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[15px]"
                   >
                     Batal
@@ -1413,19 +1706,33 @@ const MonitoringAset = () => {
         </div>
         
         {/* Maintenance Alert Banner for PC */}
-        {assets.filter(a => a.remaining_seconds <= 172800).length > 0 && (
+        {sortedAlertAssets.length > 0 && (
           <motion.div 
             initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
-            className="flex items-center gap-4 bg-red-50 border border-red-100 p-4 rounded-2xl shadow-sm animate-pulse"
+            className="flex items-start gap-4 bg-amber-50 border border-amber-100 p-4 rounded-2xl shadow-sm max-w-md shrink-0"
           >
-            <div className="w-10 h-10 bg-red-500 rounded-full flex items-center justify-center text-white shrink-0">
-               <Zap size={20} />
+            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md">
+               <AlertTriangle size={20} />
             </div>
             <div>
-               <p className="text-[14px] font-black text-red-600 leading-tight">
-                  {assets.filter(a => a.remaining_seconds <= 172800).length} Alat Perlu Maintenance!
+               <p className="text-[13px] font-black text-amber-900 leading-tight">
+                  {sortedAlertAssets.length} Unit Butuh Perhatian!
                </p>
-               <p className="text-[11px] font-bold text-red-400">Segera lakukan pengecekan pada unit dengan sisa waktu kritis.</p>
+               <p className="text-[11px] font-bold text-amber-700/80 mt-1 leading-normal">Berikut unit kritis teratas (Freon/Perintilan diprioritaskan):</p>
+               <div className="mt-2 flex flex-wrap gap-1.5">
+                 {sortedAlertAssets.slice(0, 3).map(a => (
+                   <span key={a.id} className={`px-2 py-0.5 rounded text-[9px] font-black uppercase shadow-sm border ${
+                     a.remaining_seconds <= 0 
+                       ? 'bg-red-500 text-white border-red-400' 
+                       : 'bg-amber-100 text-amber-800 border-amber-200'
+                   }`}>
+                     {a.nama_mesin}
+                   </span>
+                 ))}
+                 {sortedAlertAssets.length > 3 && (
+                   <span className="text-[9px] font-bold text-amber-500/80">+{sortedAlertAssets.length - 3} lagi</span>
+                 )}
+               </div>
             </div>
           </motion.div>
         )}
@@ -1588,7 +1895,7 @@ const MonitoringAset = () => {
                   }
 
                   return (
-                    <tr key={asset.id} className={`hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer ${liveTime <= 172800 ? 'bg-red-50/50' : ''}`}>
+                    <tr key={asset.id} className={`hover:bg-[#F9F9F9]/50 transition-all group cursor-pointer ${liveTime <= 604800 ? 'bg-red-50/50' : ''}`}>
                       <td className="px-6 py-5 text-sm font-light text-[#7E8299]">{(currentPage - 1) * rowsPerPage + index + 1}</td>
                       <td className="px-6 py-5">
                         <p className="text-sm font-normal text-[#181C32] mb-0.5">{asset.nama_mesin}</p>
@@ -1598,7 +1905,7 @@ const MonitoringAset = () => {
                         <div className="flex items-center gap-3">
                           <div className={`w-2.5 h-2.5 rounded-full ${asset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                           <div>
-                            <p className={`text-sm font-black tabular-nums ${liveTime <= 172800 ? 'text-red-600' : (asset.is_running ? 'text-[#0095E8]' : 'text-slate-700')}`}>
+                            <p className={`text-sm font-black tabular-nums ${liveTime <= 604800 ? 'text-red-600' : (asset.is_running ? 'text-[#0095E8]' : 'text-slate-700')}`}>
                               {formatTime(liveTime)}
                             </p>
                             <p className="text-[9px] text-[#A1A5B7] font-bold uppercase tracking-wider">
@@ -1655,7 +1962,7 @@ const MonitoringAset = () => {
               <div className="p-8 overflow-y-auto no-scrollbar grid grid-cols-1 lg:grid-cols-12 gap-10">
                 <div className="lg:col-span-8 space-y-8">
                   {/* Timer Large Display in Detail */}
-                  <div className={`p-8 rounded-[32px] text-white flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-500 ${timeLeft <= 172800 ? 'bg-red-600 shadow-xl shadow-red-100' : 'bg-[#1E1E2D]'}`}>
+                  <div className={`p-8 rounded-[32px] text-white flex flex-col items-center justify-center relative overflow-hidden transition-colors duration-500 ${timeLeft <= 604800 ? 'bg-red-600 shadow-xl shadow-red-100' : 'bg-[#1E1E2D]'}`}>
                     <div className="absolute top-0 right-0 p-6 opacity-10">
                       <Zap size={100} />
                     </div>
@@ -1686,6 +1993,72 @@ const MonitoringAset = () => {
                     <div className="space-y-1">
                       <label className="text-[9px] font-normal text-[#A1A5B7] uppercase tracking-wider">Pendaftar</label>
                       <p className="text-sm font-normal text-[#3F4254]">{selectedAsset.firstName}</p>
+                    </div>
+                  </div>
+
+                  {/* Hubungan Aset Induk / Anak di PC Detail */}
+                  <div className="p-6 bg-slate-50 rounded-[28px] border border-slate-100 space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Zap size={16} className="text-[#0095E8]" />
+                      <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Hubungan Aset & Sinkronisasi Timer</h4>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black text-[#A1A5B7] uppercase tracking-wider">Aset Induk</p>
+                        {selectedAsset.parent_id ? (
+                          <div className="p-4 bg-blue-50 border border-blue-100 rounded-2xl flex items-center justify-between shadow-sm">
+                            <div>
+                              <p className="text-sm font-black text-blue-900">{selectedAsset.parent_name || 'Terhubung'}</p>
+                              <p className="text-[11px] text-blue-700/80 font-bold mt-0.5">Timer menyatu & sinkron secara otomatis dengan unit ini.</p>
+                            </div>
+                            <div className="w-8 h-8 rounded-full bg-blue-500 text-white flex items-center justify-center shrink-0">
+                              <Zap size={16} />
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-400 font-bold italic">Aset ini berdiri sendiri (tidak memiliki aset induk).</p>
+                        )}
+                      </div>
+
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black text-[#A1A5B7] uppercase tracking-wider">Aset Anak Terhubung</p>
+                        {(() => {
+                          const childAssets = assets.filter(a => a.parent_id === selectedAsset.id);
+                          if (childAssets.length > 0) {
+                            return (
+                              <div className="grid grid-cols-1 gap-2 max-h-[180px] overflow-y-auto pr-2 custom-scrollbar">
+                                {childAssets.map(child => {
+                                  let childLiveTime = child.remaining_seconds;
+                                  if (child.is_running && child.last_started_at) {
+                                    const start = new Date(child.last_started_at);
+                                    const now = new Date();
+                                    const elapsed = Math.floor((now - start) / 1000);
+                                    childLiveTime = Math.max(0, child.remaining_seconds - elapsed);
+                                  }
+                                  return (
+                                    <div key={child.id} className="p-3 bg-white border border-slate-100 rounded-xl flex items-center justify-between shadow-sm">
+                                      <div>
+                                        <p className="text-[12px] font-black text-slate-700 leading-none">{child.nama_mesin}</p>
+                                        <p className="text-[10px] text-slate-400 font-bold uppercase mt-1">{child.brand || '-'}</p>
+                                      </div>
+                                      <div className="flex items-center gap-3">
+                                        <span className={`text-[10px] font-black uppercase ${child.is_running ? 'text-green-500 animate-pulse' : 'text-slate-300'}`}>
+                                          {child.is_running ? 'ON' : 'OFF'}
+                                        </span>
+                                        <span className="text-[12px] font-mono font-bold text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+                                          {formatTime(childLiveTime)}
+                                        </span>
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            );
+                          }
+                          return <p className="text-xs text-slate-400 font-bold italic">Tidak ada aset anak yang terhubung ke unit ini.</p>
+                        })()}
+                      </div>
                     </div>
                   </div>
 
@@ -1881,6 +2254,23 @@ const MonitoringAset = () => {
                           </select>
                         </div>
                       </div>
+
+                      {/* Aset Induk */}
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Aset Induk (Opsional)</label>
+                        {assets.some(a => a.parent_id === editingAsset?.id) ? (
+                          <div className="p-4 bg-slate-100 rounded-2xl text-[12px] text-slate-500 font-bold italic leading-relaxed">
+                            * Unit ini adalah Aset Induk bagi unit lain dan tidak dapat memiliki induk.
+                          </div>
+                        ) : (
+                          <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none cursor-pointer" value={editFormData.parent_id || ''} onChange={e => setEditFormData({...editFormData, parent_id: e.target.value ? parseInt(e.target.value) : null})}>
+                            <option value="">Tanpa Induk (Mandiri)</option>
+                            {assets.filter(a => a.id !== editingAsset?.id && !a.parent_id).map(a => (
+                              <option key={a.id} value={a.id}>{a.nama_mesin} ({a.brand || 'No Brand'})</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
                     </div>
 
                     {/* Maintenance Interval */}
@@ -1942,11 +2332,103 @@ const MonitoringAset = () => {
          )}
        </AnimatePresence>
 
+        {/* Selection Checkbox Modal (PC) */}
+        <AnimatePresence>
+          {toggleSelectModal.show && (
+            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })} />
+              <motion.div 
+                initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                className="relative bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl"
+              >
+                <div className="text-center mb-6">
+                  <div className={`w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
+                     <Power size={28} />
+                  </div>
+                  <h3 className="text-[18px] font-black text-slate-800 leading-tight">Kontrol Multi-Aset</h3>
+                  <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Pilih unit yang ingin di{toggleSelectModal.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}</p>
+                </div>
+
+                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 mb-6 custom-scrollbar">
+                  {toggleSelectModal.connectedAssets.map(ast => {
+                    const isParent = !ast.parent_id;
+                    const isChecked = toggleSelectModal.selectedIds.includes(ast.id);
+                    return (
+                      <div 
+                        key={ast.id} 
+                        onClick={() => {
+                          const alreadySelected = toggleSelectModal.selectedIds.includes(ast.id);
+                          const newIds = alreadySelected 
+                            ? toggleSelectModal.selectedIds.filter(id => id !== ast.id)
+                            : [...toggleSelectModal.selectedIds, ast.id];
+                          setToggleSelectModal(prev => ({ ...prev, selectedIds: newIds }));
+                        }}
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
+                          isChecked 
+                            ? 'bg-[#F1FAFF] border-[#0095E8]/30 shadow-sm' 
+                            : 'bg-slate-50/50 border-slate-100'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <input 
+                            type="checkbox" 
+                            checked={isChecked}
+                            readOnly
+                            className="w-4 h-4 rounded text-[#0095E8] border-slate-300 focus:ring-[#0095E8]"
+                          />
+                          <div>
+                            <p className="text-[13px] font-black text-slate-800 leading-tight">{ast.nama_mesin}</p>
+                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{isParent ? 'Aset Induk' : 'Aset Anak'}</span>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-black uppercase ${ast.is_running ? 'text-green-500' : 'text-slate-400'}`}>
+                          {ast.is_running ? 'ON' : 'OFF'}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                <p className="text-[11px] text-slate-400 font-bold italic text-center mb-6 leading-normal">
+                  * Unit yang tidak dicentang tidak akan berubah statusnya.
+                </p>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button 
+                    onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })}
+                    className="py-3.5 bg-slate-50 text-slate-500 rounded-2xl font-black text-[13px]"
+                  >
+                    Batal
+                  </button>
+                  <button 
+                    onClick={() => {
+                      if (toggleSelectModal.selectedIds.length === 0) {
+                        showError('Mohon pilih minimal 1 unit');
+                        return;
+                      }
+                      setToggleConfirm({
+                        show: true,
+                        assetId: toggleSelectModal.assetId,
+                        action: toggleSelectModal.action,
+                        selectedIds: toggleSelectModal.selectedIds
+                      });
+                      setToggleSelectModal(prev => ({ ...prev, show: false }));
+                    }}
+                    className={`py-3.5 text-white rounded-2xl font-black text-[13px] shadow-lg ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
+                  >
+                    Lanjut
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
+
         {/* Local Confirmation Modal for Toggle */}
         <AnimatePresence>
           {toggleConfirm.show && (
             <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '' })} />
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })} />
               <motion.div 
                 initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
@@ -1955,12 +2437,33 @@ const MonitoringAset = () => {
                    <Power size={40} />
                 </div>
                 <h3 className="text-[20px] font-black text-slate-800 mb-2">{toggleConfirm.action} Mesin?</h3>
-                <p className="text-[14px] text-slate-500 font-medium mb-8 leading-relaxed">
-                  Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit mesin <strong>{assets.find(a => a.id === toggleConfirm.assetId)?.nama_mesin}</strong> sekarang?
+                <p className="text-[13px] text-slate-500 font-medium mb-6 leading-relaxed">
+                  Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit berikut sekarang?
                 </p>
+
+                {toggleConfirm.selectedIds && toggleConfirm.selectedIds.length > 0 && (
+                  <div className="mb-6 p-4 bg-slate-50 rounded-2xl text-left border border-slate-100 max-h-[120px] overflow-y-auto custom-scrollbar">
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Unit yang akan di{toggleConfirm.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}:</span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {toggleConfirm.selectedIds.map(sid => {
+                        const targetAsset = assets.find(a => a.id === sid);
+                        return (
+                          <span key={sid} className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm border ${
+                            toggleConfirm.action === 'Mematikan' 
+                              ? 'bg-red-50 text-red-700 border-red-100' 
+                              : 'bg-blue-50 text-blue-700 border-blue-100'
+                          }`}>
+                            {targetAsset?.nama_mesin || 'Aset'}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
                 <div className="grid grid-cols-2 gap-4">
                   <button 
-                    onClick={() => setToggleConfirm({ show: false, assetId: null, action: '' })}
+                    onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })}
                     className="py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[15px]"
                   >
                     Batal

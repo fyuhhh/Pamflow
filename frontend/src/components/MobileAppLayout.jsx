@@ -35,7 +35,7 @@ const MobileAppLayout = ({ children }) => {
         const assetRes = await authFetch('/api/assets');
         if (assetRes.ok) {
           const assets = await assetRes.json();
-          const count = assets.filter(a => a.remaining_seconds <= 172800).length;
+          const count = assets.filter(a => a.remaining_seconds <= 604800).length;
           setMaintCount(count);
         }
       } catch (err) {
