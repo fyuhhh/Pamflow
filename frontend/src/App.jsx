@@ -48,6 +48,16 @@ import AssetPlaceholder from './components/AssetPlaceholder';
 import RegisterAset from './components/RegisterAset';
 import MonitoringAset from './components/MonitoringAset';
 import HakAksesAset from './components/HakAksesAset';
+import DashboardAset from './components/DashboardAset';
+import AssetList from './components/AssetList';
+import AssetMutation from './components/AssetMutation';
+import AssetMaintenance from './components/AssetMaintenance';
+import AssetStockOpname from './components/AssetStockOpname';
+import AssetDisposal from './components/AssetDisposal';
+import AssetDepreciation from './components/AssetDepreciation';
+import MasterDataAset from './components/MasterDataAset';
+import HakAksesManajemenAset from './components/HakAksesManajemenAset';
+import RecycleBinAset from './components/RecycleBinAset';
 
 import DashboardHome from './components/DashboardHome';
 
@@ -235,6 +245,18 @@ function App() {
           <Route path="/aset/hak-akses" element={<PrivateRoute moduleId="aset_hak_akses"><Dashboard onLogout={logout}><HakAksesAset /></Dashboard></PrivateRoute>} />
           <Route path="/aset/register" element={<PrivateRoute moduleId="aset_register"><Dashboard onLogout={logout}><RegisterAset /></Dashboard></PrivateRoute>} />
           <Route path="/aset/monitoring" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><MonitoringAset /></Dashboard></PrivateRoute>} />
+
+          {/* Pure Asset (Manajemen Aset) Routes */}
+          <Route path="/manajemen-aset/dashboard" element={<PrivateRoute moduleId="pure_asset_dashboard"><Dashboard onLogout={logout}><DashboardAset /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/list" element={<PrivateRoute moduleId="pure_asset_register"><Dashboard onLogout={logout}><AssetList /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/mutasi" element={<PrivateRoute moduleId="pure_asset_mutation"><Dashboard onLogout={logout}><AssetMutation /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/maintenance" element={<PrivateRoute moduleId="pure_asset_maintenance"><Dashboard onLogout={logout}><AssetMaintenance /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/opname" element={<PrivateRoute moduleId="pure_asset_opname"><Dashboard onLogout={logout}><AssetStockOpname /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/disposal" element={<PrivateRoute moduleId="pure_asset_disposal"><Dashboard onLogout={logout}><AssetDisposal /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/depresiasi" element={<PrivateRoute moduleId="pure_asset_depreciation"><Dashboard onLogout={logout}><AssetDepreciation /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/master-data" element={<PrivateRoute moduleId="pure_asset_master"><Dashboard onLogout={logout}><MasterDataAset /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/hak-akses" element={<PrivateRoute moduleId="pure_asset_hak_akses"><Dashboard onLogout={logout}><HakAksesManajemenAset /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/history-penghapusan" element={<PrivateRoute moduleId="pure_asset_master"><Dashboard onLogout={logout}><RecycleBinAset /></Dashboard></PrivateRoute>} />
 
           <Route path="/pengaturan/ubah-password" element={<Dashboard onLogout={logout}><ChangePassword /></Dashboard>} />
           <Route path="/profile/user" element={<Dashboard onLogout={logout}><Profile /></Dashboard>} />

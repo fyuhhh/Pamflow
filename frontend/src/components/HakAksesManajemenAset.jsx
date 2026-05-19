@@ -3,7 +3,7 @@ import { Shield, Save, Search, Check, X, AlertCircle, Info, Lock, User, Users, C
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 
-const HakAksesAset = () => {
+const HakAksesManajemenAset = () => {
   const [activeTab, setActiveTab] = useState('role'); // 'role' or 'user'
   const [roles, setRoles] = useState([]);
   const [users, setUsers] = useState([]);
@@ -25,9 +25,9 @@ const HakAksesAset = () => {
           <div className="w-20 h-20 bg-blue-50 rounded-full flex items-center justify-center mx-auto text-[#0095E8]">
             <Shield size={40} />
           </div>
-          <h2 className="text-xl font-bold text-[#181C32]">Hak Akses Maintenance Aset</h2>
+          <h2 className="text-xl font-bold text-[#181C32]">Hak Akses Manajemen Aset</h2>
           <p className="text-sm text-[#A1A5B7] font-light max-w-[280px]">
-            Halaman konfigurasi hak akses maintenance aset masih dalam proses pengembangan untuk versi mobile.
+            Halaman konfigurasi hak akses manajemen aset masih dalam proses pengembangan untuk versi mobile.
           </p>
         </div>
       </div>
@@ -79,11 +79,15 @@ const HakAksesAset = () => {
   };
 
   const assetModules = [
-    { id: 'aset_menu', label: 'Menu Aset', actions: ['Lihat'] },
-    { id: 'aset_register', label: 'Registrasi Aset', actions: ['Lihat', 'Buat', 'Edit', 'Hapus'] },
-    { id: 'aset_monitoring', label: 'Monitoring Aset', actions: ['Lihat'] },
-    { id: 'aset_audit', label: 'Log Audit Aset', actions: ['Lihat'] },
-    { id: 'aset_hak_akses', label: 'Kelola Hak Akses Maintenance Aset', actions: ['Lihat', 'Edit'] }
+    { id: 'pure_asset_dashboard', label: 'Dashboard Aset', actions: ['Lihat'] },
+    { id: 'pure_asset_register', label: 'Asset List (Registrasi Aset)', actions: ['Lihat', 'Buat', 'Edit', 'Hapus'] },
+    { id: 'pure_asset_mutation', label: 'Mutasi Aset', actions: ['Lihat', 'Buat'] },
+    { id: 'pure_asset_maintenance', label: 'Maintenance Aset', actions: ['Lihat', 'Buat', 'Edit'] },
+    { id: 'pure_asset_opname', label: 'Stock Opname (Audit Aset)', actions: ['Lihat', 'Buat', 'Edit'] },
+    { id: 'pure_asset_disposal', label: 'Disposal (Penghapusan)', actions: ['Lihat', 'Buat'] },
+    { id: 'pure_asset_depreciation', label: 'Depresiasi Aset', actions: ['Lihat', 'Buat'] },
+    { id: 'pure_asset_master', label: 'Master Data (Kategori, Lokasi, Vendor)', actions: ['Lihat', 'Buat', 'Edit', 'Hapus'] },
+    { id: 'pure_asset_hak_akses', label: 'Kelola Hak Akses Aset', actions: ['Lihat', 'Edit'] }
   ];
 
   const handleRoleToggle = (roleId, moduleId, action) => {
@@ -96,12 +100,6 @@ const HakAksesAset = () => {
           currentPerms[moduleId] = modulePerms.filter(a => a !== action);
         } else {
           currentPerms[moduleId] = [...modulePerms, action];
-        }
-        
-        if (moduleId !== 'aset_menu' && currentPerms[moduleId].length > 0) {
-          if (!currentPerms['aset_menu']?.includes('Lihat')) {
-            currentPerms['aset_menu'] = ['Lihat'];
-          }
         }
 
         return { ...role, permissions: currentPerms };
@@ -121,15 +119,8 @@ const HakAksesAset = () => {
     } else {
       currentPerms[moduleId] = [...modulePerms, action];
     }
-    
-    if (moduleId !== 'aset_menu' && currentPerms[moduleId].length > 0) {
-      if (!currentPerms['aset_menu']?.includes('Lihat')) {
-        currentPerms['aset_menu'] = ['Lihat'];
-      }
-    }
 
     setSelectedUser({ ...selectedUser, permissions: currentPerms });
-    // Also update in the users list to keep it in sync
     setUsers(prev => prev.map(u => u.id === selectedUser.id ? { ...u, permissions: currentPerms } : u));
   };
 
@@ -148,7 +139,6 @@ const HakAksesAset = () => {
       });
 
       if (response.ok) {
-        // Update local session if the user just edited their own role
         if (role.id === currentUser.role_id) {
           const updatedUser = { ...currentUser, permissions: role.permissions };
           localStorage.setItem('user', JSON.stringify(updatedUser));
@@ -178,18 +168,10 @@ const HakAksesAset = () => {
       });
 
       if (response.ok) {
-        // Update local session if the admin just edited themselves
         if (selectedUser.id === currentUser.id) {
-          // Re-merge current role perms with the new specific perms
-          const rolePerms = currentUser.role_permissions || {}; // We might not have this in localStorage yet
-          // For now, the most robust way to get the merged result is to just update 
-          // the localStorage with what we have and trigger event.
-          // Note: The login logic is the one that really knows how to merge.
-          // But we can approximate it here.
           const updatedUser = { ...currentUser, permissions: selectedUser.permissions }; 
-          // Wait, 'permissions' in localStorage is the MERGED one. 
-          // So replacing it with ONLY specific perms is wrong.
-          // The best approach is to just tell them to refresh or re-fetch.
+          localStorage.setItem('user', JSON.stringify(updatedUser));
+          window.dispatchEvent(new Event('auth-change'));
           success('Berhasil', 'Izin spesifik Anda telah diperbarui. Silakan refresh halaman untuk menerapkan perubahan sepenuhnya.');
         } else {
           success('Berhasil', `Izin spesifik untuk ${selectedUser.firstName} telah diperbarui.`);
@@ -218,8 +200,8 @@ const HakAksesAset = () => {
     <div className="p-8 max-w-[1400px] mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-10">
         <div>
-          <h1 className="text-2xl font-bold text-[#181C32] mb-1">Hak Akses Maintenance Aset</h1>
-          <p className="text-[#A1A5B7] text-sm font-light">Konfigurasi detail izin operasional maintenance aset baik berdasarkan Role maupun Pengguna spesifik.</p>
+          <h1 className="text-2xl font-bold text-[#181C32] mb-1">Hak Akses Manajemen Aset</h1>
+          <p className="text-[#A1A5B7] text-sm font-light">Konfigurasi detail izin operasional modul Aset (ASETA clone) baik berdasarkan Role maupun Pengguna spesifik.</p>
         </div>
         
         <div className="flex items-center gap-4 bg-white p-1 rounded-xl border border-[#F1F1F4] shadow-sm">
@@ -438,4 +420,4 @@ const HakAksesAset = () => {
   );
 };
 
-export default HakAksesAset;
+export default HakAksesManajemenAset;

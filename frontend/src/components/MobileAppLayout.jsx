@@ -57,7 +57,7 @@ const MobileAppLayout = ({ children }) => {
     { icon: Home, label: 'Beranda', path: '/demo/mobile' },
     { icon: ClipboardList, label: 'Tugas', path: '/demo/mobile/tasks' },
     { icon: ClipboardCheck, label: 'Checklist', path: '/demo/mobile/checklist' },
-    ...(hasPerm('aset_menu', 'Lihat') ? [{ icon: Package, label: 'Aset', path: '/demo/mobile/aset' }] : []),
+    ...(hasPerm('aset_menu', 'Lihat') ? [{ icon: Package, label: 'Maintenance Aset', path: '/demo/mobile/aset' }] : []),
     ...(canApprove ? [{ icon: ShieldCheck, label: 'Approval', path: '/demo/mobile/approvals' }] : []),
     { icon: UserCircle, label: 'Profil', path: '/demo/mobile/profile' },
   ];

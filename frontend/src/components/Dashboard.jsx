@@ -21,7 +21,8 @@ import {
   PiBuildingsDuotone,
   PiGearDuotone,
   PiPackageDuotone,
-  PiListChecksDuotone
+  PiListChecksDuotone,
+  PiFolderSimpleDuotone
 } from 'react-icons/pi';
 
 import Logo from './Logo';
@@ -117,13 +118,31 @@ const Dashboard = ({ children, onLogout }) => {
     },
     {
       id: 'aset',
-      label: 'Aset',
+      label: 'Maintenance Aset',
       icon: <PiPackageDuotone size={20} />,
       permission: ['aset_hak_akses', 'aset_register', 'aset_monitoring'],
       subItems: [
         { label: 'Register Aset', path: '/aset/register', permission: 'aset_register' },
         { label: 'Monitoring Aset', path: '/aset/monitoring', permission: 'aset_monitoring' },
         { label: 'Hak Akses Aset', path: '/aset/hak-akses', permission: 'aset_hak_akses' },
+      ]
+    },
+    {
+      id: 'manajemen-aset',
+      label: 'Manajemen Aset',
+      icon: <PiFolderSimpleDuotone size={20} />,
+      permission: ['pure_asset_dashboard', 'pure_asset_register', 'pure_asset_mutation', 'pure_asset_maintenance', 'pure_asset_opname', 'pure_asset_disposal', 'pure_asset_depreciation', 'pure_asset_master', 'pure_asset_hak_akses'],
+      subItems: [
+        { label: 'Dashboard Aset', path: '/manajemen-aset/dashboard', permission: 'pure_asset_dashboard' },
+        { label: 'Asset List', path: '/manajemen-aset/list', permission: 'pure_asset_register' },
+        { label: 'Mutasi Aset', path: '/manajemen-aset/mutasi', permission: 'pure_asset_mutation' },
+        { label: 'Maintenance Aset', path: '/manajemen-aset/maintenance', permission: 'pure_asset_maintenance' },
+        { label: 'Stock Opname', path: '/manajemen-aset/opname', permission: 'pure_asset_opname' },
+        { label: 'Disposal', path: '/manajemen-aset/disposal', permission: 'pure_asset_disposal' },
+        { label: 'Depresiasi', path: '/manajemen-aset/depresiasi', permission: 'pure_asset_depreciation' },
+        { label: 'Master Data', path: '/manajemen-aset/master-data', permission: 'pure_asset_master' },
+        { label: 'Hak Akses Aset', path: '/manajemen-aset/hak-akses', permission: 'pure_asset_hak_akses' },
+        { label: 'History Penghapusan', path: '/manajemen-aset/history-penghapusan', permission: 'pure_asset_master' },
       ]
     },
     {
