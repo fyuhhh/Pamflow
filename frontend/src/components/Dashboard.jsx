@@ -7,12 +7,14 @@ import {
   Settings,
   LogOut,
   Menu,
+
   ChevronDown,
   ChevronRight,
   Building2,
   UserCircle,
   Lock,
-  Star
+  Star,
+  Grip
 } from 'lucide-react';
 import {
   PiSquaresFourDuotone,
@@ -28,11 +30,12 @@ import {
 import Logo from './Logo';
 import { authFetch } from '../services/api';
 
-const Dashboard = ({ children, onLogout }) => {
+const Dashboard = ({ children, onLogout, isHub = false }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [isSidebarOpen, setSidebarOpen] = useState(true);
   const [isProfileOpen, setProfileOpen] = useState(false);
+  const [isSwitcherOpen, setSwitcherOpen] = useState(false);
   const [openMenus, setOpenMenus] = useState({});
   const [hoveredMenu, setHoveredMenu] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
@@ -114,6 +117,7 @@ const Dashboard = ({ children, onLogout }) => {
       subItems: [
         { label: 'Checklist Harian', path: '/tugas-departemen/checklist-harian', alwaysShow: true },
         { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true },
+        { label: 'Hak Akses Checklist Harian', path: '/tugas-departemen/hak-akses-checklist', alwaysShow: true },
       ]
     },
     {
@@ -122,6 +126,7 @@ const Dashboard = ({ children, onLogout }) => {
       icon: <PiPackageDuotone size={20} />,
       permission: ['aset_hak_akses', 'aset_register', 'aset_monitoring'],
       subItems: [
+        { label: 'Dashboard Maintenance Aset', path: '/aset/dashboard-maintenance', permission: 'aset_monitoring' },
         { label: 'Register Aset', path: '/aset/register', permission: 'aset_register' },
         { label: 'Monitoring Aset', path: '/aset/monitoring', permission: 'aset_monitoring' },
         { label: 'Hak Akses Aset', path: '/aset/hak-akses', permission: 'aset_hak_akses' },
@@ -134,27 +139,59 @@ const Dashboard = ({ children, onLogout }) => {
       permission: ['pure_asset_dashboard', 'pure_asset_register', 'pure_asset_mutation', 'pure_asset_maintenance', 'pure_asset_opname', 'pure_asset_disposal', 'pure_asset_depreciation', 'pure_asset_master', 'pure_asset_hak_akses'],
       subItems: [
         { label: 'Dashboard Aset', path: '/manajemen-aset/dashboard', permission: 'pure_asset_dashboard' },
-        { label: 'Asset List', path: '/manajemen-aset/list', permission: 'pure_asset_register' },
-        { label: 'Mutasi Aset', path: '/manajemen-aset/mutasi', permission: 'pure_asset_mutation' },
-        { label: 'Maintenance Aset', path: '/manajemen-aset/maintenance', permission: 'pure_asset_maintenance' },
-        { label: 'Stock Opname', path: '/manajemen-aset/opname', permission: 'pure_asset_opname' },
-        { label: 'Disposal', path: '/manajemen-aset/disposal', permission: 'pure_asset_disposal' },
-        { label: 'Depresiasi', path: '/manajemen-aset/depresiasi', permission: 'pure_asset_depreciation' },
+        { 
+          label: 'Aset', 
+          path: '/manajemen-aset/aset-group', 
+          permission: ['pure_asset_register', 'pure_asset_mutation', 'pure_asset_opname'],
+          subItems: [
+            { label: 'Daftar Aset', path: '/manajemen-aset/list' },
+            { label: 'Relokasi', path: '/manajemen-aset/mutasi' },
+            { label: 'Stok Opname', path: '/manajemen-aset/opname' }
+          ]
+        },
+        {
+          label: 'Depresiasi',
+          path: '/manajemen-aset/depresiasi-group',
+          permission: 'pure_asset_depreciation',
+          subItems: [
+            { label: 'Perhitungan Depresiasi', path: '/manajemen-aset/depresiasi' }
+          ]
+        },
+        {
+          label: 'Pemeliharaan',
+          path: '/manajemen-aset/pemeliharaan-group',
+          permission: 'pure_asset_maintenance',
+          subItems: []
+        },
         { 
           label: 'Master Data', 
           path: '/manajemen-aset/master-data', 
           permission: 'pure_asset_master',
           subItems: [
-            { label: 'Kategori Aset', path: '/manajemen-aset/master-data?tab=category' },
             { label: 'Aset', path: '/manajemen-aset/master-data?tab=asset' },
-            { label: 'Lokasi', path: '/manajemen-aset/master-data?tab=location' },
-            { label: 'Vendor Aset', path: '/manajemen-aset/master-data?tab=vendor' },
             { label: 'Departemen', path: '/manajemen-aset/master-data?tab=department' },
-            { label: 'Kondisi', path: '/manajemen-aset/master-data?tab=condition' }
+            { label: 'Kategori', path: '/manajemen-aset/master-data?tab=category' },
+            { label: 'Kondisi', path: '/manajemen-aset/master-data?tab=condition' },
+            { label: 'Lokasi', path: '/manajemen-aset/master-data?tab=location' },
+            { label: 'Vendor', path: '/manajemen-aset/master-data?tab=vendor' }
           ]
         },
-        { label: 'Hak Akses Aset', path: '/manajemen-aset/hak-akses', permission: 'pure_asset_hak_akses' },
-        { label: 'History Penghapusan', path: '/manajemen-aset/history-penghapusan', permission: 'pure_asset_master' },
+        {
+          label: 'Manajemen Pengguna',
+          path: '/manajemen-aset/pengguna-group',
+          permission: 'pure_asset_hak_akses',
+          subItems: [
+            { label: 'Hak Akses Aset', path: '/manajemen-aset/hak-akses' }
+          ]
+        },
+        {
+          label: 'Riwayat',
+          path: '/manajemen-aset/riwayat-group',
+          permission: 'pure_asset_master',
+          subItems: [
+            { label: 'History Penghapusan', path: '/manajemen-aset/history-penghapusan' }
+          ]
+        }
       ]
     },
     {
@@ -231,34 +268,51 @@ const Dashboard = ({ children, onLogout }) => {
     });
   };
 
+  const activeModule = localStorage.getItem('activeModule') || 'wo';
+  
+  const filteredMenuItems = menuItems.filter(item => {
+    if (activeModule === 'checklist') return item.id === 'checklist';
+    if (activeModule === 'maintenance') return item.id === 'aset';
+    if (activeModule === 'manajemen_aset') return item.id === 'manajemen-aset';
+    // default (wo)
+    return ['dashboard', 'pengguna', 'tugas-agen', 'tugas-dept', 'pengaturan'].includes(item.id);
+  });
+
+  const handleSwitchModule = (moduleId, path) => {
+    localStorage.setItem('activeModule', moduleId);
+    setSwitcherOpen(false);
+    navigate(path);
+  };
+
   return (
     <div className="flex min-h-screen bg-[#F5F8FA]">
 
       {/* Sidebar - Clean Light Theme */}
-      <aside className={`fixed top-0 left-0 h-full bg-white border-r border-[#E1E3EA] shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 z-50 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
-        <div className="flex flex-col h-full">
+      {!isHub && (
+        <aside className={`fixed top-0 left-0 h-full bg-white border-r border-[#E1E3EA] shadow-[4px_0_24px_rgba(0,0,0,0.02)] transition-all duration-300 z-50 ${isSidebarOpen ? 'w-64' : 'w-20'}`}>
+          <div className="flex flex-col h-full">
 
-          {/* Logo Section - PamFlow */}
-          <div className="p-4 flex items-center gap-3 border-b border-[#F1F1F4] h-16">
-            <Logo className="w-8 h-8" />
-            {isSidebarOpen && (
-              <div className="flex flex-col">
-                <span className="text-lg font-bold leading-none tracking-tight text-[#181C32]">PamFlow</span>
-                <span className="text-[10px] font-medium text-[#A1A5B7] self-end">v1.9.0</span>
-              </div>
-            )}
-          </div>
+            {/* Logo Section - PamFlow */}
+            <div className="p-4 flex items-center gap-3 border-b border-[#F1F1F4] h-16">
+              <Logo className="w-8 h-8" />
+              {isSidebarOpen && (
+                <div className="flex flex-col">
+                  <span className="text-lg font-bold leading-none tracking-tight text-[#181C32]">PamFlow</span>
+                  <span className="text-[10px] font-medium text-[#A1A5B7] self-end">v1.9.0</span>
+                </div>
+              )}
+            </div>
 
-          {/* Navigation */}
-          <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 custom-scrollbar">
-            {menuItems.filter(item => isDeptMenuVisible(item)).map(item => (
-              <div 
-                key={item.id}
-                className="relative group mb-1"
-                onMouseEnter={() => setHoveredMenu(item.id)}
-                onMouseLeave={() => setHoveredMenu(null)}
-              >
-                {item.subItems ? (
+            {/* Navigation */}
+            <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 custom-scrollbar">
+              {filteredMenuItems.filter(item => isDeptMenuVisible(item)).map(item => (
+                <div
+                  key={item.id}
+                  className="relative group mb-1"
+                  onMouseEnter={() => setHoveredMenu(item.id)}
+                  onMouseLeave={() => setHoveredMenu(null)}
+                >
+                  {item.subItems ? (
                   <>
                     <button
                       onClick={() => toggleMenu(item.id)}
@@ -274,7 +328,7 @@ const Dashboard = ({ children, onLogout }) => {
                           const hasSubSubItems = sub.subItems && sub.subItems.length > 0;
                           const isSubSubActive = hasSubSubItems && sub.subItems.some(ss => isPathActive(ss.path));
                           const isSubSubOpen = !!openMenus[sub.label];
-                          
+
                           if (hasSubSubItems) {
                             return (
                               <div key={sub.label} className="space-y-1">
@@ -302,7 +356,7 @@ const Dashboard = ({ children, onLogout }) => {
                               </div>
                             );
                           }
-                          
+
                           return (
                             <Link
                               key={sub.path}
@@ -349,25 +403,88 @@ const Dashboard = ({ children, onLogout }) => {
             </div>
           </div>
         </div>
-      </aside>
+        </aside>
+      )}
 
       {/* Main Content Area */}
-      <main className={`flex-1 flex flex-col transition-all duration-300 ${isSidebarOpen ? 'pl-64' : 'pl-20'}`}>
+      <main className={`flex-1 flex flex-col transition-all duration-300 ${isHub ? 'pl-0' : (isSidebarOpen ? 'pl-64' : 'pl-20')}`}>
 
         {/* Header - Simple White Reversion */}
         <header className="bg-white border-b border-[#E1E3EA] px-8 h-16 flex items-center justify-between sticky top-0 z-40">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] rounded transition-colors">
-              <Menu size={20} />
-            </button>
-            <h1 className="text-[14px] font-bold text-[#181C32]">{location.pathname.split('/').pop().charAt(0).toUpperCase() + location.pathname.split('/').pop().slice(1)}</h1>
+            {!isHub && (
+              <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] rounded transition-colors">
+                <Menu size={20} />
+              </button>
+            )}
+            <h1 className="text-[14px] font-bold text-[#181C32]">{isHub ? 'Portal Utama' : (location.pathname.split('/').pop().charAt(0).toUpperCase() + location.pathname.split('/').pop().slice(1))}</h1>
           </div>
 
           <div className="flex items-center gap-4">
+            {/* App Switcher */}
+            <div className="relative">
+              <button 
+                onClick={() => { setSwitcherOpen(!isSwitcherOpen); setProfileOpen(false); }}
+                className="p-2 text-[#A1A5B7] hover:text-[#0095E8] hover:bg-[#F1FAFF] rounded-lg transition-all"
+                title="Pindah Modul"
+              >
+                <Grip size={20} />
+              </button>
+              
+              {isSwitcherOpen && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setSwitcherOpen(false)}></div>
+                  <div className="absolute right-0 mt-2 w-72 bg-white border border-[#E1E3EA] rounded-2xl shadow-xl z-20 p-4 animate-dropdown origin-top-right">
+                    <div className="flex items-center justify-between mb-3 px-1">
+                      <span className="text-xs font-black text-[#181C32] uppercase tracking-wider">Aplikasi Pamflow</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button 
+                        onClick={() => handleSwitchModule('wo', '/dashboard')}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeModule === 'wo' ? 'bg-[#F1FAFF] border-[#0095E8]/30' : 'bg-[#F9F9F9] border-transparent hover:border-[#E1E3EA] hover:bg-white'}`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${activeModule === 'wo' ? 'bg-[#0095E8] text-white' : 'bg-white text-[#0095E8] shadow-sm'}`}>
+                          <PiBuildingsDuotone size={20} />
+                        </div>
+                        <span className={`text-[10px] text-center leading-tight ${activeModule === 'wo' ? 'font-bold text-[#0095E8]' : 'font-medium text-[#7E8299]'}`}>WO &<br/>Checklist</span>
+                      </button>
+                      <button 
+                        onClick={() => handleSwitchModule('checklist', '/tugas-departemen/checklist-harian')}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeModule === 'checklist' ? 'bg-[#E8FFF3] border-[#50CD89]/30' : 'bg-[#F9F9F9] border-transparent hover:border-[#E1E3EA] hover:bg-white'}`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${activeModule === 'checklist' ? 'bg-[#50CD89] text-white' : 'bg-white text-[#50CD89] shadow-sm'}`}>
+                          <PiListChecksDuotone size={20} />
+                        </div>
+                        <span className={`text-[10px] text-center leading-tight ${activeModule === 'checklist' ? 'font-bold text-[#50CD89]' : 'font-medium text-[#7E8299]'}`}>Checklist<br/>Harian</span>
+                      </button>
+                      <button 
+                        onClick={() => handleSwitchModule('maintenance', '/aset/monitoring')}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeModule === 'maintenance' ? 'bg-[#FFF8DD] border-[#FFA800]/30' : 'bg-[#F9F9F9] border-transparent hover:border-[#E1E3EA] hover:bg-white'}`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${activeModule === 'maintenance' ? 'bg-[#FFA800] text-white' : 'bg-white text-[#FFA800] shadow-sm'}`}>
+                          <PiPackageDuotone size={20} />
+                        </div>
+                        <span className={`text-[10px] text-center leading-tight ${activeModule === 'maintenance' ? 'font-bold text-[#FFA800]' : 'font-medium text-[#7E8299]'}`}>Maintenance<br/>Aset</span>
+                      </button>
+                      <button 
+                        onClick={() => handleSwitchModule('manajemen_aset', '/manajemen-aset/dashboard')}
+                        className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeModule === 'manajemen_aset' ? 'bg-[#F8F5FF] border-[#8A15E3]/30' : 'bg-[#F9F9F9] border-transparent hover:border-[#E1E3EA] hover:bg-white'}`}
+                      >
+                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${activeModule === 'manajemen_aset' ? 'bg-[#8A15E3] text-white' : 'bg-white text-[#8A15E3] shadow-sm'}`}>
+                          <PiFolderSimpleDuotone size={20} />
+                        </div>
+                        <span className={`text-[10px] text-center leading-tight ${activeModule === 'manajemen_aset' ? 'font-bold text-[#8A15E3]' : 'font-medium text-[#7E8299]'}`}>Manajemen<br/>Aset</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             <div className="relative border-l border-[#E1E3EA] pl-4">
               <div
                 className="flex items-center gap-3 cursor-pointer group"
-                onClick={() => setProfileOpen(!isProfileOpen)}
+                onClick={() => { setProfileOpen(!isProfileOpen); setSwitcherOpen(false); }}
               >
                 <div className="text-right hidden sm:block">
                   <p className="text-[12px] font-bold text-[#181C32] group-hover:text-[#0095E8] transition-colors flex items-center gap-1">

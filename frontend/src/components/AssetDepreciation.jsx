@@ -92,7 +92,7 @@ const AssetDepreciation = () => {
             <BarChart3 size={32} className="text-white" />
           </div>
           <div>
-            <h1 className="text-xl font-extrabold tracking-tight">Kalkulator Depresiasi Aset</h1>
+            <h1 className="text-xl font-extrabold tracking-tight">Perhitungan Depresiasi</h1>
             <p className="text-xs text-white/80 mt-0.5">Analisis nilai penyusutan, akumulasi depresiasi, dan nilai buku aset secara akurat menggunakan metode Straight-Line.</p>
           </div>
         </div>

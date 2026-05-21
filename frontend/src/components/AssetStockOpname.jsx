@@ -390,7 +390,7 @@ const AssetStockOpname = () => {
               <ClipboardList size={32} className="text-[#0095E8]" />
             </div>
             <div>
-              <h1 className="text-xl font-extrabold tracking-tight">Stock Opname Aset</h1>
+              <h1 className="text-xl font-extrabold tracking-tight">Stok Opname Aset</h1>
               <p className="text-xs text-[#A1A5B7] mt-0.5">Lakukan audit fisik, periksa keberadaan aset, dan lacak barang nyasar secara real-time.</p>
             </div>
           </div>

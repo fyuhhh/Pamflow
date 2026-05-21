@@ -60,6 +60,7 @@ import HakAksesManajemenAset from './components/HakAksesManajemenAset';
 import RecycleBinAset from './components/RecycleBinAset';
 
 import DashboardHome from './components/DashboardHome';
+import PortalHub from './components/PortalHub';
 
 const isMobileDevice = () => {
   return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -141,7 +142,20 @@ function App() {
     if (user.userType === 'agen' && appMode === 'pc') return '/profile/user'; // Agen on PC sees profile
 
     const isSuperAdmin = user.role?.toLowerCase() === 'super admin';
-    if (isSuperAdmin) return '/dashboard';
+    
+    // Count accessible modules
+    let accessibleModules = [];
+    if (isSuperAdmin || hasPermission(user, 'dashboard', 'Lihat') || hasPermission(user, 'tugas_dept_buat_checklist', 'Lihat')) accessibleModules.push({ id: 'wo', path: '/dashboard' });
+    if (isSuperAdmin || hasPermission(user, 'checklist_harian_akses', 'Lihat')) accessibleModules.push({ id: 'checklist', path: '/tugas-departemen/checklist-harian' });
+    if (isSuperAdmin || hasPermission(user, 'aset_monitoring', 'Lihat')) accessibleModules.push({ id: 'maintenance', path: '/aset/monitoring' });
+    if (isSuperAdmin || hasPermission(user, 'pure_asset_dashboard', 'Lihat')) accessibleModules.push({ id: 'manajemen_aset', path: '/manajemen-aset/dashboard' });
+
+    if (accessibleModules.length > 1) {
+      return '/hub';
+    } else if (accessibleModules.length === 1) {
+      localStorage.setItem('activeModule', accessibleModules[0].id);
+      return accessibleModules[0].path;
+    }
 
     const permissions = user.permissions || {};
 
@@ -193,6 +207,7 @@ function App() {
       />
       {user ? (
         <>
+          <Route path="/hub" element={<Dashboard onLogout={logout} isHub={true}><PortalHub /></Dashboard>} />
           <Route path="/dashboard" element={<PrivateRoute moduleId="dashboard"><Dashboard onLogout={logout}><DashboardHome /></Dashboard></PrivateRoute>} />
           <Route path="/pengguna/admin" element={<PrivateRoute moduleId="admin"><Dashboard onLogout={logout}><AdminList /></Dashboard></PrivateRoute>} />
           <Route path="/pengguna/admin/create" element={<PrivateRoute moduleId="admin" action="Buat"><Dashboard onLogout={logout}><AdminForm /></Dashboard></PrivateRoute>} />
