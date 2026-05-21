@@ -14,7 +14,11 @@ import {
   UserCircle,
   Lock,
   Star,
-  Grip
+  Grip,
+  TrendingDown,
+  Wrench,
+  Database,
+  History
 } from 'lucide-react';
 import {
   PiSquaresFourDuotone,
@@ -115,6 +119,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
       icon: <PiListChecksDuotone size={20} />,
       permission: ['tugas_dept_buat_checklist'], // Uses similar permission or alwaysShow logic
       subItems: [
+        { label: 'Dashboard Checklist Harian', path: '/tugas-departemen/dashboard-checklist', alwaysShow: true },
         { label: 'Checklist Harian', path: '/tugas-departemen/checklist-harian', alwaysShow: true },
         { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true },
         { label: 'Hak Akses Checklist Harian', path: '/tugas-departemen/hak-akses-checklist', alwaysShow: true },
@@ -269,14 +274,59 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
   };
 
   const activeModule = localStorage.getItem('activeModule') || 'wo';
+  let finalMenuItems = [];
   
-  const filteredMenuItems = menuItems.filter(item => {
-    if (activeModule === 'checklist') return item.id === 'checklist';
-    if (activeModule === 'maintenance') return item.id === 'aset';
-    if (activeModule === 'manajemen_aset') return item.id === 'manajemen-aset';
-    // default (wo)
-    return ['dashboard', 'pengguna', 'tugas-agen', 'tugas-dept', 'pengaturan'].includes(item.id);
-  });
+  if (activeModule === 'checklist') {
+    const parent = menuItems.find(i => i.id === 'checklist');
+    if (isDeptMenuVisible(parent)) {
+      finalMenuItems.push({ id: 'header-checklist', isHeader: true, label: 'CHECKLIST HARIAN' });
+      const visibleSubs = filterSubItems(parent.subItems);
+      visibleSubs.forEach((sub, i) => {
+        finalMenuItems.push({
+          ...sub,
+          id: `checklist-sub-${i}`,
+          icon: sub.label.includes('Dashboard') ? <LayoutDashboard size={20} /> : (sub.label.includes('Riwayat') ? <ClipboardList size={20} /> : (sub.label.includes('Akses') ? <Lock size={20} /> : <PiListChecksDuotone size={20} />))
+        });
+      });
+    }
+  } else if (activeModule === 'maintenance') {
+    const parent = menuItems.find(i => i.id === 'aset');
+    if (isDeptMenuVisible(parent)) {
+      finalMenuItems.push({ id: 'header-maintenance', isHeader: true, label: 'MAINTENANCE ASET' });
+      const visibleSubs = filterSubItems(parent.subItems);
+      visibleSubs.forEach((sub, i) => {
+        finalMenuItems.push({
+          ...sub,
+          id: `maintenance-sub-${i}`,
+          icon: sub.label.includes('Dashboard') ? <LayoutDashboard size={20} /> : (sub.label.includes('Akses') ? <Lock size={20} /> : <PiPackageDuotone size={20} />)
+        });
+      });
+    }
+  } else if (activeModule === 'manajemen_aset') {
+    const parent = menuItems.find(i => i.id === 'manajemen-aset');
+    if (isDeptMenuVisible(parent)) {
+      finalMenuItems.push({ id: 'header-manajemen', isHeader: true, label: 'MANAJEMEN ASET' });
+      const visibleSubs = filterSubItems(parent.subItems);
+      visibleSubs.forEach((sub, i) => {
+        finalMenuItems.push({
+          ...sub,
+          id: `manajemen-sub-${i}`,
+          icon: sub.label.includes('Dashboard') ? <LayoutDashboard size={20} /> :
+                sub.label === 'Aset' ? <PiPackageDuotone size={20} /> :
+                sub.label === 'Depresiasi' ? <TrendingDown size={20} /> :
+                sub.label === 'Pemeliharaan' ? <Wrench size={20} /> :
+                sub.label === 'Master Data' ? <Database size={20} /> :
+                sub.label === 'Manajemen Pengguna' ? <Users size={20} /> :
+                <History size={20} />
+        });
+      });
+    }
+  } else {
+    // WO / Checklist (default)
+    finalMenuItems = menuItems.filter(item => 
+      ['dashboard', 'pengguna', 'tugas-agen', 'tugas-dept', 'pengaturan'].includes(item.id)
+    ).filter(item => isDeptMenuVisible(item));
+  }
 
   const handleSwitchModule = (moduleId, path) => {
     localStorage.setItem('activeModule', moduleId);
@@ -305,19 +355,24 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
 
             {/* Navigation */}
             <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-1 custom-scrollbar">
-              {filteredMenuItems.filter(item => isDeptMenuVisible(item)).map(item => (
-                <div
-                  key={item.id}
-                  className="relative group mb-1"
-                  onMouseEnter={() => setHoveredMenu(item.id)}
-                  onMouseLeave={() => setHoveredMenu(null)}
-                >
-                  {item.subItems ? (
-                  <>
-                    <button
-                      onClick={() => toggleMenu(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-300 text-[13px] font-semibold border-l-4 ${isParentActive(item) || openMenus[item.id] ? 'bg-gradient-to-r from-[#F1FAFF] to-transparent text-[#0095E8] border-[#0095E8]' : 'border-transparent text-[#7E8299] hover:text-[#0095E8] hover:bg-[#F5F8FA]'}`}
-                    >
+              {finalMenuItems.map(item => (
+                item.isHeader ? (
+                  <div key={item.id} className="mt-4 mb-2 px-4 text-[10px] font-black text-[#A1A5B7] uppercase tracking-wider">
+                    {isSidebarOpen ? item.label : '•••'}
+                  </div>
+                ) : (
+                  <div
+                    key={item.id}
+                    className="relative group mb-1"
+                    onMouseEnter={() => setHoveredMenu(item.id)}
+                    onMouseLeave={() => setHoveredMenu(null)}
+                  >
+                    {item.subItems ? (
+                    <>
+                      <button
+                        onClick={() => toggleMenu(item.id)}
+                        className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-300 text-[13px] font-semibold border-l-4 ${isParentActive(item) || openMenus[item.id] ? 'bg-gradient-to-r from-[#F1FAFF] to-transparent text-[#0095E8] border-[#0095E8]' : 'border-transparent text-[#7E8299] hover:text-[#0095E8] hover:bg-[#F5F8FA]'}`}
+                      >
                       <span className={`transform transition-transform duration-300 group-hover:scale-110 ${isParentActive(item) || openMenus[item.id] ? 'text-[#0095E8]' : 'text-[#A1A5B7]'}`}>{item.icon}</span>
                       {isSidebarOpen && <span className="flex-1 text-left flex items-center gap-2">{item.label} {item.subItems.some(s => s.badge) && <span className="w-2 h-2 bg-[#F1416C] rounded-full animate-pulse"></span>}</span>}
                       {isSidebarOpen && (openMenus[item.id] ? <ChevronDown size={14} className="text-[#0095E8]" /> : <ChevronRight size={14} />)}
@@ -393,6 +448,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
                   </div>
                 )}
               </div>
+              )
             ))}
           </nav>
 
@@ -410,7 +466,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
       <main className={`flex-1 flex flex-col transition-all duration-300 ${isHub ? 'pl-0' : (isSidebarOpen ? 'pl-64' : 'pl-20')}`}>
 
         {/* Header - Simple White Reversion */}
-        <header className="bg-white border-b border-[#E1E3EA] px-8 h-16 flex items-center justify-between sticky top-0 z-40">
+        <header className="bg-white border-b border-[#E1E3EA] px-8 h-16 flex items-center justify-between sticky top-0 z-[100]">
           <div className="flex items-center gap-4">
             {!isHub && (
               <button onClick={() => setSidebarOpen(!isSidebarOpen)} className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] rounded transition-colors">
@@ -449,7 +505,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
                         <span className={`text-[10px] text-center leading-tight ${activeModule === 'wo' ? 'font-bold text-[#0095E8]' : 'font-medium text-[#7E8299]'}`}>WO &<br/>Checklist</span>
                       </button>
                       <button 
-                        onClick={() => handleSwitchModule('checklist', '/tugas-departemen/checklist-harian')}
+                        onClick={() => handleSwitchModule('checklist', '/tugas-departemen/dashboard-checklist')}
                         className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeModule === 'checklist' ? 'bg-[#E8FFF3] border-[#50CD89]/30' : 'bg-[#F9F9F9] border-transparent hover:border-[#E1E3EA] hover:bg-white'}`}
                       >
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${activeModule === 'checklist' ? 'bg-[#50CD89] text-white' : 'bg-white text-[#50CD89] shadow-sm'}`}>
@@ -458,7 +514,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
                         <span className={`text-[10px] text-center leading-tight ${activeModule === 'checklist' ? 'font-bold text-[#50CD89]' : 'font-medium text-[#7E8299]'}`}>Checklist<br/>Harian</span>
                       </button>
                       <button 
-                        onClick={() => handleSwitchModule('maintenance', '/aset/monitoring')}
+                        onClick={() => handleSwitchModule('maintenance', '/aset/dashboard-maintenance')}
                         className={`flex flex-col items-center justify-center p-3 rounded-xl border transition-all ${activeModule === 'maintenance' ? 'bg-[#FFF8DD] border-[#FFA800]/30' : 'bg-[#F9F9F9] border-transparent hover:border-[#E1E3EA] hover:bg-white'}`}
                       >
                         <div className={`w-10 h-10 rounded-lg flex items-center justify-center mb-2 ${activeModule === 'maintenance' ? 'bg-[#FFA800] text-white' : 'bg-white text-[#FFA800] shadow-sm'}`}>

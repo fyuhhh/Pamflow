@@ -43,11 +43,13 @@ import AuditLog from './components/AuditLog';
 import PasswordResetRequests from './components/PasswordResetRequests';
 import RelasiDepartemen from './components/RelasiDepartemen';
 import ChecklistHarian from './components/ChecklistHarian';
+import DashboardChecklistHarian from './components/DashboardChecklistHarian';
 import { trackPageView, trackLogout } from './services/activityTracker';
 import AssetPlaceholder from './components/AssetPlaceholder';
 import RegisterAset from './components/RegisterAset';
 import MonitoringAset from './components/MonitoringAset';
 import HakAksesAset from './components/HakAksesAset';
+import DashboardMaintenanceAset from './components/DashboardMaintenanceAset';
 import DashboardAset from './components/DashboardAset';
 import AssetList from './components/AssetList';
 import AssetMutation from './components/AssetMutation';
@@ -146,8 +148,8 @@ function App() {
     // Count accessible modules
     let accessibleModules = [];
     if (isSuperAdmin || hasPermission(user, 'dashboard', 'Lihat') || hasPermission(user, 'tugas_dept_buat_checklist', 'Lihat')) accessibleModules.push({ id: 'wo', path: '/dashboard' });
-    if (isSuperAdmin || hasPermission(user, 'checklist_harian_akses', 'Lihat')) accessibleModules.push({ id: 'checklist', path: '/tugas-departemen/checklist-harian' });
-    if (isSuperAdmin || hasPermission(user, 'aset_monitoring', 'Lihat')) accessibleModules.push({ id: 'maintenance', path: '/aset/monitoring' });
+    if (isSuperAdmin || hasPermission(user, 'checklist_harian_akses', 'Lihat')) accessibleModules.push({ id: 'checklist', path: '/tugas-departemen/dashboard-checklist' });
+    if (isSuperAdmin || hasPermission(user, 'aset_monitoring', 'Lihat')) accessibleModules.push({ id: 'maintenance', path: '/aset/dashboard-maintenance' });
     if (isSuperAdmin || hasPermission(user, 'pure_asset_dashboard', 'Lihat')) accessibleModules.push({ id: 'manajemen_aset', path: '/manajemen-aset/dashboard' });
 
     if (accessibleModules.length > 1) {
@@ -234,6 +236,7 @@ function App() {
           <Route path="/tugas-departemen/diterima/:id" element={<PrivateRoute moduleId="tugas_dept_diterima"><Dashboard onLogout={logout}><DiterimaDetail /></Dashboard></PrivateRoute>} />
           <Route path="/tugas-departemen/terkirim" element={<PrivateRoute moduleId="tugas_dept_terkirim"><Dashboard onLogout={logout}><TerkirimList /></Dashboard></PrivateRoute>} />
           <Route path="/tugas-departemen/terkirim/:id" element={<PrivateRoute moduleId="tugas_dept_terkirim"><Dashboard onLogout={logout}><TerkirimDetail /></Dashboard></PrivateRoute>} />
+          <Route path="/tugas-departemen/dashboard-checklist" element={<PrivateRoute moduleId="checklist_harian_akses"><Dashboard onLogout={logout}><DashboardChecklistHarian /></Dashboard></PrivateRoute>} />
 
           <Route path="/pengaturan/organisasi" element={<PrivateRoute moduleId="organisasi"><Dashboard onLogout={logout}><Organisasi /></Dashboard></PrivateRoute>} />
           <Route path="/pengaturan/perusahaan" element={<PrivateRoute moduleId="perusahaan"><Dashboard onLogout={logout}><CompanyList /></Dashboard></PrivateRoute>} />
@@ -260,6 +263,7 @@ function App() {
           <Route path="/aset/hak-akses" element={<PrivateRoute moduleId="aset_hak_akses"><Dashboard onLogout={logout}><HakAksesAset /></Dashboard></PrivateRoute>} />
           <Route path="/aset/register" element={<PrivateRoute moduleId="aset_register"><Dashboard onLogout={logout}><RegisterAset /></Dashboard></PrivateRoute>} />
           <Route path="/aset/monitoring" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><MonitoringAset /></Dashboard></PrivateRoute>} />
+          <Route path="/aset/dashboard-maintenance" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><DashboardMaintenanceAset /></Dashboard></PrivateRoute>} />
 
           {/* Pure Asset (Manajemen Aset) Routes */}
           <Route path="/manajemen-aset/dashboard" element={<PrivateRoute moduleId="pure_asset_dashboard"><Dashboard onLogout={logout}><DashboardAset /></Dashboard></PrivateRoute>} />

@@ -40,7 +40,7 @@ const PortalHub = () => {
       icon: <PiListChecksDuotone size={48} />,
       color: 'from-[#50CD89] to-[#39A86E]',
       bgShadow: 'shadow-[#50CD89]/20',
-      path: '/tugas-departemen/checklist-harian',
+      path: '/tugas-departemen/dashboard-checklist',
       hasAccess: hasChecklistAccess
     },
     {
@@ -50,7 +50,7 @@ const PortalHub = () => {
       icon: <PiPackageDuotone size={48} />,
       color: 'from-[#FFA800] to-[#E29500]',
       bgShadow: 'shadow-[#FFA800]/20',
-      path: '/aset/monitoring',
+      path: '/aset/dashboard-maintenance',
       hasAccess: hasMaintenanceAccess
     },
     {
