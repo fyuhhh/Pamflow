@@ -16,6 +16,10 @@ const deptRelationRoutes = require('./deptRelationRoutes');
 const checklistSessionRoutes = require('./checklistSessionRoutes');
 const assetRoutes = require('./assetRoutes');
 const pureAssetRoutes = require('./pureAssetRoutes');
+const relocationRoutes = require('./relocationRoutes');
+const stockOpnameRoutes = require('./stockOpnameRoutes');
+const disposalRoutes = require('./disposalRoutes');
+const depreciationRoutes = require('./depreciationRoutes');
 const pushController = require('../controllers/pushController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -56,6 +60,10 @@ router.use('/dept-relations', authMiddleware, deptRelationRoutes);
 router.use('/checklist-sessions', authMiddleware, checklistSessionRoutes);
 router.use('/assets', authMiddleware, assetRoutes);
 router.use('/pure-assets', authMiddleware, pureAssetRoutes);
+router.use('/relocations', authMiddleware, relocationRoutes);
+router.use('/stock-opnames', authMiddleware, stockOpnameRoutes);
+router.use('/disposals', authMiddleware, disposalRoutes);
+router.use('/depreciations', authMiddleware, depreciationRoutes);
 
 // Extra dept-task endpoints (partial, final, reopen, monitor)
 const deptTaskCtrl = require('../controllers/deptTaskController');

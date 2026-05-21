@@ -140,7 +140,19 @@ const Dashboard = ({ children, onLogout }) => {
         { label: 'Stock Opname', path: '/manajemen-aset/opname', permission: 'pure_asset_opname' },
         { label: 'Disposal', path: '/manajemen-aset/disposal', permission: 'pure_asset_disposal' },
         { label: 'Depresiasi', path: '/manajemen-aset/depresiasi', permission: 'pure_asset_depreciation' },
-        { label: 'Master Data', path: '/manajemen-aset/master-data', permission: 'pure_asset_master' },
+        { 
+          label: 'Master Data', 
+          path: '/manajemen-aset/master-data', 
+          permission: 'pure_asset_master',
+          subItems: [
+            { label: 'Kategori Aset', path: '/manajemen-aset/master-data?tab=category' },
+            { label: 'Aset', path: '/manajemen-aset/master-data?tab=asset' },
+            { label: 'Lokasi', path: '/manajemen-aset/master-data?tab=location' },
+            { label: 'Vendor Aset', path: '/manajemen-aset/master-data?tab=vendor' },
+            { label: 'Departemen', path: '/manajemen-aset/master-data?tab=department' },
+            { label: 'Kondisi', path: '/manajemen-aset/master-data?tab=condition' }
+          ]
+        },
         { label: 'Hak Akses Aset', path: '/manajemen-aset/hak-akses', permission: 'pure_asset_hak_akses' },
         { label: 'History Penghapusan', path: '/manajemen-aset/history-penghapusan', permission: 'pure_asset_master' },
       ]
@@ -198,8 +210,26 @@ const Dashboard = ({ children, onLogout }) => {
     setOpenMenus(prev => ({ ...prev, [id]: !prev[id] }));
   };
 
-  const isPathActive = (path) => location.pathname === path;
-  const isParentActive = (item) => item.subItems?.some(sub => isPathActive(sub.path));
+  const isPathActive = (path) => {
+    if (!path) return false;
+    const [pathPart, queryPart] = path.split('?');
+    const matchesPath = location.pathname === pathPart;
+    if (!queryPart) return matchesPath;
+    const searchParams = new URLSearchParams(location.search);
+    const expectedParams = new URLSearchParams(queryPart);
+    for (const [key, val] of expectedParams.entries()) {
+      if (searchParams.get(key) !== val) return false;
+    }
+    return matchesPath;
+  };
+
+  const isParentActive = (item) => {
+    return item.subItems?.some(sub => {
+      if (isPathActive(sub.path)) return true;
+      if (sub.subItems?.some(ss => isPathActive(ss.path))) return true;
+      return false;
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-[#F5F8FA]">
@@ -240,20 +270,54 @@ const Dashboard = ({ children, onLogout }) => {
                     </button>
                     {isSidebarOpen && openMenus[item.id] && (
                       <div className="mt-1 space-y-1 animate-dropdown">
-                        {filterSubItems(item.subItems).map(sub => (
-                          <Link
-                            key={sub.path}
-                            to={sub.path}
-                            className={`flex items-center justify-between pl-10 pr-4 py-2 text-[12px] font-medium transition-all duration-200 rounded-md ${isPathActive(sub.path) ? 'text-[#0095E8] font-bold bg-[#F1FAFF]/50' : 'text-[#7E8299] hover:text-[#0095E8] hover:bg-[#F5F8FA]'}`}
-                          >
-                            <span>{sub.label}</span>
-                            {sub.badge && (
-                              <span className="bg-[#F1416C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded min-w-[18px] text-center">
-                                {sub.badge}
-                              </span>
-                            )}
-                          </Link>
-                        ))}
+                        {filterSubItems(item.subItems).map(sub => {
+                          const hasSubSubItems = sub.subItems && sub.subItems.length > 0;
+                          const isSubSubActive = hasSubSubItems && sub.subItems.some(ss => isPathActive(ss.path));
+                          const isSubSubOpen = !!openMenus[sub.label];
+                          
+                          if (hasSubSubItems) {
+                            return (
+                              <div key={sub.label} className="space-y-1">
+                                <button
+                                  type="button"
+                                  onClick={() => toggleMenu(sub.label)}
+                                  className={`w-full flex items-center justify-between pl-10 pr-4 py-2 text-[12px] font-medium transition-all duration-200 rounded-md cursor-pointer border-none bg-transparent text-left ${isSubSubActive || isSubSubOpen ? 'text-[#0095E8] bg-[#F1FAFF]/30 font-semibold' : 'text-[#7E8299] hover:text-[#0095E8] hover:bg-[#F5F8FA]'}`}
+                                >
+                                  <span>{sub.label}</span>
+                                  {isSubSubOpen ? <ChevronDown size={12} className="text-[#0095E8]" /> : <ChevronRight size={12} />}
+                                </button>
+                                {isSubSubOpen && (
+                                  <div className="space-y-1 pl-4 animate-dropdown">
+                                    {sub.subItems.map(ss => (
+                                      <Link
+                                        key={ss.path}
+                                        to={ss.path}
+                                        className={`flex items-center justify-between pl-10 pr-4 py-1.5 text-[11px] font-medium transition-all duration-200 rounded-md ${isPathActive(ss.path) ? 'text-[#0095E8] font-bold bg-[#F1FAFF]/50' : 'text-[#7E8299] hover:text-[#0095E8] hover:bg-[#F5F8FA]'}`}
+                                      >
+                                        <span>{ss.label}</span>
+                                      </Link>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          }
+                          
+                          return (
+                            <Link
+                              key={sub.path}
+                              to={sub.path}
+                              className={`flex items-center justify-between pl-10 pr-4 py-2 text-[12px] font-medium transition-all duration-200 rounded-md ${isPathActive(sub.path) ? 'text-[#0095E8] font-bold bg-[#F1FAFF]/50' : 'text-[#7E8299] hover:text-[#0095E8] hover:bg-[#F5F8FA]'}`}
+                            >
+                              <span>{sub.label}</span>
+                              {sub.badge && (
+                                <span className="bg-[#F1416C] text-white text-[10px] font-bold px-1.5 py-0.5 rounded min-w-[18px] text-center">
+                                  {sub.badge}
+                                </span>
+                              )}
+                            </Link>
+                          );
+                        })}
                       </div>
                     )}
                   </>

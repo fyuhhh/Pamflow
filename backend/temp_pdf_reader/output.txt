@@ -1,0 +1,1006 @@
+
+
+ 
+ 
+ 
+ 
+
+ 
+DAFTAR ISI 
+ 
+DAFTAR ISI..................................................................................................................1 
+Panduan Umum Menjalankan Aplikasi Website............................................................2 
+1. Dashboard.............................................................................................................12 
+2. Asset.....................................................................................................................16 
+2.1. Asset List..................................................................................................................16 
+2.2. Mutation...................................................................................................................24 
+2.3 Maintenance.............................................................................................................28 
+2.4. Stock Opname..........................................................................................................34 
+2.5. Disposal....................................................................................................................38 
+3. Depreciation...........................................................................................................42 
+3.1. Depreciation Calculation.........................................................................................42 
+4. Master Data...........................................................................................................44 
+4.1 Asset Category.........................................................................................................44 
+4.2. Asset.........................................................................................................................46 
+4.3. Condition..................................................................................................................48 
+4.4. Department..............................................................................................................49 
+4.5. Vendor......................................................................................................................50 
+4.6. Location....................................................................................................................51 
+5. User Management..................................................................................................53 
+5.1. User...........................................................................................................................53 
+5.2. Role...........................................................................................................................55 
+5.3. Menu Role................................................................................................................57 
+6. Report....................................................................................................................59 
+6.1. Asset List Report.....................................................................................................59 
+6.2. Registration Report..................................................................................................60 
+6.3. Mutation Report.......................................................................................................62 
+6.4. Maintenance Report................................................................................................64 
+6.5. Stock Opname Report.............................................................................................65 
+6.6. Disposal Report.......................................................................................................68 
+6.7. Depreciation Report.................................................................................................71 
+ 
+ 
+ 
+ 
+1 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Panduan Umum Menjalankan Aplikasi Website 
+Akses aplikasi web “ASETA” dengan masuk ke berikut https://app.aseta.id/ pada 
+browser (Google Chrome). Maka akan tampil halaman Login seperti berikut: 
+ 
+Langkah pertama, masukkan email yang telah diaktifkan sebagai pengguna dan 
+password pada field yang tersedia, kemudian klik tombol .  
+ 
+Untuk menyimpan informasi login, klik box ‘Remember me’ sehingga tampil tanda check. 
+Setelah klik Login, maka pengguna akan masuk ke fitur-fitur pada web app Aseta sesuai 
+hak akses yang dimiliki. 
+2 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Jika email dan password yang dimasukkan tidak sesuai dengan hak akses, tidak 
+terdaftar, atau terdapat kesalahan, maka akan tampill pesan seperti di bawah ini:  
+ 
+Jika pengguna lupa kata sandi, klik tautan Forgot Password pada halaman login. 
+Pengguna akan dialihkan ke halaman Reset Password. 
+Masukkan alamat email yang terdaftar pada kolom yang tersedia, lalu klik tombol 
+. 
+Sistem akan mengirimkan instruksi untuk mereset kata sandi melalui email tersebut. 
+ 
+ 
+ 
+ 
+ 
+3 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Jika email yang dimasukan pada reset password tidak sesuai, maka akan ada notifikasi 
+seperti di bawah ini: 
+ 
+ 
+ 
+ 
+ 
+ 
+Langkah kedua, setelah berhasil login, akan tampil halaman utama (main page) seperti 
+di bawah ini: 
+ 
+Pada main page, akan tampil fitur-fitur: 
+● Dashboard, menyediakan fungsi untuk menampilkan dan mencetak laporan aset, 
+yang berguna dalam pemantauan data aset 
+● Asset, menyediakan fungsi untuk entri data aset dan pelacakan data aset 
+berdasarkan kronologi 
+● Depreciation, berfungsi menghitung penyusutan biaya perolehan aset tetap 
+selama masa pakainya akibat penggunaan, keausan, atau faktor eksternal 
+● Master Data, berfungsi sebagai referensi utama yang mendukung seluruh fitur 
+dalam menu 
+4 | ASETA (Asset Management & Maintenance System) 
+
+ 
+● User Management, berfungsi untuk mengelola hak akses, keamanan, dan 
+informasi pengguna 
+● Report, menyediakan fungsi untuk melihat dan mengunduh laporan 
+ 
+Pada main page, terdapat ikon  yang dapat mengubah tampilan list fitur (minimize), 
+seperti berikut: 
+ 
+ 
+5 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Pemilihan bahasa (Indonesia - English) dapat dilakukan pada menu Language, kemudian 
+pilih bahasa yang diinginkan: 
+ 
+Menu Download digunakan untuk mengunduh panduan penggunaan dan file lain 
+penunjang penggunaan Aseta. Klik ikon  maka akan tampil daftar file yang 
+tersedia untuk diunduh. Klik ikon yang tersedia pada kolom Action untuk 
+mengunduh file. 
+  
+ 
+6 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Search Menu berfungsi sebagai pintasan untuk mempermudah akses ke berbagai menu 
+yang tersedia di web app Aseta. Pengguna dapat mencari menu yang diinginkan melalui 
+kolom pencarian dengan memasukkan nama menu, atau memilih langsung dari daftar 
+menu yang tersedia. 
+ 
+Ikon  menampilkan daftar pemeliharaan (maintenance) yang dijadwalkan pada 
+tanggal pengguna mengakses aplikasi web Aseta. Ikon akan berubah menjadi  jika 
+terdapat notifikasi untuk pemeliharaan aset pada tanggal tersebut. Klik ikon tersebut 
+untuk melihat list aset yang perlu dilakukan pemeliharaan (maintenance). 
+ 
+7 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+ 
+● Jika pengguna sudah memberikan perlakuan terhadap maintenance tersebut, 
+maka dapat mengklik tombol . Pengguna diwajibkan untuk memasukkan 
+tindakan yang telah dilakukan terhadap maintenance tersebut. Selanjutnya, klik 
+tombol .  
+ 
+● Apabila pengguna ingin menghapus maintenance tersebut, maka pengguna 
+dapat mengklik tombol . Pengguna diwajibkan untuk mengisi alasan 
+mengapa maintenance tersebut di-dismiss. Setelah itu, klik tombol  untuk 
+menyimpan, data maintenance akan terhapus secara otomatis. 
+ 
+● Untuk menutup jendela notifikasi, klik ikon   yang terletak di pojok kanan atas. 
+ 
+ 
+8 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Saat pengguna mengklik 'Lihat semua', sistem akan mengarahkan ke halaman Reminder 
+Maintenance, yang menampilkan daftar lengkap pengingat maintenance. 
+ 
+ 
+Ikon  akan menampilkan informasi nama pengguna, serta menu Change Password, 
+Help, dan Log out saat diklik. Untuk mengubah kata sandi, pilih menu Change Password. 
+ 
+ 
+9 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Selanjutnya, tampilan akan muncul seperti berikut. Untuk mengganti kata sandi, 
+masukkan kata sandi lama, kata sandi baru, serta konfirmasi kata sandi pada kolom 
+yang tersedia. Setelah itu, klik tombol  untuk menyimpan perubahan. 
+ 
+Klik menu ‘Help’ untuk mengunduh manual book 
+ 
+ 
+ 
+10 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik menu Logout untuk keluar dari sistem. Maka tampilan akan kembali ke halaman 
+Login seperti di awal. 
+ 
+ 
+11 | ASETA (Asset Management & Maintenance System) 
+
+ 
+1. Dashboard 
+Menu Dashboard menyajikan ringkasan data utama terkait aset yang tercatat dalam 
+sistem Aseta. Halaman ini membantu pengguna untuk memperoleh gambaran umum 
+secara cepat mengenai kondisi dan distribusi aset. Beberapa informasi yang 
+ditampilkan di menu Dashboard antara lain: Asset Value, Accumulated Depreciation, dan 
+Maintenance Cost. 
+Pada halaman Dashboard juga ditampilkan grafik untuk Asset Value per Category dan 
+Asset Quantity per Category, serta pie chart untuk Asset Percentage per Category. 
+ 
+ 
+ 
+12 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Asset Value per Category, menampilkan total nilai aset berdasarkan kategori. Grafik ini 
+memudahkan pengguna dalam membandingkan nilai aset dari masing-masing kategori 
+ 
+Grafik dapat di download dalam bentuk format PNG, JPG, PDF, Excel, CSV, dan SVG. 
+ 
+ 
+ 
+13 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Asset Percentage per Category, menampilkan persentase aset berdasarkan kategori dalam 
+bentuk pie chart yang memberikan visualisasi proporsi setiap kategori terhadap keseluruhan 
+aset. 
+ 
+Pie Chart dapat didownload dalam bentuk format PNG, JPG, PDF, Excel, dan CSV. 
+ 
+ 
+ 
+ 
+14 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Asset Quantity per Category, menampilkan jumlah total aset yang tercatat dalam sistem. 
+Informasi ini disajikan secara ringkas untuk memberikan gambaran mengenai kuantitas aset 
+yang dimiliki per kategori. 
+ 
+Grafik dapat di download dalam bentuk format PNG, JPG, PDF, Excel, CSV, dan SVG. 
+ 
+ 
+ 
+15 | ASETA (Asset Management & Maintenance System) 
+
+ 
+2. Asset 
+2.1. Asset List 
+Pada menu Asset, terdapat menu Asset List. Asset List ini berfungsi untuk memasukkan 
+data Asset secara manual maupun otomatis dengan template Excel yang sudah 
+disediakan dari Aseta.  
+ 
+Add New Asset secara Manual 
+Klik tombol  untuk menambahkan data aset baru secara manual. Maka 
+akan muncul form tampilan berikut: 
+ 
+ 
+16 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Jika aset yang akan diinput sudah terdaftar sebelumnya dalam Master Data, pengguna 
+dapat langsung memilih nama aset tersebut dari menu dropdown yang tersedia. 
+Setelah itu, lanjutkan dengan mengisi field informasi lainnya, serta menambahkan 
+gambar aset apabila diperlukan. 
+  
+ 
+Jika aset yang akan diinput belum terdaftar di Master Data, pengguna dapat mengklik 
+tombol Add Asset atau ikon , kemudian akan muncul formulir penambahan aset 
+seperti berikut: 
+ 
+ 
+17 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Isi seluruh field yang kosong pada form, seperti Asset ID, Asset Name, Category, dan 
+Specification. 
+Untuk Asset ID, pengguna dapat menyesuaikan dengan format atau ketentuan yang 
+berlaku di perusahaan masing-masing. Maksimum karakter yang dapat diinput adalah 
+16 karakter. 
+Contoh format Asset ID: 
+ 
+Jika seluruh field telah terisi, maka klik tombol  untuk menyimpan data. Halaman 
+akan otomatis kembali ke form Add New Asset, dengan field Asset Name dan 
+Specification yang telah terisi secara otomatis. 
+Selanjutnya, lengkapi informasi pada bagian Asset Detail, meliputi: Vendor, Acquisition 
+Date, Acquisition Cost, Location, Department, dan Asset User. 
+Pengguna juga dapat menambahkan gambar aset apabila diperlukan, dengan maksimal 
+unggahan hingga 3 gambar. 
+ 
+ 
+18 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Centang checkbox  untuk memasukkan aset ke perhitungan depresiasi. ketika 
+di-klik, maka tampilan akan menjadi seperti berikut: 
+ 
+Pilih Depreciation Formula yang ingin digunakan. Persentase depresiasi akan otomatis 
+terisi, mengikuti depreciation formula yang dipilih. 
+ 
+19 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Selanjutnya, jika field sudah terisi, maka pengguna dapat klik tombol  untuk 
+menyimpan data aset. 
+ 
+Setelah tersimpan, maka data aset akan masuk ke list. Untuk mengedit data aset, dapat 
+klik ikon  
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Add New Asset secara otomatis 
+20 | ASETA (Asset Management & Maintenance System) 
+
+ 
+1. Menambahkan data aset baru dapat dilakukan secara otomatis jika sudah 
+memiliki datanya di Excel. Terkait format Excel untuk import data, dapat di 
+download terlebih dahulu dengan klik tombol . Format Excel 
+disesuaikan dengan template, untuk memudahkan import asset data. Ketika 
+sudah di download, buka file excel-nya. 
+ 
+Pengguna diminta untuk mengisi data aset secara lengkap pada template Excel 
+yang telah disediakan. Kolom-kolom yang harus dilengkapi meliputi nomor, kode 
+kategori, nama kategori, kelompok harta, metode depresiasi, nama aset, kode 
+aset, nomor register, tanggal perolehan, harga perolehan, vendor, spesifikasi, 
+lokasi, department, asset PIC, dan asset user. 
+Pastikan seluruh kolom terisi dengan benar dan sesuai dengan ketentuan yang 
+berlaku, agar proses input data ke sistem dapat berjalan dengan lancar dan 
+tanpa kendala. 
+ 
+ 
+ 
+ 
+ 
+ 
+21 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Terkait ketentuan pengisian data, informasi Rules Upload dapat ditemukan pada sheet 
+yang berada di sebelah template input data. Sheet ini berisi panduan atau acuan dalam 
+mengisi setiap kolom pada file Excel, agar data yang diinput sesuai dengan format yang 
+dibutuhkan sistem. 
+Disarankan untuk membaca Rules Upload terlebih dahulu sebelum melakukan 
+pengisian, guna menghindari kesalahan data saat proses unggah. 
+Setelah menyesuaikan dengan format template, file Excel dapat diupload. Klik tombol 
+Import Asset Data atau tombol . Kemudian akan muncul jendela seperti 
+berikut. Pilih file Excel yang akan di-upload. Klik open. 
+ 
+ 
+22 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Fitur berfungsi untuk memilih berapa data yang ingin ditampilkan 
+dalam satu halaman. 
+Fitur berfungsi untuk mencari data aset yang diinginkan. 
+pencarian dapat dilakukan berdasarkan Asset ID, Asset Name, Register No, 
+Location, Condition, dan Department. 
+ 
+Pada bagian bawah halaman, terdapat tombol Go to First Page yang berfungsi untuk 
+kembali ke halaman pertama, serta tombol Go to Last Page untuk langsung menuju ke 
+halaman terakhir. 
+Selain itu, juga ditampilkan informasi jumlah data yang sedang ditampilkan, “Showing 
+11 to 20 of 908 entries” agar pengguna dapat mengetahui posisi data yang sedang 
+dilihat secara keseluruhan. 
+23 | ASETA (Asset Management & Maintenance System) 
+
+ 
+2.2. Mutation 
+Mutation Asset berfungsi untuk mencatat Pemindahan aset dari satu lokasi ke lokasi 
+lainnya. 
+ 
+Untuk menambah data mutasi aset, pengguna dapat klik tombol , nanti akan 
+muncul jendela: 
+ 
+Masukkan lokasi tujuan pada field Destination Location, dan departemen tujuan pada 
+field Destination Department. 
+Field Mutation Date diisi dengan tanggal dilakukannya mutasi aset. 
+24 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Pada field Description, tambahkan keterangan mengenai tujuan atau alasan 
+dilakukannya mutasi aset. 
+Setelah seluruh informasi terisi, klik tombol  untuk memilih aset mana saja 
+yang akan dimutasi. Selanjutnya, akan muncul jendela dengan tampilan seperti berikut: 
+ 
+ 
+Pilih aset yang akan dimutasi dengan mengisi field Asset ID, Register No, dan New Asset 
+User. Field Asset ID dapat diisi dengan maksimal 16 karakter. Current Location, Current 
+Department, dan Current Asset User akan otomatis terisi setelah memilih aset. Jika 
+sudah terisi, maka klik tombol  untuk menyimpan data. 
+ 
+25 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Jika ingin menambahkan aset lain dalam batch mutasi yang sama, ulangi langkah 
+sebelumnya untuk memilih aset tambahan. Setelah itu, tampilan akan menampilkan 
+daftar aset yang akan dimutasi. 
+ 
+Pengguna dapat menghapus aset dari daftar tersebut dengan mengklik ikon  
+Jika seluruh data sudah sesuai, klik tombol  untuk menyimpan data. 
+Setelah proses berhasil, akan muncul notifikasi sebagai berikut: 
+ 
+ 
+ 
+26 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Setelah mengklik tombol , tampilan akan kembali ke halaman awal. 
+Data mutasi yang telah disimpan akan langsung muncul pada daftar mutasi yang 
+tersedia, sehingga pengguna dapat melihat riwayat mutasi aset yang telah dilakukan. 
+ 
+ 
+27 | ASETA (Asset Management & Maintenance System) 
+
+ 
+2.3 Maintenance 
+Fitur Maintenance digunakan untuk mencatat dan memantau seluruh aktivitas 
+pemeliharaan aset. Melalui fitur ini, pengguna dapat menjadwalkan dan 
+mendokumentasikan setiap kegiatan perawatan, baik yang bersifat teknis seperti 
+pengecekan, perbaikan, dan penggantian komponen, maupun yang bersifat 
+administratif seperti pembaruan dokumen atau penyesuaian status aset. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+28 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Pada bagian akhir halaman, terdapat legend yang menjelaskan arti dari beberapa simbol 
+yang digunakan dalam tampilan. 
+ 
+: Memberikan gambaran kepada pengguna bahwa maintenance 
+reminder masih jauh, yaitu lebih dari 3 hari lagi. 
+ 
+: Memberikan gambaran kepada pengguna bahwa maintenance 
+reminder sudah mulai dekat dengan tempo, yaitu kurang dari 3 
+hari lagi. 
+ 
+: Menunjukkan bahwa reminder tidak direspons (tidak mengklik OK 
+atau Dismiss) setelah due date terlewati. 
+ 
+: Status ketika pengguna mengklik OK pada alert reminder. 
+ 
+: Status ketika pengguna mengklik Dismiss pada alert reminder. 
+ 
+: Untuk maintenance yang bersifat teknis, seperti layanan rutin, 
+kalibrasi, dan lain-lain. 
+ 
+: Untuk maintenance yang bersifat administrasi, seperti 
+perpanjangan kontrak, perpanjangan STNK, pembayaran pajak, 
+dan lain-lain. 
+ 
+29 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Untuk menambahkan maintenance, klik tombol  maka akan muncul jendela 
+seperti berikut: 
+                
+ 
+ 
+ 
+Setelah klik tombol , maka akan muncul notifikasi sebagai berikut: 
+ 
+30 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Selanjutnya, maintenance yang telah disimpan akan muncul pada daftar Maintenance di 
+halaman utama. Jika ingin mengedit maintenance, maka dapat klik ikon  pada kolom 
+action. 
+ 
+ 
+31 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Selanjutnya pada bagian Reminder, berfungsi untuk melihat daftar maintenance dan 
+melakukan action terhadap maintenance. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Pada bagian akhir halaman, terdapat legend yang menjelaskan arti dari beberapa 
+simbol yang digunakan dalam tampilan. 
+Jika aset sudah dilakukan maintenance, pengguna dapat klik tombol  pada kolom 
+action, maka akan muncul jendela seperti berikut. Pengguna harus memasukkan 
+maintenance cost yang telah dilakukan, kemudian diberi keterangan pada field Notes 
+terkait perlakuan yang telah diberikan, dan memberi keterangan kondisi aset saat ini 
+pada fields Condition. 
+32 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+ 
+Jika aset tidak jadi di-maintenance, maka pengguna dapat klik tombol , 
+kemudian pengguna akan diminta memasukkan alasan mengapa aset tersebut 
+di-dismiss seperti berikut: 
+ 
+Kemudian klik tombol . 
+Selanjutnya, bagian Inspection Log berfungsi untuk menampilkan daftar aset yang telah 
+diinspeksi, mencakup berbagai kondisi aset, dengan fokus utama pada aset yang 
+mengalami kerusakan. Data pada Inspection Log ini diperoleh dari hasil inspeksi 
+menggunakan Handheld/RFID Reader untuk aset dalam kondisi rusak. 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+33 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Tanda menunjukkan bahwa aset tersebut sudah di-maintenance 
+Tanda menunjukkan bahwa aset tersebut sudah dimasukkan ke maintenance 
+namun di-dismiss. 
+Tanda menunjukkan bahwa aset tersebut perlu dilakukan maintenance. 
+Pada tabulasi ini, klik tomboluntuk menambahkan aset dengan kondisi rusak ke 
+dalam daftar Maintenance Reminder Asset, fungsinya untuk melakukan penindakan 
+selanjutnya setelah dilakukan inspeksi. 
+Setelah form add maintenance diisi dengan benar seperti diatas, maka klik tombol 
+ untuk menyimpan data reminder maintenance asset. 
+2.4. Stock Opname 
+Stock Opname berfungsi sebagai proses pencatatan dan pengecekan atau audit stok 
+barang untuk memastikan kondisi fisik aset. 
+ 
+ 
+ 
+ 
+ 
+ 
+34 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Menambahkan data Stock Opname 
+Klik tombol , kemudian akan tampil jendela seperti di bawah: 
+ 
+ 
+ 
+ 
+ 
+ 
+Isi field Stock Opname Group, Location, dan Description. Description dapat diisi dengan 
+keterangan. 
+Setelah itu, untuk menambahkan data aset yang akan di-stock opname, pengguna dapat 
+klik tombol  , selajutnya akan muncul tampilan seperti berikut. Checklist pada 
+data aset yang ingin di-stock opname. Pengguna dapat menggunakan fitur search untuk 
+mencari data aset yang diinginkan. Fitur search bisa digunakan berdasarkan Asset ID, 
+Register No, Asset Name. Jika sudah memilih, maka pengguna bisa klik tombol 
+. 
+35 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Jika menemukan aset yang seharusnya tidak ada di lokasi tersebut, maka aset tersebut 
+termasuk Foreign item. Untuk mendata aset tersebut, pengguna dapat klik tombol 
+. 
+ 
+checklist foreign aset yang ditemukan. Jika sudah, klik tombol . Aset yang 
+termasuk pada foreign item, selanjutnya akan terdapat status  pada list stock 
+opname. 
+36 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Setelah selesai, pengguna dapat klik tombol  untuk menyimpan data stock 
+opname. 
+ 
+ 
+ 
+ 
+ 
+37 | ASETA (Asset Management & Maintenance System) 
+
+ 
+2.5. Disposal 
+Disposal berfungsi sebagai proses pembuangan atau penghapusan barang atau aset 
+yang sudah tidak terpakai atau diperlukan lagi. Aset yang sudah di-disposal tidak bisa di 
+kembalikan datanya. 
+ 
+Klik tombol untuk menambahkan data disposal. Lalu akan muncul jendela 
+seperti berikut. Terdapat beberapa fields yang harus diisi, di antaranya adalah Condition 
+Status, Description. 
+ 
+ 
+38 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Untuk menambahkan aset yang akan di-dispose, klik tombol , jendela akan 
+tampil seperti berikut. Pengguna dapat memilih aset yang akan di-dispose dengan klik 
+checkbox. 
+ 
+Untuk mencari aset yang diinginkan, pengguna dapat memanfaatkan fitur search. Fitur 
+search ini dapat mencari aset berdasarkan Asset ID, Register No, dan Asset Name. 
+ 
+Setelah memilih aset yang akan di-dispose, pengguna dapat klik tombol, 
+Aset yang dipilih akan muncul dalam daftar (list) aset yang akan di-dispose.  
+39 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik tombol pada kolom action untuk menghapus aset dari list. Selanjutnya, klik 
+tombol  untuk menyimpan data. 
+ 
+ 
+ 
+40 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Data disposal yang tadi telah disimpan, akan muncul di list disposal asset. Pengguna 
+dapat memfilter data disposal berdasarkan tanggal dengan centang box, kemudian 
+dipilih tanggal yang ingin ditampilkan 
+  
+ 
+ 
+41 | ASETA (Asset Management & Maintenance System) 
+
+ 
+3. Depreciation 
+3.1. Depreciation Calculation 
+Menu Depreciation Calculation digunakan untuk menghitung nilai penyusutan aset 
+berdasarkan tahun yang dipilih. 
+Pengguna cukup memasukkan tahun pada kolom Year, lalu klik tombol Calculate, dan 
+sistem akan secara otomatis menampilkan hasil perhitungan penyusutan untuk seluruh 
+aset yang terdaftar. 
+Informasi yang ditampilkan meliputi: 
+● Acquisition Date: Tanggal perolehan aset 
+ 
+● Acquisition Value: Nilai perolehan aset 
+ 
+● Economic Age: Umur ekonomis aset 
+ 
+● Depreciation Formula: Metode penyusutan yang digunakan (misalnya 
+Straight-Line) 
+ 
+● Depreciation Value: Nilai penyusutan yang dihitung untuk tahun tersebut 
+ 
+● Book Value: Nilai buku aset setelah dikurangi penyusutan 
+42 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik ikon pada kolom detail untuk melihat rincian penyusutan aset secara bulanan 
+dalam satu tahun sesuai aset yang dipilih. Catatan: Penyusutan baru dimulai dari bulan 
+setelah tanggal perolehan. 
+ 
+ 
+43 | ASETA (Asset Management & Maintenance System) 
+
+ 
+4. Master Data 
+4.1 Asset Category 
+Asset Category pada menu ini berfungsi untuk mengelompokkan dan mengatur aset 
+berdasarkan karakteristik, jenis, atau kriteria tertentu. Terdapat dua kelompok besar, 
+yaitu Bangunan dan Bukan Bangunan. Pengguna dapat menyesuaikan asetnya yang 
+termasuk dalam Bangunan atau Bukan Bangunan. 
+ 
+ 
+44 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Untuk menambahkan Asset Category, klik parent yang diinginkan, misalnya disini pada 
+parent Mobil. Klik tombol, selanjutnya akan muncul tampilan seperti berikut. 
+Masukkan Category Name dan tentukan Group of Assets. Penentuan Group of Assets ini 
+akan berpengaruh terhadap perhitungan depresiasi. 
+      
+ 
+ 
+Selanjutnya, pengguna dapat klik tombol . Data akan otomatis tersimpan. 
+45 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Penambahan sub-kategori dapat dilakukan hingga maksimal 7 tingkat. Artinya, satu 
+kategori induk (parent) dapat memiliki sub-kategori, dan setiap sub-kategori dapat 
+memiliki sub-kategori berikutnya, hingga mencapai tujuh level hirarki. 
+  
+Klik  untuk mengedit Asset Category. Klik  untuk menghapus Asset Category. 
+Namun, penghapusan asset category hanya dapat dilakukan mulai dari sub-kategori 
+paling akhir. Kategori yang telah menjadi parent tidak dapat dihapus sebelum seluruh 
+sub-kategori di bawahnya dihapus terlebih dahulu. 
+Fitur Search  dapat digunakan berdasarkan category ID dan category 
+4.2. Asset 
+ 
+46 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik tombol , kemudian akan muncul jendela seperti berikut: 
+ 
+ 
+Setelah itu, pengguna dapat klik tombol untuk menyimpan data aset. 
+ 
+Klik untuk mengedit data aset. 
+47 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Klik tombol untuk menghapus data aset. 
+4.3. Condition 
+ 
+Klik tomboluntuk menambahkan condition aset. 
+ 
+48 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik  untuk mengedit condition. Klik untuk menghapus condition, akan terdapat 
+pop up untuk meyakinkan pengguna bahwa condition tersebut akan dihapus atau tidak. 
+ 
+Klik tombol  untuk menghapus condition. 
+4.4. Department 
+ 
+Klik tombol untuk menambahkan Department. 
+ 
+49 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik  untuk mengedit condition. Klik untuk menghapus department, akan terdapat 
+pop up untuk meyakinkan pengguna bahwa department tersebut akan dihapus atau 
+tidak. 
+ 
+4.5. Vendor 
+Vendor pada menu ini berfungsi untuk menyimpan pihak atau perusahaan yang 
+menyediakan atau menjual produk atau layanan tertentu kepada pengguna.  
+ 
+ 
+50 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik tombol  untuk menambahkan vendor baru. 
+ 
+Klik  untuk mengedit condition. Klik untuk menghapus vendor, akan terdapat pop 
+up notifikasi untuk meyakinkan pengguna bahwa vendor tersebut akan dihapus atau 
+tidak. 
+4.6. Location 
+ 
+Untuk menambahkan Location, klik parent yang diinginkan, misalnya disini pada parent 
+Gudang A. Klik tombol , selanjutnya akan muncul tampilan seperti berikut. 
+51 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Masukkan Location ID dan Location Name. Pengisian Location ID disesuaikan dengan 
+ketentuan dari perusahaan masing-masing. Location ID hanya dapat diisi maksimal 20 
+karakter. 
+ 
+ 
+Klik  untuk mengedit Location. Klik  untuk menghapus Location. 
+ 
+52 | ASETA (Asset Management & Maintenance System) 
+
+ 
+5. User Management 
+5.1. User 
+Menu User digunakan untuk mengelola data pengguna yang memiliki akses ke dalam 
+sistem Aseta. Di dalam menu ini, pengguna dapat melakukan beberapa tindakan 
+sebagai berikut: 
+Melihat daftar user yang sudah terdaftar, lengkap dengan informasi seperti: 
+● User ID: ID unik masing-masing pengguna, generate by system. 
+ 
+● Username: Nama akun yang digunakan untuk login. 
+ 
+● Name: Nama lengkap pengguna. 
+ 
+● Description: Peran atau jabatan pengguna (misal: Administrator). 
+ 
+● Email: Alamat email yang digunakan. 
+  
+ 
+53 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Menambahkan pengguna baru dengan menekan tombol . Maka akan 
+muncul tampilan seperti berikut: 
+ 
+Mengedit informasi pengguna dengan menekan ikon  di kolom Action. Selanjutnya 
+akan muncul jendela seperti berikut. 
+ 
+Menghapus user dengan menekan ikon  di kolom Action. Selanjutnya akan muncul 
+pop up notifikasi seperti berikut. 
+ 
+54 | ASETA (Asset Management & Maintenance System) 
+
+ 
+5.2. Role 
+Menu Role digunakan untuk melihat dan mengelola daftar peran (role) dalam sistem. 
+Setiap role mewakili hak akses dan fungsi yang berbeda sesuai kebutuhan perusahaan. 
+Pada halaman ini, pengguna dapat: 
+● Melihat daftar role yang telah dibuat beserta deskripsinya. 
+ 
+● Menambahkan role baru dengan klik tombol , maka akan muncul 
+jendela seperti berikut. 
+  
+55 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+● Mengedit nama atau deskripsi role dengan ikon . 
+ 
+● Menambahkan user ke role menggunakan ikon . Misal ketika ingin 
+menambahkan user pada role Administrator, pengguna dapat klik ikon  pada 
+baris Administrator. Selanjutnya akan muncul jendela sebagai berikut. 
+ 
+klik tombol  untuk menambahkan user 
+ 
+ 
+ 
+Menghapus role dengan ikon  jika ingin menghapus role. 
+56 | ASETA (Asset Management & Maintenance System) 
+
+ 
+5.3. Menu Role 
+Menu Menu Role digunakan untuk mengatur hak akses setiap role terhadap menu atau 
+fitur yang tersedia dalam sistem. Dengan fitur ini, admin dapat menentukan menu apa 
+saja yang dapat diakses oleh setiap role sesuai kebutuhan dan tanggung jawabnya. 
+ 
+Untuk menambahkan hak akses setiap role, pengguna dapat klik tombol  
+  
+ 
+57 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Centang menu yang akan diberikan hak aksesnya pada role tersebut. Kemudian, klik 
+tombol . 
+Role hanya akan dapat mengakses menu yang telah dicentang. Pastikan hanya 
+memberikan akses yang sesuai dengan kebutuhan dan tanggung jawab masing-masing 
+role. 
+Untuk menghapus hak akses menu pada role tertentu, pengguna dapat klik pada 
+kolom action. 
+ 
+58 | ASETA (Asset Management & Maintenance System) 
+
+ 
+6. Report 
+6.1. Asset List Report 
+Menu ini digunakan untuk melihat dan mengunduh daftar seluruh aset yang tercatat, 
+lengkap dengan Asset ID, nama aset, kategori, jumlah, dan nilai. Fitur Search dapat 
+digunakan berdasarkan Asset ID dan Asset Name. 
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut. 
+ 
+Tampilan report dalam bentuk PDF 
+59 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.    
+ 
+Tampilan report dalam bentuk Excel 
+ 
+6.2. Registration Report 
+Menu ini digunakan untuk melihat dan mengunduh data aset yang telah teregistrasi. 
+Fitur Search dapat digunakan berdasarkan Asset Name, Category, dan Department. 
+ 
+60 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Saat diunduh sebagai PDF, laporan akan otomatis terbagi per kategori aset, sehingga 
+lebih rapi dan mudah dibaca berdasarkan jenis asetnya.  
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.  
+ 
+61 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Report dalam bentuk Excel  
+6.3. Mutation Report 
+Menu ini digunakan untuk melihat dan mengunduh laporan mutasi atau perpindahan 
+aset dari satu lokasi atau ke lokasi lainnya. 
+ 
+ 
+ 
+62 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan mutasi yang diunduh dalam format PDF akan disajikan dalam satu dokumen, 
+dengan pemisahan tabel berdasarkan Mutation Number. 
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan mutasi dalam bentuk Excel. 
+63 | ASETA (Asset Management & Maintenance System) 
+
+ 
+6.4. Maintenance Report 
+Menu Maintenance Report berfungsi untuk menampilkan rekap data seluruh aktivitas 
+maintenance yang telah dilakukan, baik bersifat teknis maupun administratif. Laporan 
+ini memudahkan pengguna dalam memantau riwayat perawatan aset dan dapat di 
+unduh sesuai kebutuhan. Fitur Search dapat digunakan berdasarkan aset, registration 
+no, maintenance name, description, type, cost, dan note. 
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut.  
+ 
+64 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Laporan Maintenance dalam bentuk PDF. 
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan Maintenance dalam bentuk Excel 
+6.5. Stock Opname Report 
+Menu Stock Opname Report digunakan untuk menampilkan hasil pencatatan fisik aset 
+(stock opname) yang telah dilakukan. Laporan ini mencakup informasi kesesuaian 
+antara data sistem dan kondisi aktual di lapangan. Pengguna dapat memfilter data 
+sesuai tanggal dan mengunduh laporan dalam format PDF atau Excel. Fitur Search 
+dapat digunakan berdasarkan Stock Opname Code dan Stock Opname Group. 
+ 
+65 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut. 
+66 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Laporan Stock Opname dalam bentuk PDF 
+Dalam dokumen PDF, data disusun berdasarkan Stock Opname Code dan Stock Opname 
+Group Name yang merepresentasikan masing-masing sesi pemeriksaan 
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan Stock Opname dalam bentuk Excel 
+ 
+67 | ASETA (Asset Management & Maintenance System) 
+
+ 
+6.6. Disposal Report 
+Disposal Report digunakan untuk menampilkan data aset yang telah melalui proses 
+penghapusan atau pelepasan dari daftar aset. Fitur Search dapat digunakan 
+berdasarkan Asset ID, Condition Status, Description, Disposal No. 
+ 
+ 
+68 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+ 
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut. 
+69 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+Laporan dalam bentuk PDF  
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan dalam bentuk Excel 
+ 
+70 | ASETA (Asset Management & Maintenance System) 
+
+ 
+ 
+6.7. Depreciation Report 
+Menu Depreciation Report digunakan untuk menampilkan informasi penyusutan aset 
+yang tercatat dalam sistem. Laporan ini menyajikan detail nilai penyusutan setiap aset 
+dalam periode tertentu, termasuk nilai buku, akumulasi penyusutan, dan nilai sisa. Data 
+dapat difilter berdasarkan periode dan diunduh dalam format PDF atau Excel sesuai 
+kebutuhan. 
+ 
+ 
+ 
+71 | ASETA (Asset Management & Maintenance System) 
+
+ 
+Klik ikon  untuk mengunduh report dalam bentuk PDF. Setelah diunduh, file PDF 
+akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan Depresiasi dalam bentuk PDF 
+Klik ikon  untuk mengunduh laporan dalam format Excel. Setelah diunduh, file 
+Excel akan ditampilkan dengan tampilan seperti berikut.  
+ 
+Laporan Depresiasi dalam bentuk Excel 
+72 | ASETA (Asset Management & Maintenance System) 

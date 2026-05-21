@@ -41,6 +41,7 @@ router.post('/recycle-bin/:id/restore', pureAssetMasterCtrl.restoreRecycleItem);
 router.delete('/recycle-bin/:id/permanent', pureAssetMasterCtrl.deleteRecycleItemPermanent);
 
 // ASSETS
+router.get('/download-excel', pureAssetCtrl.downloadExcel);
 router.get('/', pureAssetCtrl.getAssets);
 router.post('/', pureAssetCtrl.createAsset);
 router.get('/:id', pureAssetCtrl.getAssetById);

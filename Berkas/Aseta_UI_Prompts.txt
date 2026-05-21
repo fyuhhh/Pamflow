@@ -1,0 +1,44 @@
+Daftar Prompt untuk Gemini Flash (UI Manajemen Aset)
+Berikut adalah daftar urutan prompt (perintah) yang sudah disusun secara sistematis agar tidak terkena limit ketika menggunakan Gemini Flash. Mas cukup salin dan tempel (copy-paste) satu per satu ke kolom chat saat sudah berganti ke model Gemini Flash.
+
+Pastikan menjalankan prompt secara berurutan agar kodingannya terstruktur dengan baik.
+
+Tahap 1: Persiapan Menu & Master Data
+Prompt 1: Routing & Sidebar
+"Flash, tolong tambahkan menu 'Manajemen Aset' di file Sidebar dan App.jsx Pamflow. Menu ini memiliki sub-menu: Dashboard Aset, Asset List, Mutasi, Maintenance, Stock Opname, Disposal, Depresiasi, dan Master Data. Pastikan dibungkus dengan pengecekan hak akses pure_asset_menu agar hanya Superadmin dan role yang diizinkan yang bisa melihatnya. Gunakan ikon dari lucide-react yang relevan."
+
+Prompt 2: Master Data - Kategori & Lokasi
+"Flash, buatkan halaman MasterDataAset.jsx. Di dalamnya buatkan sistem Tab untuk mengelola 'Kategori', 'Lokasi', dan 'Vendor'. Untuk sekarang, selesaikan UI tabel dan form modal (Tambah/Edit/Hapus) untuk Tab Kategori (punya field category_code, category_name, group_of_assets, depreciation_method) dan Tab Lokasi (punya field location_id, location_name). Desainnya wajib disamakan dengan gaya UI Pamflow (TailwindCSS, estetik, responsif). Tembak API ke /api/pure-assets/categories dan /api/pure-assets/locations."
+
+Prompt 3: Master Data - Vendor & Kondisi
+"Flash, lanjutkan halaman MasterDataAset.jsx tadi. Sekarang lengkapi UI tabel dan form modal untuk Tab Vendor (field: vendor_name, contact_person, phone, address). Tembak API ke /api/pure-assets/vendors. Pastikan tabelnya rapi dan desain modalnya konsisten dengan komponen Pamflow lainnya."
+
+Tahap 2: Manajemen Aset Utama (Asset List)
+Prompt 4: Halaman Asset List (Tabel Utama)
+"Flash, buatkan halaman AssetList.jsx. Halaman ini menampilkan tabel data seluruh aset yang memanggil API GET /api/pure-assets/. Buatkan fitur pencarian (Search), Pagination, dan filter simpel. Kolom tabel mencakup: Asset ID, Register No, Asset Name, Kategori, Lokasi, Vendor, dan Status. Gunakan desain tabel modern khas Pamflow dengan opsi 'Action' (Edit/Hapus)."
+
+Prompt 5: Modal Tambah/Edit Aset (Terintegrasi Master Data)
+"Flash, buatkan komponen AssetFormModal.jsx yang dipanggil dari AssetList.jsx. Form ini cukup kompleks karena harus mengambil dropdown Kategori, Lokasi, dan Vendor dari API Master Data /api/pure-assets/.... Field yang harus ada: Asset ID (auto/manual), Asset Name, Register No, Spesifikasi, Vendor, Tanggal Perolehan, Harga Perolehan, Lokasi, Departemen (ambil dari departemen Pamflow lama), PIC, User, dan 3 slot Upload Gambar. Ada juga checkbox 'Hitung Depresiasi' yang jika dicentang memunculkan pilihan formula. Buat UI-nya sangat user-friendly dalam bentuk Grid 2 kolom."
+
+Tahap 3: Fitur Transaksional (Mutasi, Maintenance, dll)
+Prompt 6: Halaman Mutasi (Mutation)
+"Flash, buatkan halaman AssetMutation.jsx. Di halaman ini ada tabel riwayat mutasi aset. Buatkan juga fitur 'Tambah Mutasi' di mana user bisa memilih Lokasi Tujuan, Departemen Tujuan, Tanggal, dan Keterangan. Lalu di bawahnya user bisa mencari dan memilih beberapa barang (Aset) sekaligus untuk dipindahkan. Pastikan UI-nya intuitif seperti sistem 'keranjang' atau tabel multi-select. Sesuaikan desainnya agar seindah Pamflow."
+
+Prompt 7: Halaman Maintenance & Reminder
+"Flash, buatkan halaman AssetMaintenance.jsx. Halaman ini berisi Tab 'Reminder' dan 'Inspection Log'. Pada form tambah maintenance, sediakan input: Pilih Aset, Maintenance Name, Type (Technical/Admin), Reminder Date, Due Date, dan Cost. Buat indikator warna canggih pada tabel: Hijau jika H-3, Merah jika lewat jatuh tempo. Terdapat tombol 'OK' (untuk memasukkan biaya/keterangan selesai) dan tombol 'Dismiss' (batal dengan alasan)."
+
+Prompt 8: Halaman Stock Opname (Audit Fisik)
+"Flash, buatkan halaman AssetStockOpname.jsx. User bisa membuat sesi Opname baru dengan memilih Lokasi. Saat sesi berjalan, tampilkan daftar aset yang seharusnya ada di lokasi tersebut dengan opsi status: 'Found', 'Missing', atau 'Foreign Item' (Barang Nyasar). Jika user memilih 'Foreign Item', munculkan Alert/Warning yang mewajibkan user mengisi catatan atau usulan lokasi aslinya. Desain UI wajib bersih dan mobile-friendly."
+
+Prompt 9: Halaman Disposal (Penghapusan)
+"Flash, buatkan halaman AssetDisposal.jsx. Menampilkan tabel aset-aset yang sudah dibuang/dijual. Pada form Disposal, user mengisi 'Tanggal', 'Kondisi', 'Alasan', dan bisa memilih (mencentang) lebih dari 1 aset untuk dihapus permanen dari operasional. Berikan peringatan warna merah (Warning Modal) khas Pamflow sebelum data benar-benar di-submit karena aksi ini tidak bisa dikembalikan."
+
+Tahap 4: Depresiasi & Report
+Prompt 10: Halaman Depresiasi
+"Flash, buatkan halaman AssetDepreciation.jsx. Halaman ini berisi input sederhana: Dropdown pilihan 'Tahun', lalu tombol 'Calculate'. Di bawahnya akan muncul tabel hasil kalkulasi depresiasi untuk semua aset aktif (Nama Aset, Nilai Perolehan, Umur Ekonomis, Nilai Buku, dan Akumulasi Penyusutan). Sediakan juga tombol kecil di tabel untuk melihat rincian bulanannya. Buat UI-nya terlihat seperti dashboard analitik."
+
+Prompt 11: Export & Report Center
+"Flash, buatkan fitur 'Export to Excel / PDF' untuk diletakkan di halaman AssetList, Mutation, Maintenance, Stock Opname, Disposal, dan Depreciation. Buatkan satu helper function atau manfaatkan pustaka (seperti xlsx or jspdf jika ada) yang bisa mengunduh tabel yang sedang dilihat user ke dalam format Excel dan PDF dengan rapi."
+
+Prompt 12: Halaman Hak Akses Manajemen Aset
+"Flash, buatkan halaman HakAksesManajemenAset.jsx yang memungkinkan kita mengonfigurasi hak akses (Lihat, Buat, Edit, Hapus) untuk setiap role (Superadmin, GA, dll) dan juga user spesifik secara modular untuk seluruh menu Manajemen Aset baru. Modul yang dikelola: Dashboard Aset (pure_asset_dashboard), Asset List (pure_asset_register), Mutasi (pure_asset_mutation), Maintenance (pure_asset_maintenance), Stock Opname (pure_asset_opname), Disposal (pure_asset_disposal), Depresiasi (pure_asset_depreciation), Master Data (pure_asset_master), dan Kelola Hak Akses (pure_asset_hak_akses). Terapkan desain matriks tabel interaktif dengan ikon Check/Shield, pencarian pengguna, dan sinkronisasi ke backend /api/roles/:id serta /api/users/:id/permissions sesuai gaya visual premium Pamflow."

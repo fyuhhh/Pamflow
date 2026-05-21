@@ -1,7 +1,79 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Search, Edit2, Trash2, Folder, MapPin, Users, Loader2, X, Info, Shield, HelpCircle, BookOpen, ChevronRight, ChevronDown, Building2, Activity } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Plus, Search, Edit2, Trash2, Folder, MapPin, Users, Loader2, X, Info, Shield, HelpCircle, BookOpen, ChevronRight, ChevronDown, Building2, Activity, Box } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
+
+const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false, required = false }) => {
+  const [isOpen, setIsOpen] = useState(false);
+  const [search, setSearch] = useState('');
+  
+  const selectedOption = (Array.isArray(options) ? options : []).find(opt => String(opt.value) === String(value));
+  const filteredOptions = (Array.isArray(options) ? options : []).filter(opt =>
+    String(opt.label).toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <div className="relative flex flex-col space-y-1.5 w-full">
+      {label && <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">{label} {required && <span className="text-red-500">*</span>}</label>}
+      <div 
+        onClick={() => { if (!disabled) setIsOpen(!isOpen); }}
+        className={`w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-medium flex items-center justify-between cursor-pointer select-none focus:border-[#0095E8]/30 transition-all ${disabled ? 'opacity-50 bg-[#F9F9F9] cursor-not-allowed' : ''}`}
+      >
+        <span className={selectedOption ? "text-[#3F4254]" : "text-[#B5B5C3]"}>
+          {selectedOption ? selectedOption.label : placeholder}
+        </span>
+        <ChevronDown size={14} className={`text-[#A1A5B7] transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+      </div>
+
+      {isOpen && (
+        <>
+          <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
+          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E1E3EA] rounded-xl shadow-lg z-[9999] overflow-hidden max-h-[200px] flex flex-col">
+            <div className="p-2 border-b border-[#F1F1F4] bg-[#F9F9F9]">
+              <div className="flex items-center px-2 py-1 bg-white border border-[#E1E3EA] rounded-lg">
+                <Search size={12} className="text-[#A1A5B7] mr-2" />
+                <input
+                  type="text"
+                  placeholder="Cari..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  onClick={(e) => e.stopPropagation()}
+                  autoFocus
+                  className="w-full text-xs font-semibold outline-none bg-transparent"
+                />
+              </div>
+            </div>
+            <div className="overflow-y-auto">
+              {filteredOptions.length === 0 ? (
+                <div className="p-3 text-xs text-[#7E8299] text-center">Tidak ada data</div>
+              ) : (
+                filteredOptions.map(opt => (
+                  <div
+                    key={opt.value}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onChange(opt.value);
+                      setIsOpen(false);
+                      setSearch('');
+                    }}
+                    className={`px-4 py-2.5 text-xs font-bold cursor-pointer transition-colors border-b border-[#FAFBFC] last:border-b-0 ${
+                      String(opt.value) === String(value)
+                        ? 'bg-[#E1F0FF] text-[#0095E8]'
+                        : 'text-[#3F4254] hover:bg-[#F5F8FA]'
+                    }`}
+                  >
+                    {opt.label}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+};
 
 // PMK 72 Tahun 2023 Data
 const KELOMPOK_HARTA_RULES = {
@@ -89,13 +161,40 @@ const KELOMPOK_HARTA_RULES = {
 };
 
 const MasterDataAset = () => {
-  const [activeTab, setActiveTab] = useState('category'); // 'category', 'location', 'vendor', 'department', 'condition'
+  const location = useLocation();
+  const navigate = useNavigate();
+
+  const getInitialTab = () => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['category', 'asset', 'location', 'vendor', 'department', 'condition'].includes(tab)) {
+      return tab;
+    }
+    return 'category';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
   const [categories, setCategories] = useState([]);
+  const [pureAssets, setPureAssets] = useState([]);
   const [locations, setLocations] = useState([]);
   const [vendors, setVendors] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [conditions, setConditions] = useState([]);
   const [activeConditionSubTab, setActiveConditionSubTab] = useState('asset'); // 'asset' or 'maintenance'
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    if (tab && ['category', 'asset', 'location', 'vendor', 'department', 'condition'].includes(tab)) {
+      setActiveTab(tab);
+    }
+  }, [location.search]);
+
+  const handleTabChange = (newTab) => {
+    setActiveTab(newTab);
+    navigate(`/manajemen-aset/master-data?tab=${newTab}`);
+    setSearchTerm('');
+  };
   
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
@@ -149,6 +248,15 @@ const MasterDataAset = () => {
     parent_id: ''
   });
 
+  const [assetForm, setAssetForm] = useState({
+    asset_id: '',
+    asset_name: '',
+    category_id: '',
+    department_id: '',
+    rfid_tag: '',
+    specification: ''
+  });
+
   const [vendorForm, setVendorForm] = useState({
     vendor_name: '',
     contact_person: '',
@@ -180,6 +288,17 @@ const MasterDataAset = () => {
         if (res.ok) {
           const data = await res.json();
           setCategories(data);
+        }
+      } else if (activeTab === 'asset') {
+        const res = await authFetch('/api/pure-assets');
+        if (res.ok) {
+          const data = await res.json();
+          setPureAssets(data);
+        }
+        const catRes = await authFetch('/api/pure-assets/categories');
+        if (catRes.ok) {
+          const catData = await catRes.json();
+          setCategories(catData);
         }
       } else if (activeTab === 'location') {
         const res = await authFetch('/api/pure-assets/locations');
@@ -224,6 +343,12 @@ const MasterDataAset = () => {
       depreciation_method: 'Straight Line',
       parent_id: ''
     });
+    setAssetForm({
+      asset_id: '',
+      asset_name: '',
+      category_id: '',
+      specification: ''
+    });
     setLocationForm({
       location_id: '',
       location_name: '',
@@ -257,6 +382,15 @@ const MasterDataAset = () => {
         depreciation_method: item.depreciation_method || 'Straight Line',
         parent_id: item.parent_id || ''
       });
+    } else if (activeTab === 'asset') {
+      setAssetForm({
+        asset_id: item.asset_id || '',
+        asset_name: item.asset_name || '',
+        category_id: item.category_id || '',
+        department_id: item.department_id || '',
+        rfid_tag: item.rfid_tag || '',
+        specification: item.specification || ''
+      });
     } else if (activeTab === 'location') {
       setLocationForm({
         location_id: item.location_id || '',
@@ -288,6 +422,8 @@ const MasterDataAset = () => {
     e.preventDefault();
     const endpoint = activeTab === 'category' 
       ? '/api/pure-assets/categories' 
+      : activeTab === 'asset'
+      ? '/api/pure-assets'
       : activeTab === 'location' 
       ? '/api/pure-assets/locations' 
       : activeTab === 'vendor'
@@ -302,6 +438,13 @@ const MasterDataAset = () => {
       group_of_assets: categoryForm.group_of_assets,
       depreciation_method: categoryForm.depreciation_method,
       parent_id: categoryForm.parent_id === '' ? null : parseInt(categoryForm.parent_id)
+    } : activeTab === 'asset' ? {
+      asset_id: assetForm.asset_id || null,
+      asset_name: assetForm.asset_name,
+      category_id: assetForm.category_id === '' ? null : parseInt(assetForm.category_id),
+      department_id: assetForm.department_id === '' ? null : parseInt(assetForm.department_id),
+      rfid_tag: assetForm.rfid_tag || null,
+      specification: assetForm.specification
     } : activeTab === 'location' ? {
       location_id: locationForm.location_id,
       location_name: locationForm.location_name,
@@ -322,7 +465,7 @@ const MasterDataAset = () => {
     const method = modalMode === 'add' ? 'POST' : 'PUT';
     const url = modalMode === 'add' ? endpoint : `${endpoint}/${selectedItem.id}`;
 
-    const label = activeTab === 'category' ? 'Kategori' : activeTab === 'location' ? 'Lokasi' : activeTab === 'vendor' ? 'Vendor' : activeTab === 'department' ? 'Departemen' : 'Kondisi';
+    const label = activeTab === 'category' ? 'Kategori' : activeTab === 'asset' ? 'Aset' : activeTab === 'location' ? 'Lokasi' : activeTab === 'vendor' ? 'Vendor' : activeTab === 'department' ? 'Departemen' : 'Kondisi';
 
     try {
       const res = await authFetch(url, {
@@ -348,6 +491,8 @@ const MasterDataAset = () => {
   const handleDelete = (item) => {
     const itemName = activeTab === 'category' 
       ? item.category_name 
+      : activeTab === 'asset'
+      ? item.asset_name
       : activeTab === 'location' 
       ? item.location_name 
       : activeTab === 'vendor'
@@ -358,6 +503,8 @@ const MasterDataAset = () => {
 
     const endpoint = activeTab === 'category' 
       ? '/api/pure-assets/categories' 
+      : activeTab === 'asset'
+      ? '/api/pure-assets'
       : activeTab === 'location' 
       ? '/api/pure-assets/locations' 
       : activeTab === 'vendor'
@@ -366,7 +513,7 @@ const MasterDataAset = () => {
       ? '/api/pure-assets/departments'
       : '/api/pure-assets/conditions';
     
-    const label = activeTab === 'category' ? 'kategori' : activeTab === 'location' ? 'lokasi' : activeTab === 'vendor' ? 'vendor' : activeTab === 'department' ? 'departemen' : 'kondisi';
+    const label = activeTab === 'category' ? 'kategori' : activeTab === 'asset' ? 'aset' : activeTab === 'location' ? 'lokasi' : activeTab === 'vendor' ? 'vendor' : activeTab === 'department' ? 'departemen' : 'kondisi';
     
     confirm(
       'Hapus Data',
@@ -583,6 +730,14 @@ const MasterDataAset = () => {
     return matchesSearch && matchesCity && matchesContact;
   });
 
+  // Pure Assets search/filter
+  const filteredPureAssets = pureAssets.filter(asset => 
+    (asset.asset_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (asset.asset_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (asset.category_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (asset.specification || '').toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   // Department search
   const filteredDepartments = departments.filter(d => 
     d.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -609,6 +764,11 @@ const MasterDataAset = () => {
         (a.location_id || '').localeCompare(b.location_id || '') ||
         (a.location_name || '').localeCompare(b.location_name || '')
       );
+
+  const sortedPureAssets = [...filteredPureAssets].sort((a, b) => 
+    (a.asset_id || '').localeCompare(b.asset_id || '') ||
+    (a.asset_name || '').localeCompare(b.asset_name || '')
+  );
 
   const sortedVendors = [...filteredVendors].sort((a, b) => 
     (a.vendor_name || '').localeCompare(b.vendor_name || '')
@@ -699,7 +859,7 @@ const MasterDataAset = () => {
             className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg bg-[#0095E8] text-white hover:bg-[#0084CC] shadow-[#0095E8]/10"
           >
             <Plus size={16} />
-            {activeTab === 'category' ? 'Tambah Kategori' : activeTab === 'location' ? 'Tambah Lokasi' : activeTab === 'vendor' ? 'Tambah Vendor' : activeTab === 'department' ? 'Tambah Departemen' : 'Tambah Kondisi'}
+            {activeTab === 'category' ? 'Tambah Kategori' : activeTab === 'asset' ? 'Tambah Aset' : activeTab === 'location' ? 'Tambah Lokasi' : activeTab === 'vendor' ? 'Tambah Vendor' : activeTab === 'department' ? 'Tambah Departemen' : 'Tambah Kondisi'}
           </button>
         </div>
       </div>
@@ -708,35 +868,42 @@ const MasterDataAset = () => {
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 mb-6">
         <div className="flex flex-wrap items-center gap-2 bg-white p-1.5 rounded-2xl border border-[#F1F1F4] shadow-sm w-full lg:w-auto">
           <button 
-            onClick={() => { setActiveTab('category'); setSearchTerm(''); }}
+            onClick={() => handleTabChange('category')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'category' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
           >
             <Folder size={14} />
             Kategori Aset
           </button>
           <button 
-            onClick={() => { setActiveTab('location'); setSearchTerm(''); }}
+            onClick={() => handleTabChange('asset')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'asset' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
+          >
+            <Box size={14} />
+            Aset
+          </button>
+          <button 
+            onClick={() => handleTabChange('location')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'location' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
           >
             <MapPin size={14} />
             Lokasi
           </button>
           <button 
-            onClick={() => { setActiveTab('vendor'); setSearchTerm(''); }}
+            onClick={() => handleTabChange('vendor')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'vendor' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
           >
             <Users size={14} />
             Vendor Aset
           </button>
           <button 
-            onClick={() => { setActiveTab('department'); setSearchTerm(''); }}
+            onClick={() => handleTabChange('department')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'department' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
           >
             <Building2 size={14} />
             Departemen
           </button>
           <button 
-            onClick={() => { setActiveTab('condition'); setSearchTerm(''); }}
+            onClick={() => handleTabChange('condition')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'condition' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
           >
             <Activity size={14} />
@@ -748,7 +915,7 @@ const MasterDataAset = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A5B7]" size={16} />
           <input 
             type="text" 
-            placeholder={`Cari data ${activeTab === 'category' ? 'Kategori' : activeTab === 'location' ? 'Lokasi' : activeTab === 'vendor' ? 'Vendor' : activeTab === 'department' ? 'Departemen' : 'Kondisi'}...`}
+            placeholder={`Cari data ${activeTab === 'category' ? 'Kategori' : activeTab === 'asset' ? 'Aset' : activeTab === 'location' ? 'Lokasi' : activeTab === 'vendor' ? 'Vendor' : activeTab === 'department' ? 'Departemen' : 'Kondisi'}...`}
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all shadow-sm"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -1027,6 +1194,57 @@ const MasterDataAset = () => {
                 </tbody>
               </table>
               {renderPagination(sortedCategories)}
+            </div>
+          )}
+
+          {activeTab === 'asset' && (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-[#F1F1F4] bg-[#F9F9F9]/50">
+                    <th className="p-5 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-center w-[60px]">No</th>
+                    <th className="p-5 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">ID Aset</th>
+                    <th className="p-5 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Nama Aset</th>
+                    <th className="p-5 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Kategori</th>
+                    <th className="p-5 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider">Spesifikasi</th>
+                    <th className="p-5 text-[11px] font-bold text-[#A1A5B7] uppercase tracking-wider text-right">Aksi</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#F1F1F4]">
+                  {sortedPureAssets.length > 0 ? (
+                    getPaginatedData(sortedPureAssets).map((asset, index) => {
+                      return (
+                        <tr key={asset.id} className="hover:bg-[#F9F9F9]/30 transition-all group">
+                          <td className="p-5 text-sm font-semibold text-[#7E8299] text-center">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
+                          <td className="p-5 text-sm font-semibold text-[#181C32]">{asset.asset_id}</td>
+                          <td className="p-5 text-sm text-[#3F4254] font-medium">{asset.asset_name}</td>
+                          <td className="p-5 text-sm text-[#7E8299]">{asset.category_name || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
+                          <td className="p-5 text-sm text-[#7E8299] max-w-[300px] truncate">{asset.specification || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
+                          <td className="p-5 text-sm text-right space-x-1 whitespace-nowrap">
+                            <button 
+                              onClick={() => handleOpenEditModal(asset)}
+                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(asset)}
+                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  ) : (
+                    <tr>
+                      <td colSpan="6" className="p-10 text-center text-[#A1A5B7] font-light">Tidak ada data aset ditemukan.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+              {renderPagination(sortedPureAssets)}
             </div>
           )}
 
@@ -1348,6 +1566,8 @@ const MasterDataAset = () => {
                     ? (modalMode === 'add' ? 'Tambah Vendor Baru' : 'Edit Vendor')
                     : activeTab === 'department'
                     ? (modalMode === 'add' ? 'Tambah Data Departemen' : 'Edit Departemen')
+                    : activeTab === 'asset'
+                    ? (modalMode === 'add' ? 'Tambah Data Aset' : 'Edit Data Aset')
                     : (modalMode === 'add' ? 'Tambah Kondisi Baru' : 'Edit Kondisi')
                   }
                 </h3>
@@ -1360,6 +1580,8 @@ const MasterDataAset = () => {
                     ? 'Kelola standardisasi penyedia barang/jasa dan pemeliharaan aset.'
                     : activeTab === 'department'
                     ? 'Kelola standardisasi divisi dan departemen operasional internal.'
+                    : activeTab === 'asset'
+                    ? 'Kelola informasi jenis/tipe unit aset ke dalam master data.'
                     : 'Kelola standardisasi status kondisi unit aset dan pemeliharaan.'
                   }
                 </p>
@@ -1511,6 +1733,81 @@ const MasterDataAset = () => {
                           return p ? String(p.level + 1) : '0';
                         })()}
                         className="w-full px-4 py-3 bg-[#E1E3EA]/30 border border-[#F1F1F4] rounded-xl text-sm text-[#7E8299] font-bold outline-none cursor-not-allowed"
+                      />
+                    </div>
+                  </div>
+                ) : activeTab === 'asset' ? (
+                  <div className="space-y-5">
+                    {/* ID ASET */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">ID Aset</label>
+                      <input 
+                        type="text"
+                        placeholder="ID Aset"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-semibold"
+                        value={assetForm.asset_id}
+                        onChange={(e) => setAssetForm({ ...assetForm, asset_id: e.target.value })}
+                      />
+                      <p className="text-[10px] text-[#A1A5B7] font-semibold">*Kosongkan untuk meng-generate ID aset otomatis secara berurutan.</p>
+                    </div>
+
+                    {/* NAMA ASET */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Nama Aset</label>
+                      <input 
+                        type="text"
+                        required
+                        placeholder="Nama Aset"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        value={assetForm.asset_name}
+                        onChange={(e) => setAssetForm({ ...assetForm, asset_name: e.target.value })}
+                      />
+                    </div>
+
+                    {/* KATEGORI */}
+                    <div className="z-20">
+                      <SearchableSelect 
+                        label="Kategori"
+                        required
+                        placeholder="Pilih Kategori"
+                        value={assetForm.category_id}
+                        onChange={(val) => setAssetForm({ ...assetForm, category_id: val })}
+                        options={resolvedCategories.map(c => ({ value: c.id, label: c.category_name }))}
+                      />
+                    </div>
+
+                    {/* DEPARTEMEN */}
+                    <div className="z-10">
+                      <SearchableSelect 
+                        label="Departemen"
+                        placeholder="Pilih Departemen (Opsional)"
+                        value={assetForm.department_id}
+                        onChange={(val) => setAssetForm({ ...assetForm, department_id: val })}
+                        options={sortedDepartments.map(d => ({ value: d.id, label: d.name }))}
+                      />
+                    </div>
+
+                    {/* RFID */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">RFID</label>
+                      <input 
+                        type="text"
+                        placeholder="Tag RFID"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        value={assetForm.rfid_tag}
+                        onChange={(e) => setAssetForm({ ...assetForm, rfid_tag: e.target.value })}
+                      />
+                    </div>
+
+                    {/* SPESIFIKASI */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Spesifikasi</label>
+                      <textarea 
+                        placeholder="Spesifikasi"
+                        rows="4"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all resize-none font-medium"
+                        value={assetForm.specification}
+                        onChange={(e) => setAssetForm({ ...assetForm, specification: e.target.value })}
                       />
                     </div>
                   </div>
@@ -1711,7 +2008,7 @@ const MasterDataAset = () => {
                 </button>
                 <button 
                   type="submit"
-                  className="px-6 py-2.5 text-xs font-semibold text-white bg-[#0095E8] hover:bg-[#0084CC] rounded-xl transition-all shadow-md shadow-[#0095E8]/10"
+                  className="px-6 py-2.5 text-xs font-semibold text-white bg-[#181C32] hover:bg-[#181C32]/80 rounded-xl transition-all shadow-md"
                 >
                   Simpan
                 </button>
