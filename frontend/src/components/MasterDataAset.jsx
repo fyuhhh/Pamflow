@@ -3,6 +3,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { Plus, Search, Edit2, Trash2, Folder, MapPin, Users, Loader2, X, Info, Shield, HelpCircle, BookOpen, ChevronRight, ChevronDown, Building2, Activity, Box } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
+import { hasPermission } from '../utils/permissions';
+
 
 const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false, required = false }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -163,6 +165,12 @@ const KELOMPOK_HARTA_RULES = {
 const MasterDataAset = () => {
   const location = useLocation();
   const navigate = useNavigate();
+
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const canCreate = hasPermission(currentUser, 'pure_asset_master', 'Buat');
+  const canEdit = hasPermission(currentUser, 'pure_asset_master', 'Edit');
+  const canDelete = hasPermission(currentUser, 'pure_asset_master', 'Hapus');
+
 
   const getInitialTab = () => {
     const params = new URLSearchParams(location.search);
@@ -854,13 +862,15 @@ const MasterDataAset = () => {
               Buku PMK 72/2023
             </button>
           )}
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg bg-[#0095E8] text-white hover:bg-[#0084CC] shadow-[#0095E8]/10"
-          >
-            <Plus size={16} />
-            {activeTab === 'category' ? 'Tambah Kategori' : activeTab === 'asset' ? 'Tambah Aset' : activeTab === 'location' ? 'Tambah Lokasi' : activeTab === 'vendor' ? 'Tambah Vendor' : activeTab === 'department' ? 'Tambah Departemen' : 'Tambah Kondisi'}
-          </button>
+          {canCreate && (
+            <button
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-semibold transition-all shadow-lg bg-[#0095E8] text-white hover:bg-[#0084CC] shadow-[#0095E8]/10"
+            >
+              <Plus size={16} />
+              {activeTab === 'category' ? 'Tambah Kategori' : activeTab === 'asset' ? 'Tambah Aset' : activeTab === 'location' ? 'Tambah Lokasi' : activeTab === 'vendor' ? 'Tambah Vendor' : activeTab === 'department' ? 'Tambah Departemen' : 'Tambah Kondisi'}
+            </button>
+          )}
         </div>
       </div>
 
@@ -1170,18 +1180,22 @@ const MasterDataAset = () => {
                           <td className="p-5 text-sm text-[#3F4254] text-center font-bold">{rules.straightLine}</td>
                           <td className="p-5 text-sm text-[#7E8299] text-center font-light">{rules.decliningBalance}</td>
                           <td className="p-5 text-right flex items-center justify-end gap-2">
-                            <button 
-                              onClick={() => handleOpenEditModal(cat)}
-                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
-                            >
-                              <Edit2 size={15} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(cat)}
-                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            {canEdit && (
+                              <button 
+                                onClick={() => handleOpenEditModal(cat)}
+                                className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button 
+                                onClick={() => handleDelete(cat)}
+                                className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1221,18 +1235,22 @@ const MasterDataAset = () => {
                           <td className="p-5 text-sm text-[#7E8299]">{asset.category_name || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
                           <td className="p-5 text-sm text-[#7E8299] max-w-[300px] truncate">{asset.specification || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
                           <td className="p-5 text-sm text-right space-x-1 whitespace-nowrap">
-                            <button 
-                              onClick={() => handleOpenEditModal(asset)}
-                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
-                            >
-                              <Edit2 size={15} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(asset)}
-                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            {canEdit && (
+                              <button 
+                                onClick={() => handleOpenEditModal(asset)}
+                                className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button 
+                                onClick={() => handleDelete(asset)}
+                                className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1311,18 +1329,22 @@ const MasterDataAset = () => {
                             </span>
                           </td>
                           <td className="p-5 text-right flex items-center justify-end gap-2">
-                            <button 
-                              onClick={() => handleOpenEditModal(loc)}
-                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
-                            >
-                              <Edit2 size={15} />
-                            </button>
-                            <button 
-                              onClick={() => handleDelete(loc)}
-                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            {canEdit && (
+                              <button 
+                                onClick={() => handleOpenEditModal(loc)}
+                                className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button 
+                                onClick={() => handleDelete(loc)}
+                                className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       );
@@ -1394,20 +1416,24 @@ const MasterDataAset = () => {
                           )}
                         </td>
                         <td className="p-5 text-right flex items-center justify-end gap-2">
-                          <button 
-                            type="button"
-                            onClick={() => handleOpenEditModal(v)}
-                            className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleDelete(v)}
-                            className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {canEdit && (
+                            <button 
+                              type="button"
+                              onClick={() => handleOpenEditModal(v)}
+                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button 
+                              type="button"
+                              onClick={() => handleDelete(v)}
+                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -1447,20 +1473,24 @@ const MasterDataAset = () => {
                           </span>
                         </td>
                         <td className="p-5 text-right flex items-center justify-end gap-2">
-                          <button 
-                            type="button"
-                            onClick={() => handleOpenEditModal(dept)}
-                            className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
-                          >
-                            <Edit2 size={15} />
-                          </button>
-                          <button 
-                            type="button"
-                            onClick={() => handleDelete(dept)}
-                            className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
-                          >
-                            <Trash2 size={15} />
-                          </button>
+                          {canEdit && (
+                            <button 
+                              type="button"
+                              onClick={() => handleOpenEditModal(dept)}
+                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                            >
+                              <Edit2 size={15} />
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button 
+                              type="button"
+                              onClick={() => handleDelete(dept)}
+                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -1519,20 +1549,24 @@ const MasterDataAset = () => {
                             </span>
                           </td>
                           <td className="p-5 text-right flex items-center justify-end gap-2">
-                            <button 
-                              type="button"
-                              onClick={() => handleOpenEditModal(cond)}
-                              className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
-                            >
-                              <Edit2 size={15} />
-                            </button>
-                            <button 
-                              type="button"
-                              onClick={() => handleDelete(cond)}
-                              className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
-                            >
-                              <Trash2 size={15} />
-                            </button>
+                            {canEdit && (
+                              <button 
+                                type="button"
+                                onClick={() => handleOpenEditModal(cond)}
+                                className="p-2 text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-lg transition-all animate-hover"
+                              >
+                                <Edit2 size={15} />
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button 
+                                type="button"
+                                onClick={() => handleDelete(cond)}
+                                className="p-2 text-[#7E8299] hover:bg-[#FFF5F8] hover:text-[#F1416C] rounded-lg transition-all animate-hover"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            )}
                           </td>
                         </tr>
                       ))

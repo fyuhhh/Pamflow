@@ -7,14 +7,8 @@ const db = require('../config/db');
 
 const rateLimit = require('express-rate-limit');
 
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 15,
-  message: { message: 'Terlalu banyak percobaan login, silakan coba lagi setelah 15 menit.' }
-});
-
 // Auth routes
-router.post('/login', loginLimiter, authController.login);
+router.post('/login', authController.login);
 router.post('/logout', authMiddleware, authController.logout);
 router.post('/atur-ulang-pw', authController.requestPasswordReset);
 router.post('/refresh', authController.refreshAuthToken);

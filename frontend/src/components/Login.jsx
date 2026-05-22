@@ -6,6 +6,7 @@ import LoadingScreen from './LoadingScreen';
 import API_URL from '../config';
 import logo_pamflow from '../assets/logo_pamflow.png';
 import { motion } from 'framer-motion';
+import { hasPermission } from '../utils/permissions';
 
 const Login = ({ onLogin }) => {
   const navigate = useNavigate();
@@ -45,7 +46,31 @@ const Login = ({ onLogin }) => {
           if (data.user.userType === 'agen') {
             navigate('/demo/mobile');
           } else {
-            navigate('/dashboard');
+            const userObj = data.user;
+            const isSuperAdmin = userObj.role?.toLowerCase() === 'super admin';
+            
+            let accessibleModules = [];
+            if (isSuperAdmin || hasPermission(userObj, 'dashboard', 'Lihat') || hasPermission(userObj, 'tugas_dept_buat_checklist', 'Lihat')) {
+              accessibleModules.push({ id: 'wo', path: '/dashboard' });
+            }
+            if (isSuperAdmin || hasPermission(userObj, 'checklist_harian_akses', 'Lihat')) {
+              accessibleModules.push({ id: 'checklist', path: '/tugas-departemen/dashboard-checklist' });
+            }
+            if (isSuperAdmin || hasPermission(userObj, 'aset_monitoring', 'Lihat')) {
+              accessibleModules.push({ id: 'maintenance', path: '/aset/dashboard-maintenance' });
+            }
+            if (isSuperAdmin || hasPermission(userObj, 'pure_asset_dashboard', 'Lihat')) {
+              accessibleModules.push({ id: 'manajemen_aset', path: '/manajemen-aset/dashboard' });
+            }
+
+            if (accessibleModules.length > 1) {
+              navigate('/hub');
+            } else if (accessibleModules.length === 1) {
+              localStorage.setItem('activeModule', accessibleModules[0].id);
+              navigate(accessibleModules[0].path);
+            } else {
+              navigate('/dashboard');
+            }
           }
         }, 2000);
       } else {

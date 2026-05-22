@@ -7,6 +7,8 @@ import {
 import { authFetch } from '../services/api';
 import API_URL from '../config';
 import { useModal } from '../context/ModalContext';
+import { hasPermission } from '../utils/permissions';
+
 
 // CUSTOM SEARCHABLE SELECT
 const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false, required = false }) => {
@@ -77,6 +79,9 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, disabl
 
 const AssetDisposal = () => {
   const { confirm, success, showError } = useModal();
+
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const canCreate = hasPermission(currentUser, 'pure_asset_disposal', 'Buat');
 
   const [disposals, setDisposals] = useState([]);
   const [activeAssets, setActiveAssets] = useState([]);
@@ -283,12 +288,14 @@ const AssetDisposal = () => {
           >
             Riwayat Disposal
           </button>
-          <button
-            onClick={() => setActiveTab('buat')}
-            className={`px-5 py-2 rounded-lg text-xs font-black transition-all w-full sm:w-auto text-center ${activeTab === 'buat' ? 'bg-white text-[#C71B43] shadow-md' : 'text-white hover:bg-white/10'}`}
-          >
-            Buat Disposal Baru
-          </button>
+          {canCreate && (
+            <button
+              onClick={() => setActiveTab('buat')}
+              className={`px-5 py-2 rounded-lg text-xs font-black transition-all w-full sm:w-auto text-center ${activeTab === 'buat' ? 'bg-white text-[#C71B43] shadow-md' : 'text-white hover:bg-white/10'}`}
+            >
+              Buat Disposal Baru
+            </button>
+          )}
         </div>
       </div>
 
@@ -366,13 +373,15 @@ const AssetDisposal = () => {
                           >
                             <Eye size={14} />
                           </button>
-                          <button
-                            onClick={() => handleDeleteDisposalRecord(disp.id, disp.disposal_no)}
-                            className="p-1.5 bg-[#FFF5F8] hover:bg-[#F1416C] hover:text-white text-[#F1416C] rounded-lg transition-all"
-                            title="Hapus Log"
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {canCreate && (
+                            <button
+                              onClick={() => handleDeleteDisposalRecord(disp.id, disp.disposal_no)}
+                              className="p-1.5 bg-[#FFF5F8] hover:bg-[#F1416C] hover:text-white text-[#F1416C] rounded-lg transition-all"
+                              title="Hapus Log"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>

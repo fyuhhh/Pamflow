@@ -1,10 +1,12 @@
 const express = require('express');
 const router = express.Router();
 const ctrl = require('../controllers/disposalController');
+const { checkPermission } = require('../middleware/permissionMiddleware');
 
-router.get('/', ctrl.getDisposals);
-router.get('/:id', ctrl.getDisposalById);
-router.post('/', ctrl.createDisposal);
-router.delete('/:id', ctrl.deleteDisposal);
+router.get('/', checkPermission('pure_asset_disposal', 'Lihat'), ctrl.getDisposals);
+router.get('/:id', checkPermission('pure_asset_disposal', 'Lihat'), ctrl.getDisposalById);
+router.post('/', checkPermission('pure_asset_disposal', 'Buat'), ctrl.createDisposal);
+router.delete('/:id', checkPermission('pure_asset_disposal', 'Buat'), ctrl.deleteDisposal);
 
 module.exports = router;
+

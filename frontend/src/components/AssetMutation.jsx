@@ -3,6 +3,8 @@ import { Plus, Search, Edit2, Trash2, MapPin, Users, Building2, X, Info, Check, 
 import { authFetch } from '../services/api';
 import API_URL from '../config';
 import { useModal } from '../context/ModalContext';
+import { hasPermission } from '../utils/permissions';
+
 
 // CUSTOM SEARCHABLE SELECT
 const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false, required = false }) => {
@@ -78,6 +80,9 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, disabl
 
 const AssetMutation = () => {
   const { confirm, success, error: showError } = useModal();
+  
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const canCreate = hasPermission(currentUser, 'pure_asset_mutation', 'Buat');
   
   // Data States
   const [relocations, setRelocations] = useState([]);
@@ -373,13 +378,15 @@ const AssetMutation = () => {
           <p className="text-sm text-[#7E8299] mt-1">Manajemen perpindahan dan relokasi aset perusahaan</p>
         </div>
         <div className="flex items-center gap-3">
-          <button 
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#0095E8] hover:bg-[#0084CC] text-white rounded-xl text-sm font-bold shadow-md shadow-[#0095E8]/20 transition-all"
-          >
-            <Plus size={16} />
-            Tambah Data
-          </button>
+          {canCreate && (
+            <button 
+              onClick={handleOpenAddModal}
+              className="flex items-center gap-2 px-5 py-2.5 bg-[#0095E8] hover:bg-[#0084CC] text-white rounded-xl text-sm font-bold shadow-md shadow-[#0095E8]/20 transition-all"
+            >
+              <Plus size={16} />
+              Tambah Data
+            </button>
+          )}
         </div>
       </div>
 
@@ -488,7 +495,7 @@ const AssetMutation = () => {
                         >
                           <Eye size={16} />
                         </button>
-                        {item.status === 'Pending' && activeTab === 'daftar' && (
+                        {item.status === 'Pending' && activeTab === 'daftar' && canCreate && (
                           <button 
                             onClick={() => handleDelete(item.id)}
                             className="p-1.5 text-[#F1416C] hover:bg-[#FFF5F8] rounded-lg transition-colors border border-transparent hover:border-[#F1416C]/20"
@@ -1039,7 +1046,7 @@ const AssetMutation = () => {
                 Tutup
               </button>
               
-              {selectedRelocation.status === 'Pending' && activeTab === 'persetujuan' && (
+               {selectedRelocation.status === 'Pending' && activeTab === 'persetujuan' && canCreate && (
                 <div className="flex gap-3">
                   <button 
                     onClick={handleReject}

@@ -149,9 +149,9 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
           path: '/manajemen-aset/aset-group', 
           permission: ['pure_asset_register', 'pure_asset_mutation', 'pure_asset_opname'],
           subItems: [
-            { label: 'Daftar Aset', path: '/manajemen-aset/list' },
-            { label: 'Relokasi', path: '/manajemen-aset/mutasi' },
-            { label: 'Stok Opname', path: '/manajemen-aset/opname' }
+            { label: 'Daftar Aset', path: '/manajemen-aset/list', permission: 'pure_asset_register' },
+            { label: 'Relokasi', path: '/manajemen-aset/mutasi', permission: 'pure_asset_mutation' },
+            { label: 'Stok Opname', path: '/manajemen-aset/opname', permission: 'pure_asset_opname' }
           ]
         },
         {
@@ -159,7 +159,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
           path: '/manajemen-aset/depresiasi-group',
           permission: 'pure_asset_depreciation',
           subItems: [
-            { label: 'Perhitungan Depresiasi', path: '/manajemen-aset/depresiasi' }
+            { label: 'Perhitungan Depresiasi', path: '/manajemen-aset/depresiasi', permission: 'pure_asset_depreciation' }
           ]
         },
         {
@@ -173,12 +173,12 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
           path: '/manajemen-aset/master-data', 
           permission: 'pure_asset_master',
           subItems: [
-            { label: 'Aset', path: '/manajemen-aset/master-data?tab=asset' },
-            { label: 'Departemen', path: '/manajemen-aset/master-data?tab=department' },
-            { label: 'Kategori', path: '/manajemen-aset/master-data?tab=category' },
-            { label: 'Kondisi', path: '/manajemen-aset/master-data?tab=condition' },
-            { label: 'Lokasi', path: '/manajemen-aset/master-data?tab=location' },
-            { label: 'Vendor', path: '/manajemen-aset/master-data?tab=vendor' }
+            { label: 'Aset', path: '/manajemen-aset/master-data?tab=asset', permission: 'pure_asset_master' },
+            { label: 'Departemen', path: '/manajemen-aset/master-data?tab=department', permission: 'pure_asset_master' },
+            { label: 'Kategori', path: '/manajemen-aset/master-data?tab=category', permission: 'pure_asset_master' },
+            { label: 'Kondisi', path: '/manajemen-aset/master-data?tab=condition', permission: 'pure_asset_master' },
+            { label: 'Lokasi', path: '/manajemen-aset/master-data?tab=location', permission: 'pure_asset_master' },
+            { label: 'Vendor', path: '/manajemen-aset/master-data?tab=vendor', permission: 'pure_asset_master' }
           ]
         },
         {
@@ -186,7 +186,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
           path: '/manajemen-aset/pengguna-group',
           permission: 'pure_asset_hak_akses',
           subItems: [
-            { label: 'Hak Akses Aset', path: '/manajemen-aset/hak-akses' }
+            { label: 'Hak Akses Aset', path: '/manajemen-aset/hak-akses', permission: 'pure_asset_hak_akses' }
           ]
         },
         {
@@ -194,7 +194,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
           path: '/manajemen-aset/riwayat-group',
           permission: 'pure_asset_master',
           subItems: [
-            { label: 'History Penghapusan', path: '/manajemen-aset/history-penghapusan' }
+            { label: 'History Penghapusan', path: '/manajemen-aset/history-penghapusan', permission: 'pure_asset_master' }
           ]
         }
       ]
@@ -397,7 +397,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
                                 </button>
                                 {isSubSubOpen && (
                                   <div className="space-y-1 pl-4 animate-dropdown">
-                                    {sub.subItems.map(ss => (
+                                    {sub.subItems.filter(ss => !ss.permission || hasPermission(ss.permission)).map(ss => (
                                       <Link
                                         key={ss.path}
                                         to={ss.path}

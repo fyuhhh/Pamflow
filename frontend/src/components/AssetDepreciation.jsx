@@ -7,9 +7,14 @@ import { authFetch } from '../services/api';
 import { exportToExcel, exportToPDF } from '../utils/exportHelper';
 import API_URL from '../config';
 import { useModal } from '../context/ModalContext';
+import { hasPermission } from '../utils/permissions';
+
 
 const AssetDepreciation = () => {
   const { showError } = useModal();
+  
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const canCalculate = hasPermission(currentUser, 'pure_asset_depreciation', 'Buat');
   
   const [year, setYear] = useState(new Date().getFullYear());
   const [data, setData] = useState(null);
@@ -113,14 +118,16 @@ const AssetDepreciation = () => {
             ))}
           </select>
           <div className="flex items-center gap-2">
-            <button
-              onClick={handleCalculate}
-              disabled={loading}
-              className="flex items-center gap-1.5 px-5 py-2 bg-white text-[#430B8A] hover:bg-[#F5F8FA] rounded-lg text-xs font-black shadow-md transition-all disabled:opacity-50"
-            >
-              {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-              Calculate
-            </button>
+            {canCalculate && (
+              <button
+                onClick={handleCalculate}
+                disabled={loading}
+                className="flex items-center gap-1.5 px-5 py-2 bg-white text-[#430B8A] hover:bg-[#F5F8FA] rounded-lg text-xs font-black shadow-md transition-all disabled:opacity-50"
+              >
+                {loading ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                Calculate
+              </button>
+            )}
             {/* Export Buttons */}
             <button
               onClick={handleExportExcel}

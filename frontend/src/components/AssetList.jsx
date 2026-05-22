@@ -8,6 +8,8 @@ import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
+import { hasPermission } from '../utils/permissions';
+
 
 // BEAUTIFUL CUSTOM SEARCHABLE SELECT COMPONENT WITH HIGH VISIBILITY Z-INDEX AND CLEAN TRANSITION
 const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false }) => {
@@ -211,6 +213,12 @@ const FilterSelect = ({ label, icon, options, value, onChange, placeholder }) =>
 const AssetList = () => {
   const { confirm, success, error: showError } = useModal();
   const navigate = useNavigate();
+
+  // Get current user permissions
+  const currentUser = JSON.parse(localStorage.getItem('user'));
+  const canCreate = hasPermission(currentUser, 'pure_asset_register', 'Buat');
+  const canEdit = hasPermission(currentUser, 'pure_asset_register', 'Edit');
+  const canDelete = hasPermission(currentUser, 'pure_asset_register', 'Hapus');
 
   // Database lists
   const [assets, setAssets] = useState([]);
@@ -1537,31 +1545,36 @@ const AssetList = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <button 
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all shadow-md bg-[#0095E8] text-white hover:bg-[#0084CC] shadow-[#0095E8]/10"
-          >
-            <Plus size={14} />
-            Tambah Data
-          </button>
+          {canCreate && (
+            <>
+              <button 
+                onClick={handleOpenAddModal}
+                className="flex items-center gap-2 px-5 py-3 rounded-xl text-xs font-bold transition-all shadow-md bg-[#0095E8] text-white hover:bg-[#0084CC] shadow-[#0095E8]/10"
+              >
+                <Plus size={14} />
+                Tambah Data
+              </button>
 
-          <div className="relative">
-            <input 
-              type="file" 
-              accept=".xlsx, .xls"
-              id="import-excel-input"
-              className="hidden"
-              onChange={handleImportTemplate}
-              disabled={importing}
-            />
-            <label 
-              htmlFor="import-excel-input"
-              className={`flex items-center gap-2 px-5 py-3 border border-[#E1E3EA] bg-white text-[#5E6278] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm ${importing ? 'opacity-50 cursor-not-allowed' : ''}`}
-            >
-              {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload size={14} />}
-              {importing ? `Mengimpor (${importProgress}/${importTotal})` : 'Impor Data Aset'}
-            </label>
-          </div>
+              <div className="relative">
+                <input 
+                  type="file" 
+                  accept=".xlsx, .xls"
+                  id="import-excel-input"
+                  className="hidden"
+                  onChange={handleImportTemplate}
+                  disabled={importing}
+                />
+                <label 
+                  htmlFor="import-excel-input"
+                  className={`flex items-center gap-2 px-5 py-3 border border-[#E1E3EA] bg-white text-[#5E6278] hover:bg-[#F5F8FA] hover:text-[#0095E8] rounded-xl text-xs font-bold cursor-pointer transition-all shadow-sm ${importing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  {importing ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload size={14} />}
+                  {importing ? `Mengimpor (${importProgress}/${importTotal})` : 'Impor Data Aset'}
+                </label>
+              </div>
+            </>
+          )}
+
 
           <button 
             onClick={handleDownloadTemplate}
@@ -1910,20 +1923,24 @@ const AssetList = () => {
 
                     <td className="px-6 py-4.5">
                       <div className="flex items-center justify-center gap-2">
-                        <button 
-                          onClick={() => handleOpenEditModal(asset)}
-                          className="p-2 bg-[#F5F8FA] hover:bg-[#E1F0FF] text-[#0095E8] rounded-xl transition-all duration-150"
-                          title="Ubah Data"
-                        >
-                          <Edit2 size={14} />
-                        </button>
-                        <button 
-                          onClick={() => handleDelete(asset)}
-                          className="p-2 bg-[#FFF5F8] hover:bg-[#FFF0F2] text-[#F1416C] rounded-xl transition-all duration-150"
-                          title="Hapus Data"
-                        >
-                          <Trash2 size={14} />
-                        </button>
+                        {canEdit && (
+                          <button 
+                            onClick={() => handleOpenEditModal(asset)}
+                            className="p-2 bg-[#F5F8FA] hover:bg-[#E1F0FF] text-[#0095E8] rounded-xl transition-all duration-150"
+                            title="Ubah Data"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                        )}
+                        {canDelete && (
+                          <button 
+                            onClick={() => handleDelete(asset)}
+                            className="p-2 bg-[#FFF5F8] hover:bg-[#FFF0F2] text-[#F1416C] rounded-xl transition-all duration-150"
+                            title="Hapus Data"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
