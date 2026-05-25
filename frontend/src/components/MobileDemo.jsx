@@ -13,6 +13,7 @@ import MobileApprovalDetail from './MobileApprovalDetail';
 import ChecklistHarian from './ChecklistHarian';
 import BuatTugasDepartemen from './BuatTugasDepartemen';
 import MonitoringAset from './MonitoringAset';
+import MobileUtilityListrik from './MobileUtilityListrik';
 import { useNavigate, useLocation, useParams } from 'react-router-dom';
 
 import { Smartphone, Monitor } from 'lucide-react';
@@ -101,6 +102,8 @@ const MobileDemo = ({ onLogout }) => {
         return <MobileApprovalList />;
       case '/demo/mobile/aset':
         return <MonitoringAset />;
+      case '/demo/mobile/utility-listrik':
+        return <MobileUtilityListrik />;
       case '/demo/mobile/dept-task/:id': // Managed by startsWith but included for clarity
         return <MobileDeptTaskDetail />;
       

@@ -60,6 +60,9 @@ import AssetDepreciation from './components/AssetDepreciation';
 import MasterDataAset from './components/MasterDataAset';
 import HakAksesManajemenAset from './components/HakAksesManajemenAset';
 import RecycleBinAset from './components/RecycleBinAset';
+import TenantApprovalListrik from './components/TenantApprovalListrik';
+import UtilityListrik from './components/UtilityListrik';
+import UtilityAir from './components/UtilityAir';
 
 import DashboardHome from './components/DashboardHome';
 import PortalHub from './components/PortalHub';
@@ -207,6 +210,7 @@ function App() {
           user ? <Navigate to={getDefaultRoute(user)} replace /> : <Login onLogin={login} />
         }
       />
+      <Route path="/approval-listrik/:token" element={<TenantApprovalListrik />} />
       {user ? (
         <>
           <Route path="/hub" element={<Dashboard onLogout={logout} isHub={true}><PortalHub /></Dashboard>} />
@@ -263,6 +267,8 @@ function App() {
           <Route path="/aset/hak-akses" element={<PrivateRoute moduleId="aset_hak_akses"><Dashboard onLogout={logout}><HakAksesAset /></Dashboard></PrivateRoute>} />
           <Route path="/aset/register" element={<PrivateRoute moduleId="aset_register"><Dashboard onLogout={logout}><RegisterAset /></Dashboard></PrivateRoute>} />
           <Route path="/aset/monitoring" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><MonitoringAset /></Dashboard></PrivateRoute>} />
+          <Route path="/aset/listrik" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><UtilityListrik /></Dashboard></PrivateRoute>} />
+          <Route path="/aset/air" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><UtilityAir /></Dashboard></PrivateRoute>} />
           <Route path="/aset/dashboard-maintenance" element={<PrivateRoute moduleId="aset_monitoring"><Dashboard onLogout={logout}><DashboardMaintenanceAset /></Dashboard></PrivateRoute>} />
 
           {/* Pure Asset (Manajemen Aset) Routes */}
@@ -273,6 +279,8 @@ function App() {
           <Route path="/manajemen-aset/opname" element={<PrivateRoute moduleId="pure_asset_opname"><Dashboard onLogout={logout}><AssetStockOpname /></Dashboard></PrivateRoute>} />
           <Route path="/manajemen-aset/disposal" element={<PrivateRoute moduleId="pure_asset_disposal"><Dashboard onLogout={logout}><AssetDisposal /></Dashboard></PrivateRoute>} />
           <Route path="/manajemen-aset/depresiasi" element={<PrivateRoute moduleId="pure_asset_depreciation"><Dashboard onLogout={logout}><AssetDepreciation /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/listrik" element={<PrivateRoute moduleId="pure_asset_maintenance"><Dashboard onLogout={logout}><UtilityListrik /></Dashboard></PrivateRoute>} />
+          <Route path="/manajemen-aset/air" element={<PrivateRoute moduleId="pure_asset_maintenance"><Dashboard onLogout={logout}><UtilityAir /></Dashboard></PrivateRoute>} />
           <Route path="/manajemen-aset/master-data" element={<PrivateRoute moduleId="pure_asset_master"><Dashboard onLogout={logout}><MasterDataAset /></Dashboard></PrivateRoute>} />
           <Route path="/manajemen-aset/hak-akses" element={<PrivateRoute moduleId="pure_asset_hak_akses"><Dashboard onLogout={logout}><HakAksesManajemenAset /></Dashboard></PrivateRoute>} />
           <Route path="/manajemen-aset/history-penghapusan" element={<PrivateRoute moduleId="pure_asset_master"><Dashboard onLogout={logout}><RecycleBinAset /></Dashboard></PrivateRoute>} />
@@ -294,6 +302,7 @@ function App() {
           user ? <Navigate to="/demo/mobile" replace /> : <MobileLogin onLogin={login} />
         }
       />
+      <Route path="/approval-listrik/:token" element={<TenantApprovalListrik />} />
       {user ? (
         <>
           <Route path="/demo/mobile" element={<MobileDemo onLogout={logout} />} />

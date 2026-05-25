@@ -20,6 +20,7 @@ const relocationRoutes = require('./relocationRoutes');
 const stockOpnameRoutes = require('./stockOpnameRoutes');
 const disposalRoutes = require('./disposalRoutes');
 const depreciationRoutes = require('./depreciationRoutes');
+const utilityRoutes = require('./utilityRoutes');
 const pushController = require('../controllers/pushController');
 const authMiddleware = require('../middleware/authMiddleware');
 
@@ -44,6 +45,7 @@ router.get('/ping', (req, res) => {
 
 // Mounting routes - ORDER MATTERS
 router.use('/', authRoutes); // /api/login, /api/atur-ulang-pw - PUBLIC
+router.use('/utility', utilityRoutes); // Handled internally in utilityRoutes (supports both public & secure routes)
 
 // Protected routes - REQUIRE TOKEN
 router.use('/users', authMiddleware, userRoutes); 

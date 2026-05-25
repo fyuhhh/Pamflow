@@ -55,10 +55,6 @@ const MobileAppLayout = ({ children }) => {
 
   const navItems = [
     { icon: Home, label: 'Beranda', path: '/demo/mobile' },
-    { icon: ClipboardList, label: 'Tugas', path: '/demo/mobile/tasks' },
-    { icon: ClipboardCheck, label: 'Checklist', path: '/demo/mobile/checklist' },
-    ...(hasPerm('aset_menu', 'Lihat') ? [{ icon: Package, label: 'Maintenance Aset', path: '/demo/mobile/aset' }] : []),
-    ...(canApprove ? [{ icon: ShieldCheck, label: 'Approval', path: '/demo/mobile/approvals' }] : []),
     { icon: UserCircle, label: 'Profil', path: '/demo/mobile/profile' },
   ];
 
@@ -108,8 +104,8 @@ const MobileAppLayout = ({ children }) => {
             backgroundColor: 'rgba(255, 255, 255, 0.95)',
             backdropFilter: 'blur(10px)',
             borderTop: '1px solid #f1f5f9',
-            paddingTop: '4px',
-            paddingBottom: '2px',
+            paddingTop: '6px',
+            paddingBottom: '4px',
             flexShrink: 0,
             boxShadow: '0 -4px 20px rgba(0,0,0,0.03)',
             zIndex: 50,
@@ -117,7 +113,7 @@ const MobileAppLayout = ({ children }) => {
         >
           {navItems.map((item) => {
             const Icon = item.icon;
-            const active = location.pathname === item.path || (item.path === '/demo/mobile/checklist' && location.pathname === '/demo/mobile/checklist-riwayat');
+            const active = location.pathname === item.path;
             return (
               <button
                 key={item.label}
@@ -126,7 +122,7 @@ const MobileAppLayout = ({ children }) => {
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: '2px',
+                  gap: '4px',
                   background: 'none',
                   border: 'none',
                   cursor: 'pointer',
@@ -135,12 +131,10 @@ const MobileAppLayout = ({ children }) => {
                   WebkitTapHighlightColor: 'transparent',
                   transition: 'all 0.2s ease',
                   transform: active ? 'translateY(-2px)' : 'none',
+                  width: '50%',
                 }}
               >
                 <div style={{
-                  padding: '2px',
-                  borderRadius: '12px',
-                  backgroundColor: active ? '#E3F2FD' : 'transparent',
                   position: 'relative',
                   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}>

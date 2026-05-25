@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, HelpCircle, Info, Clock, ChevronRight, X, Phone, FileText, CheckCircle2, PlayCircle, AlertCircle, Activity, PieChart, Package, Database, Lock } from 'lucide-react';
+import { Bell, HelpCircle, Info, Clock, ChevronRight, X, Phone, FileText, CheckCircle2, PlayCircle, AlertCircle, Activity, PieChart, Package, Database, Lock, ClipboardList, CheckSquare, History, ShieldCheck, Zap, Droplets, FileBarChart, Wrench, FileClock, User, QrCode } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -14,6 +14,12 @@ const MobileHome = () => {
 
   const [deptTasks, setDeptTasks] = useState([]);
   const [todayTasks, setTodayTasks] = useState([]);
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
   const [loadingTasks, setLoadingTasks] = useState(true);
   const [loadingToday, setLoadingToday] = useState(true);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -264,36 +270,59 @@ const MobileHome = () => {
     exit: { y: "100%", transition: { type: "spring", damping: 25, stiffness: 300 } }
   };
 
+  const formattedTime = currentTime.toLocaleTimeString('id-ID', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
+  const formattedDate = currentTime.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+  const userRole = user?.role?.toUpperCase() || 'STAF';
+  const userDept = user?.department || 'Umum';
+  const companyName = user?.company_name || 'PamFlow Workspace';
+  const canApprove = user?.can_approve === 1 || user?.can_approve === true;
+
+  const handleMenuClick = (path) => {
+    if (path.startsWith('/')) {
+      navigate(path);
+    } else {
+      alert(path);
+    }
+  };
+
+  const getGreeting = () => {
+    const hour = currentTime.getHours();
+    if (hour < 11) return 'Selamat Pagi,';
+    if (hour < 15) return 'Selamat Siang,';
+    if (hour < 18) return 'Selamat Sore,';
+    return 'Selamat Malam,';
+  };
+
   return (
-    <div className="bg-[#F5F8FA] min-h-full pb-10 font-sans">
-      {/* Top Header Section - Sticky at the top */}
+    <div className="bg-[#F5F8FA] min-h-screen font-sans flex flex-col relative overflow-x-hidden pb-10">
+      
+      {/* Top Header Section */}
       <div 
-        className="px-6 pb-2 mb-2 flex items-center justify-between bg-[#F5F8FA]/90 backdrop-blur-md sticky top-0 z-30 transition-all"
-        style={{ paddingTop: 'calc(12px + env(safe-area-inset-top))' }}
+        className="px-6 flex items-center justify-between sticky top-0 z-30 transition-all pt-6 pb-4 bg-[#F5F8FA]/90 backdrop-blur-md"
+        style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}
       >
-        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="flex flex-col -space-y-1">
-          <p className="text-slate-400 text-[12px] font-bold">Halo,</p>
-          <h2 className="text-[18px] font-black text-slate-800">{fullName}</h2>
+        <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}>
+          <p className="text-slate-400 text-[12px] font-bold">{getGreeting()}</p>
+          <h2 className="text-[18px] font-black text-slate-800 tracking-tight">{firstName}</h2>
         </motion.div>
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-2">
+        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
           <motion.button 
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowHelpModal(true)}
-            className="bg-white border border-slate-200 flex items-center gap-1.5 px-3 py-1.5 rounded-full text-slate-500 font-bold text-[12px] shadow-sm hover:bg-slate-50 transition-colors"
+            className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 shadow-sm hover:bg-slate-50 transition-colors"
           >
-            <HelpCircle size={16} />
-            <span>Bantuan</span>
+            <Phone size={18} />
           </motion.button>
           <motion.div 
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/demo/mobile/notifications')}
             className="relative cursor-pointer"
           >
-            <div className="w-9 h-9 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 shadow-sm hover:bg-slate-50 transition-colors">
+            <div className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 shadow-sm hover:bg-slate-50 transition-colors">
               <Bell size={20} />
             </div>
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-[#F1416C] text-white text-[9px] font-bold w-4.5 h-4.5 flex items-center justify-center rounded-full border-2 border-white">
+              <span className="absolute -top-1 -right-1 bg-[#F1416C] text-white text-[9px] font-bold w-4.5 h-4.5 flex items-center justify-center rounded-full border-2 border-white shadow-sm">
                 {unreadCount > 9 ? '9+' : unreadCount}
               </span>
             )}
@@ -301,331 +330,142 @@ const MobileHome = () => {
         </motion.div>
       </div>
 
-      <motion.div variants={containerVariants} initial="hidden" animate="show">
-        {/* Total Tugas Saya - Next Level Unified Widget */}
-        <motion.section variants={itemVariants} className="px-6 mb-8 mt-4">
-          <motion.div 
-            whileTap={{ scale: 0.98 }}
-            className="relative bg-gradient-to-br from-[#1E293B] to-[#0F172A] rounded-[32px] p-7 text-white shadow-[0_12px_40px_rgba(15,23,42,0.4)] overflow-hidden"
-          >
-            {/* Glowing Ambient Background Orbs */}
-            <div className="absolute -top-16 -right-16 w-48 h-48 bg-[#0095E8] rounded-full mix-blend-screen filter blur-[60px] opacity-40"></div>
-            <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[#50CD89] rounded-full mix-blend-screen filter blur-[60px] opacity-30"></div>
-            
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-8">
-                <h3 className="text-white/80 text-[12px] font-black tracking-[0.2em] uppercase flex items-center gap-2">
-                  <Activity size={16} className="text-[#0095E8]" />
-                  Ringkasan Performa
-                </h3>
-                <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center backdrop-blur-md border border-white/10">
-                  <PieChart size={14} className="text-white/80" />
+      <motion.div variants={containerVariants} initial="hidden" animate="show" className="px-5 flex-1 z-10">
+        
+        {/* Ringkasan Performa Widget (PamFlow Original Theme) */}
+        <motion.div variants={itemVariants} className="bg-gradient-to-br from-[#0095E8] to-[#283593] rounded-[28px] p-6 mb-8 shadow-[0_12px_32px_rgba(0,149,232,0.2)] relative overflow-hidden text-white mt-2">
+          {/* Decorative shapes */}
+          <div className="absolute -top-16 -right-16 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl"></div>
+          <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white opacity-5 rounded-full blur-xl"></div>
+          
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-white/90 text-[13px] font-black tracking-widest uppercase flex items-center gap-2">
+                <Activity size={16} className="text-white" />
+                Performa Tugas
+              </h3>
+              <div className="bg-white/20 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <span className="text-[10px] font-bold">Bulan Ini</span>
+              </div>
+            </div>
+
+            <div className="flex items-end gap-4 mb-6">
+              <div>
+                <p className="text-[48px] font-black leading-none tracking-tighter drop-shadow-sm">{taskStats.selesaiTepat + taskStats.selesaiLambat}</p>
+                <p className="text-white/70 text-[12px] font-bold mt-1">Total Diselesaikan</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4 pt-4 border-t border-white/20">
+              <div>
+                <p className="text-white/70 text-[10px] font-black mb-1 uppercase tracking-widest">Terbuka</p>
+                <div className="flex items-end gap-2">
+                  <p className="text-[20px] font-black leading-none">{taskStats.terbuka}</p>
+                  {taskStats.terbukaLambat > 0 && (
+                    <span className="text-[#F1416C] text-[8px] font-black bg-white px-1.5 py-0.5 rounded-md uppercase mb-0.5">{taskStats.terbukaLambat} Telat</span>
+                  )}
                 </div>
               </div>
-
-              {/* Main Metric: Selesai */}
-              <div className="flex justify-between items-end mb-8">
-                <div>
-                  <p className="text-[56px] font-black leading-none tracking-tighter">{taskStats.selesaiTepat + taskStats.selesaiLambat}</p>
-                  <p className="text-white/60 text-[14px] font-bold mt-2">Total Diselesaikan</p>
-                </div>
-                <div className="flex flex-col gap-2 items-end pb-1">
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-                    <CheckCircle2 size={12} className="text-[#50CD89]" />
-                    <span className="text-[11px] font-black text-white">{taskStats.selesaiTepat} Tepat</span>
-                  </div>
-                  <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-3 py-1.5 rounded-xl border border-white/10">
-                    <AlertCircle size={12} className="text-[#F1416C]" />
-                    <span className="text-[11px] font-black text-white">{taskStats.selesaiLambat} Telat</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Sub Metrics: Terbuka & Proses */}
-              <div className="grid grid-cols-2 gap-4 pt-6 border-t border-white/10">
-                <div>
-                  <p className="text-white/50 text-[10px] font-black mb-2 uppercase tracking-widest">Tugas Terbuka</p>
-                  <div className="flex items-end gap-3">
-                    <p className="text-[28px] font-black leading-none">{taskStats.terbuka}</p>
-                    {taskStats.terbukaLambat > 0 ? (
-                      <span className="text-[#F1416C] text-[9px] font-black bg-[#F1416C]/20 px-2 py-1 rounded-lg uppercase mb-1 border border-[#F1416C]/20">{taskStats.terbukaLambat} Telat</span>
-                    ) : (
-                      <span className="text-[#0095E8] text-[9px] font-black bg-[#0095E8]/20 px-2 py-1 rounded-lg uppercase mb-1 border border-[#0095E8]/20">Aman</span>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="pl-5 border-l border-white/10">
-                  <p className="text-white/50 text-[10px] font-black mb-2 uppercase tracking-widest">Sedang Proses</p>
-                  <div className="flex items-end gap-3">
-                    <p className="text-[28px] font-black leading-none">{taskStats.berlangsung}</p>
-                    {taskStats.berlangsungLambat > 0 ? (
-                      <span className="text-[#F1416C] text-[9px] font-black bg-[#F1416C]/20 px-2 py-1 rounded-lg uppercase mb-1 border border-[#F1416C]/20">{taskStats.berlangsungLambat} Telat</span>
-                    ) : (
-                      <span className="text-[#FFC700] text-[9px] font-black bg-[#FFC700]/20 px-2 py-1 rounded-lg uppercase mb-1 border border-[#FFC700]/20">Aman</span>
-                    )}
-                  </div>
+              
+              <div className="pl-4 border-l border-white/20">
+                <p className="text-white/70 text-[10px] font-black mb-1 uppercase tracking-widest">Berlangsung</p>
+                <div className="flex items-end gap-2">
+                  <p className="text-[20px] font-black leading-none">{taskStats.berlangsung}</p>
+                  {taskStats.berlangsungLambat > 0 && (
+                    <span className="text-[#F1416C] text-[8px] font-black bg-white px-1.5 py-0.5 rounded-md uppercase mb-0.5">{taskStats.berlangsungLambat} Telat</span>
+                  )}
                 </div>
               </div>
             </div>
-          </motion.div>
-        </motion.section>
-
-        {/* Akses Cepat - Premium Section */}
-        <motion.section variants={itemVariants} className="px-6 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Akses Cepat</h3>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <motion.div 
-              whileTap={{ scale: 0.95 }}
-              onClick={() => navigate('/demo/mobile/checklist')}
-              className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden group cursor-pointer"
-            >
-              <div className="absolute top-0 right-0 w-24 h-24 bg-[#0095E8]/5 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500" />
-              <div className="w-12 h-12 bg-blue-50 text-[#0095E8] rounded-2xl flex items-center justify-center mb-6 shadow-sm group-active:bg-[#0095E8] group-active:text-white transition-colors">
-                <FileText size={24} />
-              </div>
-              <h4 className="text-[15px] font-black text-slate-800 leading-tight">Mulai Audit</h4>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Checklist Harian</p>
-            </motion.div>
+        </motion.div>
 
-            {(user?.role?.toLowerCase() === 'super admin' || user?.permissions?.['aset_menu']?.includes('Lihat')) && (
-              <motion.div 
-                whileTap={{ scale: 0.95 }}
-                onClick={() => navigate('/demo/mobile/aset')}
-                className="bg-white p-6 rounded-[32px] border border-slate-100 shadow-sm relative overflow-hidden group cursor-pointer"
-              >
-                <div className="absolute top-0 right-0 w-24 h-24 bg-[#50CD89]/5 rounded-full -mr-12 -mt-12 group-hover:scale-125 transition-transform duration-500" />
-                <div className="w-12 h-12 bg-emerald-50 text-[#50CD89] rounded-2xl flex items-center justify-center mb-6 shadow-sm group-active:bg-[#50CD89] group-active:text-white transition-colors">
-                  <Package size={24} />
-                </div>
-                <h4 className="text-[15px] font-black text-slate-800 leading-tight">Monitoring Aset</h4>
-                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mt-1">Data & Log Aset</p>
-              </motion.div>
-            )}
+        {/* Dynamic Grid Menu - The Neatly Separated Module Grid */}
+        <motion.div variants={itemVariants} className="grid grid-cols-4 gap-y-7 gap-x-2">
+          
+          {/* Item: Mulai Checklist */}
+          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/checklist')}>
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-[#0095E8]/10 rounded-full -mr-4 -mt-4"></div>
+              <ClipboardList size={26} className="text-[#0095E8] relative z-10" />
+            </div>
+            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Mulai<br/>Checklist</span>
           </div>
-        </motion.section>
 
-        {/* Permintaan Departemen */}
-        <motion.section variants={itemVariants} className="px-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Permintaan Departemen</h3>
-              {deptRequests.length > 0 && (
-                <span className="bg-[#0095E8] text-white text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  {deptRequests.length}
-                </span>
+          {/* Item: Riwayat Checklist */}
+          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/checklist-riwayat')}>
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-[#50CD89]/10 rounded-full -mr-4 -mt-4"></div>
+              <History size={26} className="text-[#50CD89] relative z-10" />
+            </div>
+            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Riwayat<br/>Checklist</span>
+          </div>
+
+          {/* Item: Daftar Tugas */}
+          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/tasks')}>
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative group-active:bg-slate-50 transition-colors overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-[#FFC700]/10 rounded-full -mr-4 -mt-4"></div>
+              <FileText size={26} className="text-[#FFC700] relative z-10" />
+              {(unreadCount > 0 || taskStats.terbuka > 0) && (
+                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#F1416C] rounded-full border-2 border-white z-20"></span>
               )}
             </div>
-          </div>
-          
-          {loadingRequests ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-              {[1].map(i => (
-                <div key={i} className="min-w-[280px] bg-slate-50 border border-slate-100 rounded-3xl p-5 animate-pulse">
-                  <div className="h-6 bg-slate-200 rounded w-1/2 mb-4"></div>
-                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-4"></div>
-                </div>
-              ))}
-            </div>
-          ) : deptRequests.length === 0 ? (
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 text-center shadow-sm">
-              <p className="text-slate-400 text-[13px] font-medium">Tidak ada permintaan tugas baru.</p>
-            </div>
-          ) : (
-            <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-6 px-6">
-              {sortedDeptRequests.map((req) => (
-                <motion.div 
-                  whileTap={{ scale: 0.95 }}
-                  key={req.id} 
-                  onClick={() => navigate(`/demo/mobile/dept-task/${req.id}`)}
-                  className="min-w-[280px] bg-white border border-slate-100 rounded-3xl p-5 shadow-sm cursor-pointer relative overflow-hidden"
-                >
-                  <div className="flex gap-2 mb-4">
-                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase ${
-                      req.status === 'Baru' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'bg-[#FFF8DD] text-[#FFC700]'
-                    }`}>
-                      {req.status}
-                    </span>
-                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase ${
-                      req.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C]' : 'bg-slate-100 text-slate-500'
-                    }`}>
-                      {req.urgensi}
-                    </span>
-                  </div>
-                  <h4 className="font-black text-[15px] text-slate-800 mb-2 line-clamp-1">{req.nama_wo}</h4>
-                  <p className="text-[13px] text-slate-500 mb-5 line-clamp-2 leading-relaxed">
-                    {req.deskripsi}
-                  </p>
-                  <div className="flex justify-between items-center pt-4 border-t border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-6 h-6 rounded-full bg-[#F5F8FA] flex items-center justify-center text-[10px] font-black text-[#0095E8] uppercase">
-                        {req.departemen_asal?.substring(0, 2)}
-                      </div>
-                      <span className="text-[12px] font-bold text-slate-500">{req.departemen_asal}</span>
-                    </div>
-                    <ChevronRight size={16} className="text-slate-300" />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.section>
-
-        {/* Tugas Departemen */}
-        <motion.section variants={itemVariants} className="px-6 mb-8">
-          <div className="flex items-center gap-2 mb-4">
-            <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Tugas Departemen</h3>
-            <Info size={16} className="text-slate-300" />
-          </div>
-          
-          {loadingTasks ? (
-            <div className="flex gap-4 overflow-x-auto pb-4 no-scrollbar">
-              {[1, 2].map(i => (
-                <div key={i} className="min-w-[280px] bg-slate-50 border border-slate-100 rounded-3xl p-5 animate-pulse">
-                  <div className="h-6 bg-slate-200 rounded w-1/2 mb-4"></div>
-                  <div className="h-4 bg-slate-200 rounded w-3/4 mb-4"></div>
-                  <div className="h-4 bg-slate-200 rounded w-1/3"></div>
-                </div>
-              ))}
-            </div>
-          ) : deptTasks.length === 0 ? (
-            <div className="bg-white border border-slate-100 rounded-3xl p-6 text-center shadow-sm">
-              <p className="text-slate-400 text-[13px] font-medium">Tidak ada tugas terbuka di departemen Anda.</p>
-            </div>
-          ) : (
-            <div className="flex overflow-x-auto gap-4 pb-4 no-scrollbar -mx-6 px-6">
-              {sortedDeptTasks.map((task) => (
-                <motion.div 
-                  whileTap={{ scale: 0.95 }}
-                  key={task.id} 
-                  onClick={() => navigate(`/demo/mobile/task/${task.id}`)}
-                  className="min-w-[280px] bg-white border border-slate-100 rounded-3xl p-5 shadow-sm cursor-pointer"
-                >
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase ${
-                      (task.progres === 'Berlangsung' || task.progres === 'Menunggu Material') ? 'bg-[#FFF8DD] text-[#FFC700]' : 
-                      task.progres === 'Selesai' ? 'bg-[#E8FFF3] text-[#50CD89]' :
-                      'bg-[#F1FAFF] text-[#0095E8]'
-                    }`}>
-                      {task.progres === 'Menunggu Material' ? 'Cek Material' : (task.progres || 'Terbuka')}
-                    </span>
-                    <span className={`text-[10px] font-black px-3 py-1.5 rounded-lg uppercase ${
-                      task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C]' : 
-                      task.urgensi === 'Normal' ? 'bg-[#E3F2FD] text-[#1E88E5]' :
-                      'bg-slate-100 text-slate-500'
-                    }`}>
-                      {task.urgensi}
-                    </span>
-                    {task.jenis_tugas === 'wo' ? (
-                      <span className="text-[10px] font-black px-3 py-1.5 rounded-lg uppercase bg-[#F8E3FF] text-[#7239EA]">
-                        WO
-                      </span>
-                    ) : (
-                      <span className="text-[10px] font-black px-3 py-1.5 rounded-lg uppercase bg-slate-100 text-slate-600">
-                        Checklist
-                      </span>
-                    )}
-                  </div>
-                  <h4 className="font-black text-[15px] text-slate-800 mb-4 line-clamp-1">{task.nomor_perintah_kerja ? `${task.nomor_perintah_kerja} - ` : ''}{task.nama_tugas}</h4>
-                  <div className="space-y-1">
-                    <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Mulai</p>
-                    <p className="text-[13px] font-black text-slate-600">
-                      {formatDate(task.tanggal_mulai, task.waktu_mulai)}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </motion.section>
-
-
-        {/* Tugas Hari ini */}
-        <motion.section variants={itemVariants} className="px-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Tugas Hari ini</h3>
+            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Daftar<br/>Tugas</span>
           </div>
 
-          {loadingToday ? (
-            <div className="bg-white border border-slate-100 rounded-3xl p-8 animate-pulse text-center">
-              <div className="h-4 bg-slate-100 rounded w-1/2 mx-auto mb-4"></div>
-              <div className="h-20 bg-slate-50 rounded"></div>
+          {/* Item: Catat Listrik */}
+          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/utility-listrik')}>
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-[#7239EA]/10 rounded-full -mr-4 -mt-4"></div>
+              <Zap size={26} className="text-[#7239EA] relative z-10" />
             </div>
-          ) : todayTasks.length === 0 ? (
-            <div className="bg-white border border-slate-100 rounded-3xl p-8 text-center shadow-sm">
-               <p className="text-slate-400 text-[13px] font-medium">Tidak ada tugas berlangsung untuk hari ini.</p>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {sortedTodayTasks.map((task) => {
-                const now = new Date();
-                const deadline = new Date(`${task.tanggal_selesai} ${task.waktu_selesai}`);
-                const isLate = deadline < now;
+            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Catat<br/>Listrik</span>
+          </div>
 
-                return (
-                  <motion.div 
-                    whileTap={{ scale: 0.98 }}
-                    key={task.id}
-                    onClick={() => navigate(`/demo/mobile/task/${task.id}`)}
-                    className="bg-white border border-slate-100 rounded-3xl overflow-hidden shadow-[0_4px_20px_rgba(0,0,0,0.03)] cursor-pointer"
-                  >
-                    <div className="flex flex-wrap">
-                      <span className="bg-[#FFF8DD] text-[#FFC700] text-[10px] font-black px-4 py-2 uppercase">
-                        {task.progres === 'Menunggu Material' ? 'Cek Material' : 'Berlangsung'}
-                      </span>
-                      <span className={`text-white text-[10px] font-black px-4 py-2 uppercase ${
-                        task.urgensi === 'Kritis' ? 'bg-[#F1416C]' : 
-                        task.urgensi === 'Tinggi' ? 'bg-[#1E88E5]' : 'bg-[#283593]'
-                      }`}>
-                        Urgensi {task.urgensi}
-                      </span>
-                      {isLate && (
-                        <span className="bg-[#FFF5F8] text-[#F1416C] text-[10px] font-black px-4 py-2 border-l border-[#F1416C]/10 uppercase">Terlambat</span>
-                      )}
-                      {task.jenis_tugas === 'wo' ? (
-                        <span className="bg-[#F8E3FF] text-[#7239EA] text-[10px] font-black px-4 py-2 border-l border-[#7239EA]/10 uppercase">WO</span>
-                      ) : (
-                        <span className="bg-[#F1FAFF] text-[#0095E8] text-[10px] font-black px-4 py-2 border-l border-[#0095E8]/10 uppercase">Checklist</span>
-                      )}
-                    </div>
-                    <div className="p-5">
-                      <h4 className="font-black text-[16px] text-slate-800 mb-5 leading-snug">
-                        {task.nomor_perintah_kerja ? `${task.nomor_perintah_kerja} - ` : (task.id_tugas ? `${task.id_tugas}: ` : '')}{task.nama_tugas}
-                      </h4>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Mulai</p>
-                          <p className="text-[13px] font-black text-slate-700 mt-0.5">
-                            {formatDate(task.tanggal_mulai, task.waktu_mulai)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wide">Berakhir</p>
-                          <p className="text-[13px] font-black text-[#F1416C] mt-0.5">
-                            {formatDate(task.tanggal_selesai, task.waktu_selesai)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </motion.div>
-                );
-              })}
+          {/* Item: Monitoring Aset (Conditional) */}
+          {(user?.role?.toLowerCase() === 'super admin' || user?.permissions?.['aset_menu']?.includes('Lihat')) && (
+            <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/aset')}>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-8 h-8 bg-[#1E88E5]/10 rounded-full -mr-4 -mt-4"></div>
+                <Package size={26} className="text-[#1E88E5] relative z-10" />
+              </div>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Monitoring<br/>Aset</span>
             </div>
           )}
 
-          <motion.button 
-            whileTap={{ scale: 0.98 }}
-            onClick={() => navigate('/demo/mobile/tasks')}
-            className="w-full mt-6 py-3 bg-white border border-slate-200 text-[#0095E8] rounded-2xl font-bold text-[14px] shadow-sm hover:bg-slate-50 transition-colors"
-          >
-            Lihat Semua Tugas
-          </motion.button>
-        </motion.section>
+          {/* Item: Approval (Conditional) */}
+          {canApprove && (
+            <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/approvals')}>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-8 h-8 bg-[#F1416C]/10 rounded-full -mr-4 -mt-4"></div>
+                <ShieldCheck size={26} className="text-[#F1416C] relative z-10" />
+              </div>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Persetujuan<br/>Dokumen</span>
+            </div>
+          )}
+
+          {/* Item: Catat Air (Disabled) */}
+          <div className="flex flex-col items-center gap-2 cursor-pointer opacity-60" onClick={() => handleMenuClick('Modul Catat Air sedang dikembangkan.')}>
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-[#00BCD4]/10 rounded-full -mr-4 -mt-4"></div>
+              <Droplets size={26} className="text-[#00BCD4] relative z-10" />
+            </div>
+            <span className="text-slate-400 text-[10px] font-bold text-center leading-tight">Catat<br/>Air</span>
+          </div>
+
+          {/* Item: Laporan (Disabled/Coming Soon) */}
+          <div className="flex flex-col items-center gap-2 cursor-pointer opacity-60" onClick={() => handleMenuClick('Modul Laporan sedang dikembangkan.')}>
+            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-8 h-8 bg-[#FF9800]/10 rounded-full -mr-4 -mt-4"></div>
+              <FileBarChart size={26} className="text-[#FF9800] relative z-10" />
+            </div>
+            <span className="text-slate-400 text-[10px] font-bold text-center leading-tight">Laporan<br/>Performa</span>
+          </div>
+
+        </motion.div>
       </motion.div>
 
-      {/* Hubungi Admin Modal */}
+      {/* Help Modal */}
       <AnimatePresence>
         {showHelpModal && (
           <div className="fixed inset-0 z-[100] flex items-end justify-center">
@@ -633,7 +473,7 @@ const MobileHome = () => {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/40 backdrop-blur-sm" 
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
               onClick={() => setShowHelpModal(false)}
             />
             
@@ -647,17 +487,16 @@ const MobileHome = () => {
             >
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
               <div className="flex items-center justify-between mb-8">
-                <h3 className="text-[20px] font-black text-[#181C32]">Hubungi Admin</h3>
+                <h3 className="text-[20px] font-black text-slate-800">Hubungi Bantuan</h3>
                 <button 
                   onClick={() => setShowHelpModal(false)}
-                  className="p-2 bg-slate-100 rounded-full text-slate-500 hover:bg-slate-200 transition-colors"
+                  className="p-2 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                 >
                   <X size={20} />
                 </button>
               </div>
 
               <div className="space-y-3">
-                {/* WhatsApp Option */}
                 <motion.a 
                   whileTap={{ scale: 0.96 }}
                   href="https://wa.me/62800000000000" 
@@ -672,21 +511,6 @@ const MobileHome = () => {
                       </svg>
                     </div>
                     <span className="text-[14px] font-bold text-slate-700">Kirim pesan WhatsApp</span>
-                  </div>
-                  <ChevronRight size={18} className="text-slate-400" />
-                </motion.a>
-
-                {/* Phone Option */}
-                <motion.a 
-                  whileTap={{ scale: 0.96 }}
-                  href="tel:+62800000000000" 
-                  className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-2xl"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm text-slate-500">
-                      <Phone size={20} />
-                    </div>
-                    <span className="text-[14px] font-bold text-slate-700">Telepon Sekarang</span>
                   </div>
                   <ChevronRight size={18} className="text-slate-400" />
                 </motion.a>

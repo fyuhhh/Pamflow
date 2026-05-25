@@ -48,13 +48,17 @@ const checkPermission = (moduleId, action = 'Lihat') => {
       const userPerms = parsePerms(user.user_permissions);
 
       // Extract allowed actions for this module
+      const modulesToCheck = Array.isArray(moduleId) ? moduleId : [moduleId];
       const allowedActions = new Set();
-      if (Array.isArray(rolePerms[moduleId])) {
-        rolePerms[moduleId].forEach(act => allowedActions.add(act));
-      }
-      if (Array.isArray(userPerms[moduleId])) {
-        userPerms[moduleId].forEach(act => allowedActions.add(act));
-      }
+      
+      modulesToCheck.forEach(mId => {
+        if (Array.isArray(rolePerms[mId])) {
+          rolePerms[mId].forEach(act => allowedActions.add(act));
+        }
+        if (Array.isArray(userPerms[mId])) {
+          userPerms[mId].forEach(act => allowedActions.add(act));
+        }
+      });
 
       // 4. Verify permission
       if (allowedActions.has(action)) {

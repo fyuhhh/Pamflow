@@ -18,7 +18,9 @@ import {
   TrendingDown,
   Wrench,
   Database,
-  History
+  History,
+  Zap,
+  Droplet
 } from 'lucide-react';
 import {
   PiSquaresFourDuotone,
@@ -134,6 +136,8 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
         { label: 'Dashboard Maintenance Aset', path: '/aset/dashboard-maintenance', permission: 'aset_monitoring' },
         { label: 'Register Aset', path: '/aset/register', permission: 'aset_register' },
         { label: 'Monitoring Aset', path: '/aset/monitoring', permission: 'aset_monitoring' },
+        { label: 'Pendataan Listrik', path: '/aset/listrik', permission: 'aset_monitoring' },
+        { label: 'Pendataan Air', path: '/aset/air', permission: 'aset_monitoring' },
         { label: 'Hak Akses Aset', path: '/aset/hak-akses', permission: 'aset_hak_akses' },
       ]
     },
@@ -166,7 +170,10 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
           label: 'Pemeliharaan',
           path: '/manajemen-aset/pemeliharaan-group',
           permission: 'pure_asset_maintenance',
-          subItems: []
+          subItems: [
+            { label: 'Pendataan Listrik', path: '/manajemen-aset/listrik', permission: 'pure_asset_maintenance' },
+            { label: 'Pendataan Air', path: '/manajemen-aset/air', permission: 'pure_asset_maintenance' }
+          ]
         },
         { 
           label: 'Master Data', 
@@ -298,7 +305,11 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
         finalMenuItems.push({
           ...sub,
           id: `maintenance-sub-${i}`,
-          icon: sub.label.includes('Dashboard') ? <LayoutDashboard size={20} /> : (sub.label.includes('Akses') ? <Lock size={20} /> : <PiPackageDuotone size={20} />)
+          icon: sub.label.includes('Dashboard') ? <LayoutDashboard size={20} /> : 
+                sub.label.includes('Akses') ? <Lock size={20} /> : 
+                sub.label.includes('Listrik') ? <Zap size={20} /> :
+                sub.label.includes('Air') ? <Droplet size={20} /> :
+                <PiPackageDuotone size={20} />
         });
       });
     }
