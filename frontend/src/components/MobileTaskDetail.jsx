@@ -7,7 +7,8 @@ import { saveOfflineData } from '../services/offlineDB';
 const MobileTaskDetail = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { taskId } = useParams();
+  const params = useParams();
+  const taskId = params.taskId || location.pathname.split('/').pop();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showFullDesc, setShowFullDesc] = useState(false);

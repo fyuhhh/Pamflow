@@ -463,6 +463,80 @@ const MobileHome = () => {
           </div>
 
         </motion.div>
+
+        {/* Tugas Aktif Section */}
+        <motion.div variants={itemVariants} className="mt-10 mb-4">
+          <div className="flex items-center justify-between mb-5">
+            <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Tugas Aktif Anda</h3>
+            <button 
+              onClick={() => handleMenuClick('/demo/mobile/tasks')}
+              className="text-[#0095E8] text-[12px] font-bold flex items-center gap-0.5 hover:text-[#0084CC] transition-colors"
+            >
+              Lihat Semua <ChevronRight size={14} />
+            </button>
+          </div>
+
+          <div className="space-y-4">
+            {loadingToday ? (
+              <div className="animate-pulse bg-white rounded-3xl p-5 border border-slate-100 shadow-sm">
+                <div className="h-4 bg-slate-100 rounded w-1/4 mb-4"></div>
+                <div className="h-4 bg-slate-100 rounded w-3/4 mb-2"></div>
+                <div className="h-4 bg-slate-100 rounded w-1/2"></div>
+              </div>
+            ) : sortedTodayTasks.length === 0 && sortedDeptTasks.length === 0 ? (
+              <div className="bg-white rounded-3xl p-6 text-center border border-slate-100 shadow-sm">
+                <div className="w-12 h-12 bg-[#E8FFF3] rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CheckCircle2 size={24} className="text-[#50CD89]" />
+                </div>
+                <h4 className="text-[14px] font-black text-slate-800">Semua Tugas Selesai!</h4>
+                <p className="text-[12px] text-slate-500 mt-1 font-medium leading-relaxed">Anda tidak memiliki tugas yang sedang berlangsung saat ini.</p>
+              </div>
+            ) : (
+              [...sortedTodayTasks, ...sortedDeptTasks].slice(0, 3).map(task => (
+                <motion.div 
+                  key={task.id} 
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleMenuClick(`/demo/mobile/task/${task.id}`)}
+                  className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 cursor-pointer overflow-hidden relative group"
+                >
+                  <div className="flex justify-between items-start mb-3 relative z-10">
+                    <div className="flex flex-wrap gap-2">
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
+                        task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C] border-[#F1416C]/20' : 
+                        task.urgensi === 'Sedang' ? 'bg-[#FFF8DD] text-[#FFC700] border-[#FFC700]/20' :
+                        'bg-[#F1FAFF] text-[#0095E8] border-[#0095E8]/20'
+                      }`}>
+                        {task.urgensi || 'Normal'}
+                      </span>
+                      {task.jenis_tugas === 'wo' ? (
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider bg-[#F8E3FF] text-[#7239EA] border border-[#7239EA]/20">WO</span>
+                      ) : (
+                        <span className="text-[10px] font-black px-2.5 py-1 rounded-lg uppercase tracking-wider bg-slate-100 text-slate-600 border border-slate-200">Checklist</span>
+                      )}
+                    </div>
+                    <span className="text-[11px] font-black text-slate-400 group-hover:text-[#0095E8] transition-colors">{task.nomor_perintah_kerja || `PAM-${task.id}`}</span>
+                  </div>
+                  <h4 className="font-black text-slate-800 text-[15px] mb-4 leading-snug line-clamp-2">
+                    {task.nama_tugas}
+                  </h4>
+                  <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <Clock size={12} className="text-slate-400" />
+                      <span className="text-[12px] font-bold text-slate-500">
+                        {task.tanggal_selesai ? new Date(task.tanggal_selesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
+                      </span>
+                    </div>
+                    <span className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider ${
+                      task.progres === 'Berlangsung' || task.progres === 'Menunggu Material' ? 'bg-[#FFF8DD] text-[#FFC700]' : 'bg-[#F1FAFF] text-[#0095E8]'
+                    }`}>
+                      {task.progres === 'Menunggu Material' ? 'Cek Material' : (task.progres || 'Terbuka')}
+                    </span>
+                  </div>
+                </motion.div>
+              ))
+            )}
+          </div>
+        </motion.div>
       </motion.div>
 
       {/* Help Modal */}

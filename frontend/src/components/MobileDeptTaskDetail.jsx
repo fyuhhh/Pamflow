@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Calendar, MapPin, FileText, CheckCircle2, Clock, User, Building, AlertCircle } from 'lucide-react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
 
 const MobileDeptTaskDetail = () => {
   const navigate = useNavigate();
-  const { id } = useParams();
+  const location = useLocation();
+  const params = useParams();
+  const id = params.id || location.pathname.split('/').pop();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
   const user = JSON.parse(localStorage.getItem('user') || 'null');
