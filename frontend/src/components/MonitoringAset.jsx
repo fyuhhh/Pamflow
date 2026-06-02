@@ -112,7 +112,7 @@ const AssetAnalyticsDashboard = ({ data }) => {
          <div className="absolute top-4 left-6">
             <span className="text-[10px] font-black text-slate-400 uppercase">Trend Frekuensi Kerusakan</span>
          </div>
-         <ResponsiveContainer width="100%" height="100%">
+         <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
             <BarChart data={trend} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
               <XAxis 
@@ -1754,7 +1754,7 @@ const MonitoringAset = () => {
             <p className="text-xs font-normal text-[#A1A5B7] uppercase tracking-widest">Distribusi Kondisi Aset</p>
           </div>
           <div className="w-full h-[120px]">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <BarChart data={analyticsData.statusChart} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '400', fill: '#A1A5B7' }} />
@@ -1778,7 +1778,7 @@ const MonitoringAset = () => {
         <div className="bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm h-[200px] flex flex-col">
           <p className="text-xs font-normal text-[#A1A5B7] uppercase tracking-widest mb-2">Level Prioritas</p>
           <div className="flex-1 w-full h-full min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
               <PieChart>
                 <Pie
                   data={analyticsData.priorityChart}

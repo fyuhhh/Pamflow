@@ -5,20 +5,26 @@ const fs = require('fs');
 
 exports.getAssets = async (req, res) => {
   try {
-    const assets = await knex('pa_assets')
+    const { is_master } = req.query;
+    let query = knex('pa_assets')
       .leftJoin('pa_categories', 'pa_assets.category_id', 'pa_categories.id')
       .leftJoin('pa_locations', 'pa_assets.location_id', 'pa_locations.id')
       .leftJoin('pa_vendors', 'pa_assets.vendor_id', 'pa_vendors.id')
       .leftJoin('departments', 'pa_assets.department_id', 'departments.id')
-      .leftJoin('pa_conditions', 'pa_assets.condition_id', 'pa_conditions.id')
-      .select(
-        'pa_assets.*',
-        'pa_categories.category_name',
-        'pa_locations.location_name',
-        'pa_vendors.vendor_name',
-        'departments.name as department_name',
-        'pa_conditions.condition_name'
-      );
+      .leftJoin('pa_conditions', 'pa_assets.condition_id', 'pa_conditions.id');
+
+    if (is_master !== undefined) {
+      query = query.where('pa_assets.is_master', is_master === 'true' || is_master === '1' ? 1 : 0);
+    }
+
+    const assets = await query.select(
+      'pa_assets.*',
+      'pa_categories.category_name',
+      'pa_locations.location_name',
+      'pa_vendors.vendor_name',
+      'departments.name as department_name',
+      'pa_conditions.condition_name'
+    );
     res.json(assets);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching assets', error: error.message });
@@ -114,6 +120,7 @@ exports.downloadExcel = async (req, res) => {
       .leftJoin('pa_vendors', 'pa_assets.vendor_id', 'pa_vendors.id')
       .leftJoin('departments', 'pa_assets.department_id', 'departments.id')
       .leftJoin('pa_conditions', 'pa_assets.condition_id', 'pa_conditions.id')
+      .where('pa_assets.is_master', 0)
       .select(
         'pa_assets.*',
         'pa_categories.category_code',
@@ -135,6 +142,9 @@ exports.downloadExcel = async (req, res) => {
       query = query.where(builder => {
         builder.where('pa_assets.asset_id', 'like', term)
           .orWhere('pa_assets.asset_name', 'like', term)
+          .orWhere('pa_assets.brand', 'like', term)
+          .orWhere('pa_assets.model_tipe', 'like', term)
+          .orWhere('pa_assets.serial_number', 'like', term)
           .orWhere('pa_assets.register_no', 'like', term)
           .orWhere('pa_categories.category_name', 'like', term)
           .orWhere('pa_locations.location_name', 'like', term)

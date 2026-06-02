@@ -262,7 +262,9 @@ const MasterDataAset = () => {
     category_id: '',
     department_id: '',
     rfid_tag: '',
-    specification: ''
+    specification: '',
+    brand: '',
+    model_tipe: ''
   });
 
   const [vendorForm, setVendorForm] = useState({
@@ -355,7 +357,9 @@ const MasterDataAset = () => {
       asset_id: '',
       asset_name: '',
       category_id: '',
-      specification: ''
+      specification: '',
+      brand: '',
+      model_tipe: ''
     });
     setLocationForm({
       location_id: '',
@@ -397,7 +401,9 @@ const MasterDataAset = () => {
         category_id: item.category_id || '',
         department_id: item.department_id || '',
         rfid_tag: item.rfid_tag || '',
-        specification: item.specification || ''
+        specification: item.specification || '',
+        brand: item.brand || '',
+        model_tipe: item.model_tipe || ''
       });
     } else if (activeTab === 'location') {
       setLocationForm({
@@ -452,7 +458,10 @@ const MasterDataAset = () => {
       category_id: assetForm.category_id === '' ? null : parseInt(assetForm.category_id),
       department_id: assetForm.department_id === '' ? null : parseInt(assetForm.department_id),
       rfid_tag: assetForm.rfid_tag || null,
-      specification: assetForm.specification
+      specification: assetForm.specification,
+      brand: assetForm.brand || null,
+      model_tipe: assetForm.model_tipe || null,
+      is_master: 1
     } : activeTab === 'location' ? {
       location_id: locationForm.location_id,
       location_name: locationForm.location_name,
@@ -891,6 +900,7 @@ const MasterDataAset = () => {
             <Box size={14} />
             Aset
           </button>
+
           <button 
             onClick={() => handleTabChange('location')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-semibold transition-all ${activeTab === 'location' ? 'bg-[#F1FAFF] text-[#0095E8]' : 'text-[#7E8299] hover:bg-[#F9F9F9]'}`}
@@ -1231,7 +1241,16 @@ const MasterDataAset = () => {
                         <tr key={asset.id} className="hover:bg-[#F9F9F9]/30 transition-all group">
                           <td className="p-5 text-sm font-semibold text-[#7E8299] text-center">{(currentPage - 1) * ITEMS_PER_PAGE + index + 1}</td>
                           <td className="p-5 text-sm font-semibold text-[#181C32]">{asset.asset_id}</td>
-                          <td className="p-5 text-sm text-[#3F4254] font-medium">{asset.asset_name}</td>
+                          <td className="p-5 text-sm text-[#3F4254] font-medium">
+                            <div className="flex flex-col">
+                              <span className="font-semibold">{asset.asset_name}</span>
+                              {asset.brand && (
+                                <span className="text-[10px] text-[#0095E8] font-bold mt-0.5">
+                                  Brand: {asset.brand} {asset.model_tipe ? `• ${asset.model_tipe}` : ''}
+                                </span>
+                              )}
+                            </div>
+                          </td>
                           <td className="p-5 text-sm text-[#7E8299]">{asset.category_name || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
                           <td className="p-5 text-sm text-[#7E8299] max-w-[300px] truncate">{asset.specification || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
                           <td className="p-5 text-sm text-right space-x-1 whitespace-nowrap">
@@ -1830,6 +1849,30 @@ const MasterDataAset = () => {
                         className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
                         value={assetForm.rfid_tag}
                         onChange={(e) => setAssetForm({ ...assetForm, rfid_tag: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Brand */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Brand</label>
+                      <input 
+                        type="text"
+                        placeholder="Contoh: Asus, Toyota"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        value={assetForm.brand}
+                        onChange={(e) => setAssetForm({ ...assetForm, brand: e.target.value })}
+                      />
+                    </div>
+
+                    {/* Model / Tipe */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Model / Tipe</label>
+                      <input 
+                        type="text"
+                        placeholder="Contoh: Fortuner, Zephyrus"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        value={assetForm.model_tipe}
+                        onChange={(e) => setAssetForm({ ...assetForm, model_tipe: e.target.value })}
                       />
                     </div>
 

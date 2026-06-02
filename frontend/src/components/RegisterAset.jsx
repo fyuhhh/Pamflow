@@ -58,6 +58,21 @@ const RegisterAset = () => {
   const [maintInput, setMaintInput] = useState({ days: 0, hours: 0 });
 
   const [allAssets, setAllAssets] = useState([]);
+  const [pureAssets, setPureAssets] = useState([]);
+  const [pureAssetSearch, setPureAssetSearch] = useState('');
+  const [pureAssetSort, setPureAssetSort] = useState('asc');
+  const [showPureAssetDropdown, setShowPureAssetDropdown] = useState(false);
+  const pureAssetDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (pureAssetDropdownRef.current && !pureAssetDropdownRef.current.contains(e.target)) {
+        setShowPureAssetDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const [formData, setFormData] = useState({
     nama_mesin: '',
@@ -78,6 +93,7 @@ const RegisterAset = () => {
   useEffect(() => {
     fetchAssets();
     fetchAllAssets();
+    fetchPureAssets();
     fetchPriorities();
     fetchStatuses();
     fetchLocations();
@@ -106,6 +122,18 @@ const RegisterAset = () => {
       }
     } catch (err) {
       console.error('Fetch all assets error:', err);
+    }
+  };
+
+  const fetchPureAssets = async () => {
+    try {
+      const response = await authFetch('/api/pure-assets?is_master=0');
+      if (response.ok) {
+        const data = await response.json();
+        setPureAssets(data);
+      }
+    } catch (err) {
+      console.error('Fetch pure assets error:', err);
     }
   };
 
@@ -302,6 +330,43 @@ const RegisterAset = () => {
     };
   };
 
+  const dropdownOptions = pureAssets.map(pa => ({
+    ...pa,
+    isRegistered: allAssets.some(a => 
+      a.nama_mesin?.toLowerCase() === pa.asset_name?.toLowerCase() &&
+      (a.serial_number || '').toLowerCase() === (pa.register_no || '').toLowerCase()
+    )
+  }));
+
+  const filteredOptions = dropdownOptions.filter(opt => 
+    (opt.asset_name || '').toLowerCase().includes(pureAssetSearch.toLowerCase()) ||
+    (opt.asset_id || '').toLowerCase().includes(pureAssetSearch.toLowerCase())
+  );
+
+  filteredOptions.sort((a, b) => {
+    if (a.isRegistered && !b.isRegistered) return 1;
+    if (!a.isRegistered && b.isRegistered) return -1;
+    
+    const nameA = (a.asset_name || '').toLowerCase();
+    const nameB = (b.asset_name || '').toLowerCase();
+    if (pureAssetSort === 'asc') return nameA.localeCompare(nameB);
+    return nameB.localeCompare(nameA);
+  });
+
+  const handleSelectPureAsset = (asset) => {
+    if (asset.isRegistered) return;
+    setFormData(prev => ({
+      ...prev,
+      nama_mesin: asset.asset_name,
+      brand: asset.brand || '',
+      model_tipe: asset.model_tipe || '',
+      serial_number: asset.serial_number || '',
+      lokasi: asset.location_name || prev.lokasi,
+    }));
+    setShowPureAssetDropdown(false);
+    setPureAssetSearch('');
+  };
+
   return (
     <div className="p-6 md:p-8 max-w-[1300px] mx-auto min-h-screen bg-[#FBFBFB]">
       {/* Page Header */}
@@ -440,7 +505,63 @@ const RegisterAset = () => {
                 <div className="space-y-6">
                   <div className="space-y-2">
                     <label className="text-sm font-normal text-[#3F4254]">Nama Mesin / Aset <span className="text-red-500">*</span></label>
-                    <input required type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Input nama aset..." value={formData.nama_mesin} onChange={(e) => setFormData({...formData, nama_mesin: e.target.value})} />
+                    <div className="relative" ref={pureAssetDropdownRef}>
+                      <div 
+                        className={`w-full px-4 py-3 bg-[#F9F9F9] border ${showPureAssetDropdown ? 'border-[#0095E8]/30 bg-white' : 'border-transparent'} rounded-xl text-sm font-light cursor-pointer flex justify-between items-center transition-all`}
+                        onClick={() => setShowPureAssetDropdown(!showPureAssetDropdown)}
+                      >
+                        <span className={formData.nama_mesin ? 'text-[#181C32]' : 'text-[#A1A5B7]'}>
+                          {formData.nama_mesin || 'Pilih dari daftar aset (Manajemen Aset)...'}
+                        </span>
+                        <ChevronDown size={16} className={`text-[#A1A5B7] transition-transform ${showPureAssetDropdown ? 'rotate-180' : ''}`} />
+                      </div>
+                      
+                      <AnimatePresence>
+                        {showPureAssetDropdown && (
+                          <motion.div 
+                            initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 5 }}
+                            className="absolute left-0 right-0 top-[calc(100%+4px)] bg-white border border-[#F1F1F4] rounded-xl shadow-lg z-50 overflow-hidden"
+                          >
+                            <div className="p-3 border-b border-[#F1F1F4] bg-[#F9F9F9]/50 flex gap-2">
+                              <div className="relative flex-1">
+                                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[#A1A5B7]" />
+                                <input 
+                                  type="text" autoFocus placeholder="Cari nama atau ID..."
+                                  className="w-full pl-8 pr-3 py-2 bg-white border border-[#E1E3EA] rounded-lg text-xs font-light outline-none focus:border-[#0095E8]/30"
+                                  value={pureAssetSearch} onChange={e => setPureAssetSearch(e.target.value)}
+                                />
+                              </div>
+                              <button 
+                                type="button" 
+                                onClick={() => setPureAssetSort(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                className="px-3 flex items-center justify-center bg-white border border-[#E1E3EA] rounded-lg text-[#7E8299] hover:text-[#181C32]"
+                              >
+                                {pureAssetSort === 'asc' ? 'A-Z' : 'Z-A'}
+                              </button>
+                            </div>
+                            <div className="max-h-60 overflow-y-auto no-scrollbar py-1">
+                              {filteredOptions.length === 0 ? (
+                                <div className="px-4 py-3 text-xs text-[#A1A5B7] text-center">Tidak ada aset ditemukan.</div>
+                              ) : (
+                                filteredOptions.map(opt => (
+                                  <div 
+                                    key={opt.id}
+                                    onClick={() => handleSelectPureAsset(opt)}
+                                    className={`px-4 py-2.5 flex flex-col gap-1 ${opt.isRegistered ? 'opacity-50 cursor-not-allowed bg-[#F9F9F9]' : 'cursor-pointer hover:bg-[#F5F8FA]'}`}
+                                  >
+                                    <div className="flex justify-between items-start">
+                                      <span className={`text-xs font-medium ${opt.isRegistered ? 'text-[#A1A5B7]' : 'text-[#181C32]'}`}>{opt.asset_name}</span>
+                                      {opt.isRegistered && <span className="text-[9px] font-bold text-[#F1416C] bg-[#FFF5F8] px-1.5 py-0.5 rounded uppercase">Sudah Diregister</span>}
+                                    </div>
+                                    <span className="text-[10px] text-[#A1A5B7] font-light">ID: {opt.asset_id} • Lokasi: {opt.location_name || '-'}</span>
+                                  </div>
+                                ))
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div>
                   </div>
                   
                   <div className="grid grid-cols-2 gap-4">

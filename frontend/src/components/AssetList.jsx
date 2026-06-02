@@ -222,6 +222,7 @@ const AssetList = () => {
 
   // Database lists
   const [assets, setAssets] = useState([]);
+  const [masterAssets, setMasterAssets] = useState([]);
   const [categories, setCategories] = useState([]);
   const [locations, setLocations] = useState([]);
   const [vendors, setVendors] = useState([]);
@@ -269,6 +270,9 @@ const AssetList = () => {
     asset_id: '',
     asset_name: '',
     register_no: '',
+    brand: '',
+    model_tipe: '',
+    serial_number: '',
     category_id: '',
     location_id: '',
     vendor_id: '',
@@ -437,8 +441,9 @@ const AssetList = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [resAssets, resCats, resLocs, resVendors, resDepts, resConds] = await Promise.all([
-        authFetch('/api/pure-assets'),
+      const [resAssets, resMasters, resCats, resLocs, resVendors, resDepts, resConds] = await Promise.all([
+        authFetch('/api/pure-assets?is_master=0'),
+        authFetch('/api/pure-assets?is_master=1'),
         authFetch('/api/pure-assets/categories'),
         authFetch('/api/pure-assets/locations'),
         authFetch('/api/pure-assets/vendors'),
@@ -446,8 +451,9 @@ const AssetList = () => {
         authFetch('/api/pure-assets/conditions?type=asset')
       ]);
 
-      const [dataAssets, dataCats, dataLocs, dataVendors, dataDepts, dataConds] = await Promise.all([
+      const [dataAssets, dataMasters, dataCats, dataLocs, dataVendors, dataDepts, dataConds] = await Promise.all([
         resAssets.ok ? resAssets.json() : [],
+        resMasters.ok ? resMasters.json() : [],
         resCats.ok ? resCats.json() : [],
         resLocs.ok ? resLocs.json() : [],
         resVendors.ok ? resVendors.json() : [],
@@ -456,6 +462,7 @@ const AssetList = () => {
       ]);
 
       setAssets(dataAssets);
+      setMasterAssets(dataMasters);
       setCategories(dataCats);
       setLocations(dataLocs);
       setVendors(dataVendors);
@@ -482,6 +489,9 @@ const AssetList = () => {
       asset_id: '',
       asset_name: '',
       register_no: '',
+      brand: '',
+      model_tipe: '',
+      serial_number: '',
       category_id: '',
       location_id: '',
       vendor_id: '',
@@ -522,6 +532,9 @@ const AssetList = () => {
       asset_id: asset.asset_id || '',
       asset_name: asset.asset_name || '',
       register_no: asset.register_no || '',
+      brand: asset.brand || '',
+      model_tipe: asset.model_tipe || '',
+      serial_number: asset.serial_number || '',
       category_id: asset.category_id || '',
       location_id: asset.location_id || '',
       vendor_id: asset.vendor_id || '',
@@ -626,7 +639,8 @@ const AssetList = () => {
         asset_name: nestedAssetForm.asset_name,
         category_id: nestedAssetForm.category_id || null,
         specification: nestedAssetForm.specification || '',
-        status: 'Active'
+        status: 'Active',
+        is_master: 1
       };
 
       const res = await authFetch('/api/pure-assets', {
@@ -667,6 +681,7 @@ const AssetList = () => {
       const method = modalMode === 'add' ? 'POST' : 'PUT';
 
       const payload = { ...assetForm };
+      payload.is_master = 0;
       
       // Clean up fields to match database constraints and ignore dynamic/unsupported fields
       delete payload.depreciation_percent; // FIX: Prevent unknown column error in pa_assets
@@ -677,6 +692,9 @@ const AssetList = () => {
       if (payload.department_id === '') payload.department_id = null;
       if (payload.condition_id === '') payload.condition_id = null;
       if (payload.acquisition_cost === '') payload.acquisition_cost = null;
+      if (payload.acquisition_date === '') payload.acquisition_date = null;
+
+      payload.is_depreciable = payload.is_depreciable === 'Ya' || payload.is_depreciable === true || payload.is_depreciable === 1 ? 1 : 0;
 
       // Handle images mapping — use serverPath if uploaded, else existing preview (for existing saved paths)
       const currentImages = uploadedImages.map(img => img.serverPath || img.preview);
@@ -770,6 +788,9 @@ const AssetList = () => {
       const matchesSearch = 
         (asset.asset_id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (asset.asset_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (asset.brand || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (asset.model_tipe || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (asset.serial_number || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (asset.register_no || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (asset.category_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (asset.location_name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1423,7 +1444,8 @@ const AssetList = () => {
           acquisition_date: rec.acquisition_date,
           acquisition_cost: rec.acquisition_cost,
           specification: rec.specification || '',
-          status: 'Active'
+          status: 'Active',
+          is_master: 0
         };
 
         try {
@@ -1487,18 +1509,7 @@ const AssetList = () => {
     label: `${c.category_code || ''} - ${c.category_name}`
   }));
 
-  // Deduplicate asset templates based on unique asset_id to prevent redundant option listings
-  const uniqueAssetTemplates = [];
-  const seenAssetIds = new Set();
-  
-  assets.forEach(a => {
-    if (a.asset_id && !seenAssetIds.has(a.asset_id)) {
-      seenAssetIds.add(a.asset_id);
-      uniqueAssetTemplates.push(a);
-    }
-  });
-
-  const assetIdOptions = uniqueAssetTemplates.map(a => ({
+  const assetIdOptions = masterAssets.map(a => ({
     value: a.asset_id,
     label: `${a.asset_id} - ${a.asset_name}`
   }));
@@ -1857,16 +1868,26 @@ const AssetList = () => {
                         <span className="text-[13px] font-extrabold text-[#181C32] mt-0.5 line-clamp-2 leading-relaxed">
                           {asset.asset_name}
                         </span>
+                        {(asset.brand || asset.model_tipe) && (
+                          <span className="text-[11px] text-[#0095E8] font-bold mt-1">
+                            {asset.brand || 'No Brand'} {asset.model_tipe ? `• ${asset.model_tipe}` : ''}
+                          </span>
+                        )}
                       </div>
                     </td>
 
                     <td className="px-6 py-4.5">
                       <div className="flex flex-col">
                         <span className="text-[13px] font-bold text-[#181C32]">
-                          {asset.register_no || '-'}
+                          No. Reg: {asset.register_no || '-'}
                         </span>
+                        {asset.serial_number && (
+                          <span className="text-[11px] text-[#47BE7D] font-bold mt-0.5">
+                            SN: {asset.serial_number}
+                          </span>
+                        )}
                         <span className="text-[11px] text-[#A1A5B7] font-semibold mt-0.5">
-                          {asset.acquisition_date ? formatDate(asset.acquisition_date) : '-'}
+                          Tgl: {asset.acquisition_date ? formatDate(asset.acquisition_date) : '-'}
                         </span>
                       </div>
                     </td>
@@ -2146,14 +2167,16 @@ const AssetList = () => {
                             value={assetForm.asset_id}
                             onChange={(val) => {
                               // Find matching asset template to auto-populate other form fields
-                              const matched = assets.find(a => a.asset_id === val);
+                              const matched = masterAssets.find(a => a.asset_id === val);
                               if (matched) {
                                 setAssetForm(prev => ({
                                   ...prev,
                                   asset_id: val,
                                   asset_name: matched.asset_name || prev.asset_name,
                                   category_id: matched.category_id || prev.category_id,
-                                  specification: matched.specification || prev.specification
+                                  specification: matched.specification || prev.specification,
+                                  brand: matched.brand || prev.brand,
+                                  model_tipe: matched.model_tipe || prev.model_tipe
                                 }));
                               } else {
                                 setAssetForm(prev => ({ ...prev, asset_id: val }));
@@ -2235,6 +2258,48 @@ const AssetList = () => {
                           value={assetForm.depreciation_percent}
                           onChange={(e) => setAssetForm({ ...assetForm, depreciation_percent: e.target.value })}
                           disabled={!assetForm.is_depreciable}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Brand */}
+                    <div className="col-span-4">
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-xs font-extrabold text-[#3F4254] tracking-wide uppercase">Brand</label>
+                        <input 
+                          type="text"
+                          placeholder="Contoh: Asus, Toyota"
+                          className="w-full px-5 py-3.5 bg-[#F9F9F9] border border-[#E1E3EA] rounded-2xl text-xs font-extrabold outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all text-[#181C32]"
+                          value={assetForm.brand}
+                          onChange={(e) => setAssetForm({ ...assetForm, brand: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Model / Tipe */}
+                    <div className="col-span-4">
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-xs font-extrabold text-[#3F4254] tracking-wide uppercase">Model / Tipe</label>
+                        <input 
+                          type="text"
+                          placeholder="Contoh: ROG Zephyrus, Fortuner"
+                          className="w-full px-5 py-3.5 bg-[#F9F9F9] border border-[#E1E3EA] rounded-2xl text-xs font-extrabold outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all text-[#181C32]"
+                          value={assetForm.model_tipe}
+                          onChange={(e) => setAssetForm({ ...assetForm, model_tipe: e.target.value })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Serial Number */}
+                    <div className="col-span-4">
+                      <div className="flex flex-col space-y-2">
+                        <label className="text-xs font-extrabold text-[#3F4254] tracking-wide uppercase">Serial Number</label>
+                        <input 
+                          type="text"
+                          placeholder="Nomor Seri Pabrik"
+                          className="w-full px-5 py-3.5 bg-[#F9F9F9] border border-[#E1E3EA] rounded-2xl text-xs font-extrabold outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all text-[#181C32]"
+                          value={assetForm.serial_number}
+                          onChange={(e) => setAssetForm({ ...assetForm, serial_number: e.target.value })}
                         />
                       </div>
                     </div>
