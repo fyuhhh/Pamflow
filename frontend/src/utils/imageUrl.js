@@ -6,7 +6,7 @@ import { API_URL } from '../config';
  * If it's a relative path (starting with /uploads), prepends the API_URL if necessary.
  */
 export const getImageUrl = (path) => {
-  if (!path) return '';
+  if (!path || typeof path !== 'string') return '';
   if (path.startsWith('data:')) return path;
   
   // If it's already an absolute URL, return it

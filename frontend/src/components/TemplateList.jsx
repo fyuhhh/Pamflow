@@ -323,7 +323,7 @@ const TemplateList = () => {
 
       {/* Import Modal */}
       {isImportOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsImportOpen(false)} />
           <div className="relative bg-white rounded-2xl w-full max-w-[700px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]">
@@ -458,7 +458,7 @@ const TemplateList = () => {
 
       {/* Filter Modal */}
       {isFilterOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[150] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsFilterOpen(false)} />
           <div className="relative bg-white rounded-2xl w-full max-w-[400px] shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
             {/* Header */}

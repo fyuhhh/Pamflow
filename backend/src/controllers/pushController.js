@@ -71,8 +71,52 @@ const testPush = async (req, res) => {
   }
 };
 
+const registerFCM = async (req, res) => {
+  const { token, user_id, device_name, platform } = req.body;
+  const pool = req.app.get('pool');
+
+  if (!token || !user_id) {
+    return res.status(400).json({ message: 'Token and user_id are required' });
+  }
+
+  try {
+    await pool.query(`
+      INSERT INTO fcm_tokens (user_id, token, device_name, platform)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+      user_id = VALUES(user_id),
+      device_name = VALUES(device_name),
+      platform = VALUES(platform)
+    `, [user_id, token, device_name || null, platform || 'android']);
+
+    res.status(201).json({ message: 'FCM token registered successfully' });
+  } catch (err) {
+    console.error('[PushController] Register FCM error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
+const unregisterFCM = async (req, res) => {
+  const { token } = req.body;
+  const pool = req.app.get('pool');
+
+  if (!token) {
+    return res.status(400).json({ message: 'Token is required' });
+  }
+
+  try {
+    await pool.query('DELETE FROM fcm_tokens WHERE token = ?', [token]);
+    res.status(200).json({ message: 'FCM token unregistered successfully' });
+  } catch (err) {
+    console.error('[PushController] Unregister FCM error:', err.message);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+};
+
 module.exports = {
   subscribe,
   unsubscribe,
-  testPush
+  testPush,
+  registerFCM,
+  unregisterFCM
 };

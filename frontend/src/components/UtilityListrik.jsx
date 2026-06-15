@@ -559,6 +559,40 @@ const UtilityListrik = () => {
     }
   };
 
+  const formatDateShort = (dStr) => {
+    const d = new Date(dStr);
+    if (isNaN(d.getTime())) return dStr;
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
+    return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  };
+
+  const getPeriodText = (r) => {
+    if (!r) return '';
+    if (r.period_start && r.period_end) {
+      return `${formatDateShort(r.period_start)} ➔ ${formatDateShort(r.period_end)}`;
+    }
+    // Find the previous approved reading of the same KWH meter
+    const prevReadings = readings
+      .filter(other => 
+        other.meter_id === r.meter_id && 
+        other.status === 'Approved' && 
+        new Date(other.reading_date) < new Date(r.reading_date)
+      )
+      .sort((a, b) => new Date(b.reading_date) - new Date(a.reading_date));
+
+    const prev = prevReadings[0];
+    if (prev) {
+      return `${formatDateShort(prev.reading_date)} ➔ ${formatDateShort(r.reading_date)}`;
+    } else {
+      // Check if there is a billing_start_month on the meter
+      const meterObj = meters.find(m => m.id === r.meter_id);
+      if (meterObj && meterObj.billing_start_month) {
+        return `${formatDateShort(meterObj.billing_start_month)} ➔ ${formatDateShort(r.reading_date)}`;
+      }
+      return formatDateShort(r.reading_date);
+    }
+  };
+
   const getQRUrl = (token) => {
     const origin = window.location.origin;
     const approvalLink = `${origin}/approval-listrik/${token}`;
@@ -1352,41 +1386,6 @@ const UtilityListrik = () => {
             minimumFractionDigits: 2, 
             maximumFractionDigits: 2 
           });
-        };
-
-        // Helper: Format Date to clean format (e.g. 28 Apr 2026)
-        const formatDateShort = (dStr) => {
-          const d = new Date(dStr);
-          if (isNaN(d.getTime())) return dStr;
-          const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Ags', 'Sep', 'Okt', 'Nov', 'Des'];
-          return `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
-        };
-
-        // Helper: Get Period Text (dari tanggal berapa ke tanggal berapa)
-        const getPeriodText = (r) => {
-          if (r.period_start && r.period_end) {
-            return `${formatDateShort(r.period_start)} ➔ ${formatDateShort(r.period_end)}`;
-          }
-          // Find the previous approved reading of the same KWH meter
-          const prevReadings = readings
-            .filter(other => 
-              other.meter_id === r.meter_id && 
-              other.status === 'Approved' && 
-              new Date(other.reading_date) < new Date(r.reading_date)
-            )
-            .sort((a, b) => new Date(b.reading_date) - new Date(a.reading_date));
-
-          const prev = prevReadings[0];
-          if (prev) {
-            return `${formatDateShort(prev.reading_date)} ➔ ${formatDateShort(r.reading_date)}`;
-          } else {
-            // Check if there is a billing_start_month on the meter
-            const meterObj = tenantGroup.meters.find(m => m.id === r.meter_id);
-            if (meterObj && meterObj.billing_start_month) {
-              return `${formatDateShort(meterObj.billing_start_month)} ➔ ${formatDateShort(r.reading_date)}`;
-            }
-            return formatDateShort(r.reading_date);
-          }
         };
 
         // Helper: Group readings by Month for a specific meter

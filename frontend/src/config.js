@@ -20,7 +20,7 @@ const getApiUrl = () => {
   const envUrl = import.meta.env.VITE_API_URL;
 
   // If a real domain/production URL is explicitly set, use it
-  if (envUrl && !envUrl.includes('192.168.') && !envUrl.includes('127.0.0.1') && !envUrl.includes('localhost')) {
+  if (envUrl && !envUrl.includes('127.0.0.1') && !envUrl.includes('localhost')) {
     return envUrl;
   }
 

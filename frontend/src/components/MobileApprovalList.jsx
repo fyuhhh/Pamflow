@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ClipboardCheck, ChevronRight, Clock, User, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
+import { ClipboardCheck, ChevronRight, ChevronLeft, Clock, User, RefreshCw, CheckCircle2, XCircle } from 'lucide-react';
 import { authFetch } from '../services/api';
 
 const MobileApprovalList = () => {
@@ -86,7 +86,9 @@ const MobileApprovalList = () => {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-[13px] font-bold text-[#181C32] truncate">{task.agent_name || '-'}</p>
-            <p className="text-[10px] text-[#A1A5B7]">Meminta persetujuan</p>
+            <p className="text-[10px] text-[#A1A5B7]">
+              {task.is_dept_dispatch_approval ? 'Meminta persetujuan kirim' : 'Meminta persetujuan selesai'}
+            </p>
           </div>
           <span
             className="px-2 py-0.5 rounded text-[9px] font-bold uppercase whitespace-nowrap"
@@ -101,7 +103,7 @@ const MobileApprovalList = () => {
           <h3 className="text-[13px] font-bold text-[#181C32] leading-tight">{task.nama_tugas}</h3>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-[10px] text-[#A1A5B7]">{task.nomor_perintah_kerja}</span>
-            {task.jenis_tugas === 'wo' ? (
+            {(task.jenis_tugas || '').toLowerCase() === 'wo' ? (
               <span className="px-1.5 py-0.5 rounded text-[8px] font-bold text-[#7239EA] bg-[#F8E3FF]">WO</span>
             ) : (
               <span className="px-1.5 py-0.5 rounded text-[8px] font-bold text-[#0095E8] bg-[#F1FAFF]">Checklist</span>
@@ -118,7 +120,9 @@ const MobileApprovalList = () => {
             </div>
             <div className="flex items-center gap-1">
               <User size={11} className="text-[#B5B5C3]" />
-              <span className="text-[10px] text-[#7E8299]">{task.departemen}</span>
+              <span className="text-[10px] text-[#7E8299]">
+                {task.is_dept_dispatch_approval ? `${task.departemen} → ${task.departemen_tujuan}` : task.departemen}
+              </span>
             </div>
           </div>
           <ChevronRight size={16} className="text-[#B5B5C3]" />
@@ -163,7 +167,7 @@ const MobileApprovalList = () => {
           <h3 className="text-[13px] font-bold text-[#181C32] leading-tight">{task.nama_tugas}</h3>
           <div className="flex items-center gap-3 mt-1.5">
             <span className="text-[10px] text-[#A1A5B7]">{task.nomor_perintah_kerja}</span>
-            {task.jenis_tugas === 'wo' ? (
+            {(task.jenis_tugas || '').toLowerCase() === 'wo' ? (
               <span className="px-1.5 py-0.5 rounded text-[8px] font-bold text-[#7239EA] bg-[#F8E3FF]">WO</span>
             ) : (
               <span className="px-1.5 py-0.5 rounded text-[8px] font-bold text-[#0095E8] bg-[#F1FAFF]">Checklist</span>
@@ -196,10 +200,16 @@ const MobileApprovalList = () => {
         paddingTop: 'env(safe-area-inset-top, 20px)',
       }}>
         <div className="px-5 pb-0 pt-4">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-[20px] font-bold text-white tracking-tight">Approval Tugas</h1>
-              <p className="text-[13px] text-white/70 mt-0.5">
+          <div className="flex items-center gap-3 mb-4">
+            <button 
+              onClick={() => navigate('/demo/mobile')} 
+              className="w-10 h-10 bg-white/15 border border-white/10 text-white rounded-xl flex items-center justify-center active:bg-white/25 transition-colors shrink-0 shadow-sm"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-[18px] font-bold text-white tracking-tight leading-tight">Approval Tugas</h1>
+              <p className="text-[11px] text-white/70 mt-0.5">
                 {pendingTasks.length} menunggu · {historyTasks.length} riwayat
               </p>
             </div>

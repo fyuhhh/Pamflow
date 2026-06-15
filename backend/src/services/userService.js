@@ -59,25 +59,39 @@ const getUserById = async (id) => {
   return rows[0];
 };
 
+const getUserByEmail = async (email) => {
+  if (!email) return null;
+  const [rows] = await db.query('SELECT * FROM users WHERE email = ?', [email]);
+  return rows[0];
+};
+
+const getUserByUsername = async (username) => {
+  if (!username) return null;
+  const [rows] = await db.query('SELECT * FROM users WHERE username = ?', [username]);
+  return rows[0];
+};
+
 const createUser = async (userData) => {
-  const { employeeId, firstName, lastName, email, username, phone, role, role_id, orgId, company_id, department, password, pin, userType, status, can_approve } = userData;
+  const { employeeId, firstName, lastName, email, username, phone, role, role_id, orgId, company_id, department, password, pin, userType, status, can_approve, permissions } = userData;
   
   const finalPassword = password ? await bcrypt.hash(password, 10) : null;
   const finalPin = pin ? await bcrypt.hash(pin, 10) : null;
+  const permsStr = permissions ? JSON.stringify(permissions) : null;
 
   const [result] = await db.query(
-    'INSERT INTO users (employeeId, firstName, lastName, email, username, phone, role, role_id, orgId, company_id, department, password, pin, userType, status, can_approve) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-    [employeeId, firstName, lastName, email || null, username, phone, role, role_id || null, orgId || 'PAM', company_id || null, department || 'IT', finalPassword, finalPin, userType, status || 'Aktif', can_approve ? 1 : 0]
+    'INSERT INTO users (employeeId, firstName, lastName, email, username, phone, role, role_id, orgId, company_id, department, password, pin, userType, status, can_approve, permissions) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+    [employeeId, firstName, lastName, email || null, username, phone, role, role_id || null, orgId || 'PAM', company_id || null, department || 'IT', finalPassword, finalPin, userType, status || 'Aktif', can_approve ? 1 : 0, permsStr]
   );
   return result.insertId;
 };
 
 const updateUser = async (id, userData) => {
-  const { employeeId, firstName, lastName, email, username, phone, role, role_id, orgId, company_id, department, password, pin, status, can_approve } = userData;
+  const { employeeId, firstName, lastName, email, username, phone, role, role_id, orgId, company_id, department, password, pin, status, can_approve, permissions } = userData;
   
-  const [currentUserRows] = await db.query('SELECT password, pin FROM users WHERE id = ?', [id]);
+  const [currentUserRows] = await db.query('SELECT password, pin, can_approve FROM users WHERE id = ?', [id]);
   const currentPassword = currentUserRows.length > 0 ? currentUserRows[0].password : null;
   const currentPin = currentUserRows.length > 0 ? currentUserRows[0].pin : null;
+  const currentCanApprove = currentUserRows.length > 0 ? currentUserRows[0].can_approve : 0;
   
   let finalPassword = currentPassword;
   if (password && !password.startsWith('$2b$')) {
@@ -93,9 +107,12 @@ const updateUser = async (id, userData) => {
     finalPin = pin;
   }
 
+  const permsStr = permissions ? JSON.stringify(permissions) : null;
+  const finalCanApprove = can_approve !== undefined ? (can_approve ? 1 : 0) : currentCanApprove;
+
   await db.query(
-    'UPDATE users SET employeeId=?, firstName=?, lastName=?, email=?, username=?, phone=?, role=?, role_id=?, orgId=?, company_id=?, department=?, password=?, pin=?, status=?, can_approve=? WHERE id=?',
-    [employeeId, firstName, lastName, email || null, username, phone, role, role_id || null, orgId || 'PAM', company_id || null, department || 'IT', finalPassword, finalPin, status, can_approve !== undefined ? (can_approve ? 1 : 0) : undefined, id]
+    'UPDATE users SET employeeId=?, firstName=?, lastName=?, email=?, username=?, phone=?, role=?, role_id=?, orgId=?, company_id=?, department=?, password=?, pin=?, status=?, can_approve=?, permissions=? WHERE id=?',
+    [employeeId, firstName, lastName, email || null, username, phone, role, role_id || null, orgId || 'PAM', company_id || null, department || 'IT', finalPassword, finalPin, status, finalCanApprove, permsStr, id]
   );
 };
 
@@ -118,9 +135,12 @@ module.exports = {
   createPasswordResetRequest,
   getAllUsers,
   getUserById,
+  getUserByEmail,
+  getUserByUsername,
   createUser,
   updateUser,
   updatePassword,
   updatePin,
   deleteUser
 };
+

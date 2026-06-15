@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Plus, Search, Edit2, Trash2, Folder, MapPin, Users, Loader2, X, Info, Shield, HelpCircle, BookOpen, ChevronRight, ChevronDown, Building2, Activity, Box } from 'lucide-react';
+import { Plus, Search, Edit2, Trash2, Folder, MapPin, Users, Loader2, X, Info, Shield, HelpCircle, BookOpen, ChevronRight, ChevronDown, Building2, Activity, Box, GitFork } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import { hasPermission } from '../utils/permissions';
+import VisualHierarchyModal from './VisualHierarchyModal';
 
 
-const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false, required = false }) => {
+const SearchableSelect = ({ label, options, value, onChange, placeholder, disabled = false, required = false, direction = 'down' }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState('');
   
@@ -31,7 +32,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, disabl
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[9998]" onClick={() => setIsOpen(false)} />
-          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-[#E1E3EA] rounded-xl shadow-lg z-[9999] overflow-hidden max-h-[200px] flex flex-col">
+          <div className={`absolute ${direction === 'up' ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 right-0 bg-white border border-[#E1E3EA] rounded-xl shadow-lg z-[9999] overflow-hidden max-h-[300px] flex flex-col`}>
             <div className="p-2 border-b border-[#F1F1F4] bg-[#F9F9F9]">
               <div className="flex items-center px-2 py-1 bg-white border border-[#E1E3EA] rounded-lg">
                 <Search size={12} className="text-[#A1A5B7] mr-2" />
@@ -46,7 +47,11 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, disabl
                 />
               </div>
             </div>
-            <div className="overflow-y-auto">
+            <div 
+              className="overflow-y-auto max-h-[180px]"
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {filteredOptions.length === 0 ? (
                 <div className="p-3 text-xs text-[#7E8299] text-center">Tidak ada data</div>
               ) : (
@@ -227,6 +232,19 @@ const MasterDataAset = () => {
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
+  const [isVisualModalOpen, setIsVisualModalOpen] = useState(false);
+
+  // Prevent background scrolling when modals are open
+  useEffect(() => {
+    if (isModalOpen || isInfoModalOpen || isVisualModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen, isInfoModalOpen, isVisualModalOpen]);
   const [modalMode, setModalMode] = useState('add'); // 'add' or 'edit'
   const [selectedItem, setSelectedItem] = useState(null);
   const [activeInfoTab, setActiveInfoTab] = useState('Kelompok 1');
@@ -286,6 +304,100 @@ const MasterDataAset = () => {
 
   const { success, error: showError, confirm } = useModal();
 
+  const handlePasteSpec = (e, updateValue) => {
+    const clipboardData = e.clipboardData || window.clipboardData;
+    const htmlData = clipboardData.getData('text/html');
+    const plainText = clipboardData.getData('text/plain');
+
+    if (htmlData) {
+      e.preventDefault();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlData, 'text/html');
+      
+      let lines = [];
+      let currentLine = '';
+
+      const flushLine = () => {
+        if (currentLine.trim()) {
+          lines.push(currentLine.trim());
+        }
+        currentLine = '';
+      };
+
+      const traverse = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.nodeValue;
+          if (text.includes('\n')) {
+            const parts = text.split('\n');
+            for (let i = 0; i < parts.length; i++) {
+              if (i > 0) flushLine();
+              currentLine += parts[i];
+            }
+          } else {
+            currentLine += text;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const tag = node.tagName.toLowerCase();
+          const isBlock = ['p', 'div', 'li', 'tr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'].includes(tag);
+          
+          if (isBlock) flushLine();
+
+          if (tag === 'br') {
+            flushLine();
+          } else if (tag === 'li') {
+            flushLine();
+            currentLine = '• ';
+          } else if (tag === 'td' || tag === 'th') {
+            if (currentLine.trim()) {
+              currentLine = currentLine.trim() + ' ';
+            }
+            for (let child of node.childNodes) traverse(child);
+          } else {
+            for (let child of node.childNodes) traverse(child);
+          }
+
+          if (isBlock) flushLine();
+        }
+      };
+
+      traverse(doc.body);
+      flushLine();
+
+      const formatted = lines
+        .map(l => l.trim())
+        .filter(Boolean)
+        .map(l => l.replace(/^•\s*•/g, '•').replace(/^•\s*-\s*/g, '• '))
+        .join('\n');
+
+      if (formatted) {
+        const input = e.target;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const val = input.value;
+        const newVal = val.substring(0, start) + formatted + val.substring(end);
+        updateValue(newVal);
+        setTimeout(() => {
+          input.selectionStart = input.selectionEnd = start + formatted.length;
+        }, 0);
+        return;
+      }
+    }
+
+    if (plainText) {
+      e.preventDefault();
+      const normalized = plainText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const input = e.target;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const val = input.value;
+      const newVal = val.substring(0, start) + normalized + val.substring(end);
+      updateValue(newVal);
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = start + normalized.length;
+      }, 0);
+    }
+  };
+
   useEffect(() => {
     fetchData();
   }, [activeTab, activeConditionSubTab]);
@@ -309,6 +421,11 @@ const MasterDataAset = () => {
         if (catRes.ok) {
           const catData = await catRes.json();
           setCategories(catData);
+        }
+        const deptRes = await authFetch('/api/pure-assets/departments');
+        if (deptRes.ok) {
+          const deptData = await deptRes.json();
+          setDepartments(deptData);
         }
       } else if (activeTab === 'location') {
         const res = await authFetch('/api/pure-assets/locations');
@@ -599,7 +716,7 @@ const MasterDataAset = () => {
   };
 
   // Tree building and flattening helpers for collapsible Hierarchical View
-  const buildTree = (items, parentId = null) => {
+  function buildTree(items, parentId = null) {
     let filtered = items.filter(item => {
       if (parentId === null) return !item.parent_id;
       return item.parent_id === parentId;
@@ -625,9 +742,9 @@ const MasterDataAset = () => {
       ...item,
       children: buildTree(items, item.id)
     }));
-  };
+  }
 
-  const flattenTree = (nodes, collapsedMap, depth = 0, parentVisible = true) => {
+  function flattenTree(nodes, collapsedMap, depth = 0, parentVisible = true) {
     let result = [];
     nodes.forEach(node => {
       result.push({
@@ -644,7 +761,7 @@ const MasterDataAset = () => {
       }
     });
     return result;
-  };
+  }
 
   const resolvedCategories = resolveCategoryHierarchy(categories);
 
@@ -792,6 +909,10 @@ const MasterDataAset = () => {
   );
 
   const sortedDepartments = [...filteredDepartments].sort((a, b) => 
+    (a.name || '').localeCompare(b.name || '')
+  );
+
+  const allSortedDepartments = [...departments].sort((a, b) => 
     (a.name || '').localeCompare(b.name || '')
   );
 
@@ -987,7 +1108,7 @@ const MasterDataAset = () => {
             </div>
 
             <div className="flex items-center gap-2 border-l border-[#F1F1F4] pl-4 ml-2">
-              <label className="relative inline-flex items-center cursor-pointer select-none">
+              <label className="relative inline-flex items-center cursor-pointer select-none mr-3">
                 <input
                   type="checkbox"
                   checked={useTreeViewCategory}
@@ -997,6 +1118,14 @@ const MasterDataAset = () => {
                 <div className="w-9 h-5 bg-[#E1E3EA] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0095E8]"></div>
                 <span className="ml-2 text-xs font-bold text-[#5E6278]">Hierarki TreeView</span>
               </label>
+              <button
+                type="button"
+                onClick={() => setIsVisualModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E1E3EA] hover:border-[#0095E8]/30 hover:bg-[#F1FAFF] text-[#0095E8] rounded-xl text-xs font-bold transition-all shadow-sm"
+              >
+                <GitFork size={13} className="rotate-180" />
+                Lihat Diagram
+              </button>
             </div>
           </>
         )}
@@ -1033,7 +1162,7 @@ const MasterDataAset = () => {
             </div>
 
             <div className="flex items-center gap-2 border-l border-[#F1F1F4] pl-4 ml-2">
-              <label className="relative inline-flex items-center cursor-pointer select-none">
+              <label className="relative inline-flex items-center cursor-pointer select-none mr-3">
                 <input
                   type="checkbox"
                   checked={useTreeViewLocation}
@@ -1043,6 +1172,14 @@ const MasterDataAset = () => {
                 <div className="w-9 h-5 bg-[#E1E3EA] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#0095E8]"></div>
                 <span className="ml-2 text-xs font-bold text-[#5E6278]">Hierarki TreeView</span>
               </label>
+              <button
+                type="button"
+                onClick={() => setIsVisualModalOpen(true)}
+                className="flex items-center gap-1.5 px-3.5 py-2 bg-white border border-[#E1E3EA] hover:border-[#0095E8]/30 hover:bg-[#F1FAFF] text-[#0095E8] rounded-xl text-xs font-bold transition-all shadow-sm"
+              >
+                <GitFork size={13} className="rotate-180" />
+                Lihat Diagram
+              </button>
             </div>
           </>
         )}
@@ -1252,7 +1389,15 @@ const MasterDataAset = () => {
                             </div>
                           </td>
                           <td className="p-5 text-sm text-[#7E8299]">{asset.category_name || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
-                          <td className="p-5 text-sm text-[#7E8299] max-w-[300px] truncate">{asset.specification || <span className="text-[#A1A5B7] italic text-xs font-light">-</span>}</td>
+                          <td className="p-5 text-sm text-[#7E8299] max-w-[320px]">
+                            {asset.specification ? (
+                              <div className="max-h-[90px] overflow-y-auto whitespace-pre-line break-words pr-2 text-xs leading-relaxed font-semibold text-[#5E6278]">
+                                {asset.specification}
+                              </div>
+                            ) : (
+                              <span className="text-[#A1A5B7] italic text-xs font-light">-</span>
+                            )}
+                          </td>
                           <td className="p-5 text-sm text-right space-x-1 whitespace-nowrap">
                             {canEdit && (
                               <button 
@@ -1605,10 +1750,10 @@ const MasterDataAset = () => {
 
       {/* Modal CRUD Form */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-[600px] max-w-full overflow-hidden border border-[#F1F1F4] animate-scale-up">
+        <div className="fixed inset-0 bg-black/45 backdrop-blur-sm flex items-center justify-center z-[150] animate-fade-in">
+          <div className={`bg-white rounded-3xl shadow-2xl ${activeTab === 'asset' ? 'w-[800px]' : 'w-[600px]'} max-w-full max-h-[95vh] flex flex-col border border-[#F1F1F4] animate-scale-up`}>
             {/* Modal Header */}
-            <div className="px-8 py-6 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]/50">
+            <div className="px-8 py-6 border-b border-[#F1F1F4] flex items-center justify-between bg-[#F9F9F9]/50 shrink-0 rounded-t-3xl">
               <div>
                 <h3 className="text-base font-bold text-[#181C32]">
                   {activeTab === 'category' 
@@ -1648,8 +1793,8 @@ const MasterDataAset = () => {
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmit}>
-              <div className="p-8 space-y-5">
+            <form onSubmit={handleSubmit} className="flex-1 flex flex-col overflow-visible">
+              <div className={`p-8 space-y-5 flex-1 ${activeTab === 'category' ? 'overflow-y-auto' : 'overflow-y-visible'}`}>
                 {activeTab === 'category' ? (
                   <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                     
@@ -1754,24 +1899,28 @@ const MasterDataAset = () => {
                       </div>
                     </div>
 
-                    {/* PARENT - Dynamic Select Dropdown */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-[#181C32]">Parent</label>
-                      <select 
-                        className="w-full px-4 py-3 bg-[#F9F9F9] border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all cursor-pointer"
+                    {/* PARENT - Dynamic Searchable Select */}
+                    <div className="z-20">
+                      <SearchableSelect 
+                        label="Parent"
+                        placeholder="Pilih Parent"
                         value={categoryForm.parent_id}
-                        onChange={(e) => setCategoryForm({ ...categoryForm, parent_id: e.target.value })}
-                      >
-                        <option value="">Asset Category (Utama / Root)</option>
-                        {resolvedCategories
-                          .filter(c => !selectedItem || c.id !== selectedItem.id)
-                          .map(c => (
-                            <option key={c.id} value={c.id}>
-                              {c.category_name} ({c.category_code} - Lvl {c.level})
-                            </option>
-                          ))
-                        }
-                      </select>
+                        onChange={(val) => setCategoryForm({ ...categoryForm, parent_id: val })}
+                        direction="up"
+                        options={[
+                          { value: '', label: 'Asset Category (Utama / Root)' },
+                          ...resolvedCategories
+                            .filter(c => !selectedItem || c.id !== selectedItem.id)
+                            .sort((a, b) => {
+                              if (a.level !== b.level) return a.level - b.level;
+                              return (a.category_name || '').localeCompare(b.category_name || '');
+                            })
+                            .map(c => ({
+                              value: c.id,
+                              label: `${c.category_name} (${c.category_code} - Lvl ${c.level})`
+                            }))
+                        ]}
+                      />
                     </div>
 
                     {/* LEVEL - Dynamic Calculated Badge */}
@@ -1790,35 +1939,35 @@ const MasterDataAset = () => {
                     </div>
                   </div>
                 ) : activeTab === 'asset' ? (
-                  <div className="space-y-5">
+                  <div className="grid grid-cols-2 gap-x-5 gap-y-4">
                     {/* ID ASET */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-1">
                       <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">ID Aset</label>
                       <input 
                         type="text"
                         placeholder="ID Aset"
-                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-semibold"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-semibold outline-none focus:border-[#0095E8]/30 transition-all"
                         value={assetForm.asset_id}
                         onChange={(e) => setAssetForm({ ...assetForm, asset_id: e.target.value })}
                       />
-                      <p className="text-[10px] text-[#A1A5B7] font-semibold">*Kosongkan untuk meng-generate ID aset otomatis secara berurutan.</p>
+                      <p className="text-[9px] text-[#A1A5B7] font-semibold leading-tight">*Kosongkan untuk meng-generate ID aset otomatis secara berurutan.</p>
                     </div>
 
                     {/* NAMA ASET */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-1">
                       <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Nama Aset</label>
                       <input 
                         type="text"
                         required
                         placeholder="Nama Aset"
-                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-medium outline-none focus:border-[#0095E8]/30 transition-all"
                         value={assetForm.asset_name}
                         onChange={(e) => setAssetForm({ ...assetForm, asset_name: e.target.value })}
                       />
                     </div>
 
                     {/* KATEGORI */}
-                    <div className="z-20">
+                    <div className="col-span-1 z-[30]">
                       <SearchableSelect 
                         label="Kategori"
                         required
@@ -1830,61 +1979,65 @@ const MasterDataAset = () => {
                     </div>
 
                     {/* DEPARTEMEN */}
-                    <div className="z-10">
+                    <div className="col-span-1 z-[20]">
                       <SearchableSelect 
                         label="Departemen"
                         placeholder="Pilih Departemen (Opsional)"
                         value={assetForm.department_id}
                         onChange={(val) => setAssetForm({ ...assetForm, department_id: val })}
-                        options={sortedDepartments.map(d => ({ value: d.id, label: d.name }))}
+                        options={allSortedDepartments.map(d => ({ value: d.id, label: d.name }))}
                       />
                     </div>
 
                     {/* RFID */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-1">
                       <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">RFID</label>
                       <input 
                         type="text"
                         placeholder="Tag RFID"
-                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-medium outline-none focus:border-[#0095E8]/30 transition-all"
                         value={assetForm.rfid_tag}
                         onChange={(e) => setAssetForm({ ...assetForm, rfid_tag: e.target.value })}
                       />
                     </div>
 
                     {/* Brand */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-1">
                       <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Brand</label>
                       <input 
                         type="text"
                         placeholder="Contoh: Asus, Toyota"
-                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-medium outline-none focus:border-[#0095E8]/30 transition-all"
                         value={assetForm.brand}
                         onChange={(e) => setAssetForm({ ...assetForm, brand: e.target.value })}
                       />
                     </div>
 
                     {/* Model / Tipe */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-1">
                       <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Model / Tipe</label>
                       <input 
                         type="text"
                         placeholder="Contoh: Fortuner, Zephyrus"
-                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all font-medium"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-medium outline-none focus:border-[#0095E8]/30 transition-all"
                         value={assetForm.model_tipe}
                         onChange={(e) => setAssetForm({ ...assetForm, model_tipe: e.target.value })}
                       />
                     </div>
 
+                    {/* Empty cell spacer to balance layout */}
+                    <div className="col-span-1"></div>
+
                     {/* SPESIFIKASI */}
-                    <div className="space-y-1.5">
+                    <div className="space-y-1.5 col-span-2">
                       <label className="text-[11px] font-bold text-[#181C32] uppercase tracking-wider">Spesifikasi</label>
                       <textarea 
                         placeholder="Spesifikasi"
-                        rows="4"
-                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all resize-none font-medium"
+                        rows="3"
+                        className="w-full px-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-medium outline-none focus:border-[#0095E8]/30 transition-all resize-none"
                         value={assetForm.specification}
                         onChange={(e) => setAssetForm({ ...assetForm, specification: e.target.value })}
+                        onPaste={(e) => handlePasteSpec(e, (val) => setAssetForm({ ...assetForm, specification: val }))}
                       />
                     </div>
                   </div>
@@ -1915,24 +2068,27 @@ const MasterDataAset = () => {
                       />
                     </div>
 
-                    {/* PARENT - Dynamic Select Dropdown */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-[#181C32]">Parent</label>
-                      <select 
-                        className="w-full px-4 py-3 bg-[#F9F9F9] border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all cursor-pointer"
+                    {/* PARENT - Dynamic Searchable Select */}
+                    <div className="z-20">
+                      <SearchableSelect 
+                        label="Parent"
+                        placeholder="Pilih Parent"
                         value={locationForm.parent_id}
-                        onChange={(e) => setLocationForm({ ...locationForm, parent_id: e.target.value })}
-                      >
-                        <option value="">Location Category (Utama / Root)</option>
-                        {resolvedLocations
-                          .filter(l => !selectedItem || l.id !== selectedItem.id)
-                          .map(l => (
-                            <option key={l.id} value={l.id}>
-                              {l.location_name} ({l.location_id} - Lvl {l.level})
-                            </option>
-                          ))
-                        }
-                      </select>
+                        onChange={(val) => setLocationForm({ ...locationForm, parent_id: val })}
+                        options={[
+                          { value: '', label: 'Location Category (Utama / Root)' },
+                          ...resolvedLocations
+                            .filter(l => !selectedItem || l.id !== selectedItem.id)
+                            .sort((a, b) => {
+                              if (a.level !== b.level) return a.level - b.level;
+                              return (a.location_name || '').localeCompare(b.location_name || '');
+                            })
+                            .map(l => ({
+                              value: l.id,
+                              label: `${l.location_name} (${l.location_id} - Lvl ${l.level})`
+                            }))
+                        ]}
+                      />
                     </div>
 
                     {/* LEVEL - Dynamic Calculated Badge */}
@@ -2075,7 +2231,7 @@ const MasterDataAset = () => {
               </div>
 
               {/* Modal Footer */}
-              <div className="px-8 py-5 bg-[#F9F9F9]/50 border-t border-[#F1F1F4] flex items-center justify-end gap-3">
+              <div className="px-8 py-5 bg-[#F9F9F9]/50 border-t border-[#F1F1F4] flex items-center justify-end gap-3 shrink-0 rounded-b-3xl">
                 <button 
                   type="button" 
                   onClick={() => setIsModalOpen(false)}
@@ -2097,8 +2253,8 @@ const MasterDataAset = () => {
 
       {/* Modal PMK 72/2023 - Kelompok Aktiva Tetap (Buku Referensi) */}
       {isInfoModalOpen && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 animate-fade-in">
-          <div className="bg-white rounded-3xl shadow-2xl w-[800px] max-w-full h-[650px] flex flex-col overflow-hidden border border-[#F1F1F4] animate-scale-up">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[150] animate-fade-in">
+          <div className="bg-white rounded-3xl shadow-2xl w-[800px] max-w-full h-[650px] max-h-[90vh] flex flex-col overflow-hidden border border-[#F1F1F4] animate-scale-up">
             
             {/* Header */}
             <div className="px-8 py-6 border-b border-[#F1F1F4] flex items-center justify-between bg-gradient-to-r from-[#F1FAFF] to-white">
@@ -2187,6 +2343,13 @@ const MasterDataAset = () => {
           </div>
         </div>
       )}
+
+      <VisualHierarchyModal
+        isOpen={isVisualModalOpen}
+        onClose={() => setIsVisualModalOpen(false)}
+        data={activeTab === 'category' ? categories : locations}
+        type={activeTab === 'category' ? 'category' : 'location'}
+      />
 
     </div>
   );

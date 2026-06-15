@@ -2,13 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Plus, Search, Edit2, Trash2, Folder, MapPin, Users, Loader2, X, Info, 
-  ChevronRight, ChevronDown, ChevronLeft, Building2, Activity, Box, Download, Upload, Image, HelpCircle 
+  ChevronRight, ChevronDown, ChevronLeft, Building2, Activity, Box, Download, Upload, Image, HelpCircle, GitFork
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
 import ExcelJS from 'exceljs';
 import { saveAs } from 'file-saver';
 import { hasPermission } from '../utils/permissions';
+import VisualAssetMapModal from './VisualAssetMapModal';
 
 
 // BEAUTIFUL CUSTOM SEARCHABLE SELECT COMPONENT WITH HIGH VISIBILITY Z-INDEX AND CLEAN TRANSITION
@@ -37,7 +38,7 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, disabl
       {isOpen && (
         <>
           <div className="fixed inset-0 z-[270]" onClick={() => setIsOpen(false)} />
-          <div className="absolute left-0 right-0 mt-2 bg-white border border-[#E1E3EA] rounded-2xl shadow-2xl z-[280] overflow-hidden max-h-[260px] flex flex-col animate-dropdown">
+          <div className="absolute top-full left-0 right-0 mt-1.5 bg-white border border-[#E1E3EA] rounded-2xl shadow-2xl z-[280] overflow-hidden max-h-[260px] flex flex-col animate-dropdown">
             {/* Search Input Box */}
             <div className="p-3 border-b border-[#F1F1F4] bg-[#F9F9F9] flex items-center">
               <Search size={14} className="text-[#A1A5B7] mr-2" />
@@ -51,7 +52,11 @@ const SearchableSelect = ({ label, options, value, onChange, placeholder, disabl
               />
             </div>
             {/* Options list */}
-            <div className="overflow-y-auto max-h-[200px] custom-scrollbar">
+            <div 
+              className="overflow-y-auto max-h-[200px] custom-scrollbar"
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {filteredOptions.length === 0 ? (
                 <div className="p-4 text-xs text-[#7E8299] text-center italic font-semibold">
                   Data tidak ditemukan
@@ -182,7 +187,11 @@ const FilterSelect = ({ label, icon, options, value, onChange, placeholder }) =>
               )}
             </div>
             {/* Options */}
-            <div className="overflow-y-auto max-h-[200px]">
+            <div 
+              className="overflow-y-auto max-h-[200px]"
+              onWheel={(e) => e.stopPropagation()}
+              onTouchMove={(e) => e.stopPropagation()}
+            >
               {filteredOptions.length === 0 ? (
                 <div className="py-4 text-xs text-[#B5B5C3] text-center italic font-semibold">
                   Tidak ditemukan
@@ -265,6 +274,100 @@ const AssetList = () => {
   const [uploadedImages, setUploadedImages] = useState([]);
   const [zoomedImage, setZoomedImage] = useState(null);
 
+  const handlePasteSpec = (e, updateValue) => {
+    const clipboardData = e.clipboardData || window.clipboardData;
+    const htmlData = clipboardData.getData('text/html');
+    const plainText = clipboardData.getData('text/plain');
+
+    if (htmlData) {
+      e.preventDefault();
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(htmlData, 'text/html');
+      
+      let lines = [];
+      let currentLine = '';
+
+      const flushLine = () => {
+        if (currentLine.trim()) {
+          lines.push(currentLine.trim());
+        }
+        currentLine = '';
+      };
+
+      const traverse = (node) => {
+        if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.nodeValue;
+          if (text.includes('\n')) {
+            const parts = text.split('\n');
+            for (let i = 0; i < parts.length; i++) {
+              if (i > 0) flushLine();
+              currentLine += parts[i];
+            }
+          } else {
+            currentLine += text;
+          }
+        } else if (node.nodeType === Node.ELEMENT_NODE) {
+          const tag = node.tagName.toLowerCase();
+          const isBlock = ['p', 'div', 'li', 'tr', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol'].includes(tag);
+          
+          if (isBlock) flushLine();
+
+          if (tag === 'br') {
+            flushLine();
+          } else if (tag === 'li') {
+            flushLine();
+            currentLine = '• ';
+          } else if (tag === 'td' || tag === 'th') {
+            if (currentLine.trim()) {
+              currentLine = currentLine.trim() + ' ';
+            }
+            for (let child of node.childNodes) traverse(child);
+          } else {
+            for (let child of node.childNodes) traverse(child);
+          }
+
+          if (isBlock) flushLine();
+        }
+      };
+
+      traverse(doc.body);
+      flushLine();
+
+      const formatted = lines
+        .map(l => l.trim())
+        .filter(Boolean)
+        .map(l => l.replace(/^•\s*•/g, '•').replace(/^•\s*-\s*/g, '• '))
+        .join('\n');
+
+      if (formatted) {
+        const input = e.target;
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const val = input.value;
+        const newVal = val.substring(0, start) + formatted + val.substring(end);
+        updateValue(newVal);
+        setTimeout(() => {
+          input.selectionStart = input.selectionEnd = start + formatted.length;
+        }, 0);
+        return;
+      }
+    }
+
+    if (plainText) {
+      e.preventDefault();
+      const normalized = plainText.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+      const input = e.target;
+      const start = input.selectionStart;
+      const end = input.selectionEnd;
+      const val = input.value;
+      const newVal = val.substring(0, start) + normalized + val.substring(end);
+      updateValue(newVal);
+      setTimeout(() => {
+        input.selectionStart = input.selectionEnd = start + normalized.length;
+      }, 0);
+    }
+  };
+
   // Form core states matching form mockup
   const [assetForm, setAssetForm] = useState({
     asset_id: '',
@@ -291,6 +394,7 @@ const AssetList = () => {
 
   const [isMultiple, setIsMultiple] = useState(false);
   const [multipleQty, setMultipleQty] = useState(1);
+  const [isMapModalOpen, setIsMapModalOpen] = useState(false);
 
   // Import State
   const [importing, setImporting] = useState(false);
@@ -312,6 +416,17 @@ const AssetList = () => {
     readyToImport: 0,
     details: []
   });
+
+  useEffect(() => {
+    if (isModalOpen || isNestedModalOpen || showPreImportModal || isMapModalOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, [isModalOpen, isNestedModalOpen, showPreImportModal, isMapModalOpen]);
 
   useEffect(() => {
     fetchData();
@@ -485,6 +600,11 @@ const AssetList = () => {
     
     const today = new Date().toISOString().substring(0, 10);
 
+    const matchedDept = departments.find(d => 
+      String(d.name).toLowerCase().trim() === String(currentUser?.department || '').toLowerCase().trim()
+    );
+    const defaultDeptId = matchedDept ? matchedDept.id : '';
+
     setAssetForm({
       asset_id: '',
       asset_name: '',
@@ -495,7 +615,7 @@ const AssetList = () => {
       category_id: '',
       location_id: '',
       vendor_id: '',
-      department_id: '',
+      department_id: defaultDeptId,
       condition_id: conditions[0]?.id || '',
       asset_user: '',
       acquisition_date: today,
@@ -1509,9 +1629,13 @@ const AssetList = () => {
     label: `${c.category_code || ''} - ${c.category_name}`
   }));
 
-  const assetIdOptions = masterAssets.map(a => ({
+  const sortedMasterAssetsForDropdown = [...masterAssets].sort((a, b) => 
+    (a.asset_name || '').localeCompare(b.asset_name || '')
+  );
+
+  const assetIdOptions = sortedMasterAssetsForDropdown.map(a => ({
     value: a.asset_id,
-    label: `${a.asset_id} - ${a.asset_name}`
+    label: a.asset_name
   }));
 
   const formulaOptions = [
@@ -1556,6 +1680,14 @@ const AssetList = () => {
         </div>
 
         <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setIsMapModalOpen(true)}
+            className="flex items-center gap-2 px-5 py-3 border border-[#E1E3EA] bg-white text-[#0095E8] hover:bg-[#F1FAFF] hover:border-[#0095E8]/30 rounded-xl text-xs font-bold transition-all shadow-sm"
+          >
+            <GitFork size={14} className="rotate-180" />
+            Peta Relasi Aset
+          </button>
+
           {canCreate && (
             <>
               <button 
@@ -2176,7 +2308,9 @@ const AssetList = () => {
                                   category_id: matched.category_id || prev.category_id,
                                   specification: matched.specification || prev.specification,
                                   brand: matched.brand || prev.brand,
-                                  model_tipe: matched.model_tipe || prev.model_tipe
+                                  model_tipe: matched.model_tipe || prev.model_tipe,
+                                  rfid_tag: matched.rfid_tag || prev.rfid_tag,
+                                  department_id: matched.department_id || prev.department_id
                                 }));
                               } else {
                                 setAssetForm(prev => ({ ...prev, asset_id: val }));
@@ -2240,7 +2374,21 @@ const AssetList = () => {
                         <SearchableSelect 
                           options={formulaOptions}
                           value={assetForm.depreciation_formula}
-                          onChange={(val) => setAssetForm({ ...assetForm, depreciation_formula: val })}
+                          onChange={(val) => {
+                            if (val === 'None') {
+                              setAssetForm(prev => ({
+                                ...prev,
+                                depreciation_formula: 'None',
+                                is_depreciable: false,
+                                depreciation_percent: '0'
+                              }));
+                            } else {
+                              setAssetForm(prev => ({
+                                ...prev,
+                                depreciation_formula: val
+                              }));
+                            }
+                          }}
                           placeholder="Pilih Rumus"
                           disabled={!assetForm.is_depreciable}
                         />
@@ -2314,6 +2462,7 @@ const AssetList = () => {
                           className="w-full px-5 py-3.5 bg-[#F9F9F9] border border-[#E1E3EA] rounded-2xl text-xs font-bold outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all resize-none text-[#3F4254]"
                           value={assetForm.specification}
                           onChange={(e) => setAssetForm({ ...assetForm, specification: e.target.value })}
+                          onPaste={(e) => handlePasteSpec(e, (val) => setAssetForm({ ...assetForm, specification: val }))}
                         />
                       </div>
                     </div>
@@ -2856,6 +3005,7 @@ const AssetList = () => {
                     className="w-full px-5 py-3.5 bg-[#F9F9F9] border border-[#E1E3EA] rounded-2xl text-xs font-bold outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all resize-none text-[#3F4254]"
                     value={nestedAssetForm.specification}
                     onChange={(e) => setNestedAssetForm({ ...nestedAssetForm, specification: e.target.value })}
+                    onPaste={(e) => handlePasteSpec(e, (val) => setNestedAssetForm({ ...nestedAssetForm, specification: val }))}
                   />
                 </div>
 
@@ -2875,6 +3025,15 @@ const AssetList = () => {
           </div>
         </div>
       )}
+
+      <VisualAssetMapModal
+        isOpen={isMapModalOpen}
+        onClose={() => setIsMapModalOpen(false)}
+        assets={assets}
+        categories={categories}
+        locations={locations}
+        departments={departments}
+      />
 
     </div>
   );

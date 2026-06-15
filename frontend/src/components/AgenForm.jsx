@@ -40,7 +40,8 @@ const AgenForm = () => {
     userType: 'agen',
     status: 'Aktif',
     can_approve: false,
-    username: ''
+    username: '',
+    permissions: {}
   });
 
   useEffect(() => {
@@ -78,11 +79,41 @@ const AgenForm = () => {
       const response = await authFetch(`/api/users/${id}`);
       if (response.ok) {
         const data = await response.json();
-        setFormData({ ...data });
+        let parsedPermissions = {};
+        if (data.permissions) {
+          try {
+            parsedPermissions = typeof data.permissions === 'string' ? JSON.parse(data.permissions) : data.permissions;
+          } catch (e) {}
+        }
+        setFormData({ ...data, permissions: parsedPermissions });
       } else {
         navigate('/pengguna/agen');
       }
     } catch (err) {} finally { setFetching(false); }
+  };
+
+  const MOBILE_MENUS = [
+    { id: 'checklist_harian', label: 'Checklist Harian' },
+    { id: 'riwayat_checklist', label: 'Riwayat Checklist' },
+    { id: 'daftar_tugas', label: 'Daftar Tugas' },
+    { id: 'catat_listrik', label: 'Catat Listrik' },
+    { id: 'pengoperasian_aset', label: 'Pengoperasian Aset' },
+    { id: 'persetujuan_dokumen', label: 'Persetujuan Dokumen' }
+  ];
+
+  const handleMenuToggle = (menuId) => {
+    const currentMenus = formData.permissions?.mobile_menus || [];
+    const newMenus = currentMenus.includes(menuId)
+      ? currentMenus.filter(id => id !== menuId)
+      : [...currentMenus, menuId];
+    
+    setFormData({
+      ...formData,
+      permissions: {
+        ...(formData.permissions || {}),
+        mobile_menus: newMenus
+      }
+    });
   };
 
   const handleChange = (e) => {
@@ -211,6 +242,32 @@ const AgenForm = () => {
                     <div className={`bg-white w-4 h-4 rounded-full shadow-sm transition-transform ${formData.can_approve ? 'translate-x-6' : 'translate-x-0'}`}></div>
                  </div>
               </div>
+           </div>
+        </div>
+
+        {/* Hak Akses Menu Mobile */}
+        <div className="bg-white rounded-xl border border-[#E1E3EA] p-8">
+           <div className="mb-8 pb-4 border-b border-[#F5F8FA]">
+              <h3 className="text-[14px] font-bold text-[#181C32]">Hak Akses Menu Mobile</h3>
+              <p className="text-[12px] text-[#A1A5B7]">Pilih menu apa saja yang dapat diakses oleh agen ini di aplikasi mobile.</p>
+           </div>
+
+           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {MOBILE_MENUS.map(menu => {
+                const isChecked = formData.permissions?.mobile_menus?.includes(menu.id) || false;
+                return (
+                  <div 
+                    key={menu.id} 
+                    onClick={() => handleMenuToggle(menu.id)}
+                    className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${isChecked ? 'bg-[#F1FAFF] border-[#0095E8] shadow-sm' : 'bg-white border-[#E1E3EA] hover:border-[#0095E8]/30'}`}
+                  >
+                    <div className={`w-5 h-5 rounded flex items-center justify-center transition-colors ${isChecked ? 'bg-[#0095E8]' : 'bg-[#E1E3EA]'}`}>
+                      {isChecked && <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>}
+                    </div>
+                    <span className={`text-[13px] font-bold ${isChecked ? 'text-[#0095E8]' : 'text-[#3F4254]'}`}>{menu.label}</span>
+                  </div>
+                );
+              })}
            </div>
         </div>
 

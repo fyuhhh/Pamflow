@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Bell, BellOff, Calendar, Clock, ChevronRight } from 'lucide-react';
+import { ChevronLeft, Bell, BellOff, Calendar, Clock, ChevronRight } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -115,13 +115,16 @@ const MobileNotifications = () => {
   return (
     <div className="bg-white min-h-screen font-sans flex flex-col pb-20">
       {/* Header */}
-      <header className="sticky top-0 bg-white z-40 px-6 py-4 flex items-center justify-between border-b border-slate-50"
-              style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1 active:scale-95 transition-transform">
-            <ArrowLeft size={24} className="text-slate-800" />
+      <header className="sticky top-0 bg-white z-40 px-6 pb-4 pt-8 flex items-center justify-between border-b border-slate-200 shadow-sm"
+              style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} />
           </button>
-          <h1 className="text-lg font-bold text-slate-800">Notifikasi</h1>
+          <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Notifikasi</h1>
         </div>
         {notifications.length > 0 && (
           <button 

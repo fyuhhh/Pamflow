@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">OpteraMobile</string>
+    <string name="title_activity_main">OpteraMobile</string>
+    <string name="package_name">com.optera.mobile</string>
+    <string name="custom_url_scheme">com.optera.mobile</string>
+</resources>

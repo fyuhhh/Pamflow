@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logAudit } = require('../services/auditService');
 const socketService = require('../services/socketService');
 const { notifyUsers } = require('../services/pushService');
 const { processBase64InObject } = require('../utils/fileHelper');
@@ -23,13 +24,13 @@ const submitSession = async (req, res) => {
   }
 
   try {
-    const total_items  = item_results.length;
-    const ok_count     = item_results.filter(i => i.status === 'ok').length;
+    const total_items = item_results.length;
+    const ok_count = item_results.filter(i => i.status === 'ok').length;
     const broken_count = item_results.filter(i => i.status === 'rusak').length;
 
     // Process base64 images in item_results
-    const processedResults = processBase64InObject(item_results, 'checklists');
-    
+    const processedResults = await processBase64InObject(item_results, 'checklists');
+
     const [result] = await db.query(
       `INSERT INTO checklist_sessions
         (company_id, dept_id, dept_name, template_id, template_name,
@@ -55,6 +56,16 @@ const submitSession = async (req, res) => {
       broken_count,
       session_date,
       session_time
+    });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'checklist',
+      entity_id: sessionId,
+      action: 'SUBMIT',
+      new_value: { template_name, session_shift, total_items, ok_count, broken_count },
+      notes: `Melakukan submit Checklist Operasional: "${template_name || 'Harian'}" (Shift: ${session_shift}). Total item: ${total_items}, Kondisi OK: ${ok_count}, Rusak: ${broken_count}`,
+      req
     });
 
     res.status(201).json({
@@ -89,7 +100,13 @@ const getSessions = async (req, res) => {
     const params = [];
 
     if (company_id) { query += ' AND cs.company_id = ?'; params.push(company_id); }
-    if (dept_id)    { query += ' AND cs.dept_id = ?';    params.push(dept_id); }
+    if (dept_id) { 
+      query += ' AND cs.dept_id = ?'; 
+      params.push(dept_id); 
+    } else if (req.query.dept_name) {
+      query += ' AND cs.dept_name = ?'; 
+      params.push(req.query.dept_name); 
+    }
     if (session_date) { query += ' AND cs.session_date = ?'; params.push(session_date); }
     if (session_shift) { query += ' AND cs.session_shift = ?'; params.push(session_shift); }
 
@@ -208,7 +225,7 @@ const generateWO = async (req, res) => {
     }));
 
     // Process base64 in lampiran if any (though usually it's already path from checklist)
-    const processedLampiran = processBase64InObject(lampiran, 'dept-tasks');
+    const processedLampiran = await processBase64InObject(lampiran, 'dept-tasks');
 
     // Insert department_task (WO ke Engineering)
     const [taskResult] = await db.query(
@@ -264,6 +281,16 @@ const generateWO = async (req, res) => {
       id: newWoId, nama_wo, departemen_asal: departemen_asal || session.dept_name
     });
 
+    // Log Audit
+    await logAudit({
+      entity_type: 'checklist',
+      entity_id: sessionId,
+      action: 'GENERATE_WO',
+      new_value: { wo_id: newWoId, nama_wo, departemen_tujuan, wo_items_count: woItems.length },
+      notes: `Membuat Work Order (WO) "${nama_wo}" dari temuan item rusak pada checklist (Sesi ID: ${sessionId}) ditujukan ke departemen ${departemen_tujuan}`,
+      req
+    });
+
     res.status(201).json({
       message: 'WO berhasil dibuat',
       wo_id: newWoId,
@@ -311,7 +338,7 @@ const checkDuplicateItems = async (req, res) => {
     );
 
     const duplicates = {};
-    const safeItems  = [];
+    const safeItems = [];
 
     // Build item-level lookup dari semua WO aktif
     const activeItemMap = {};
@@ -321,7 +348,7 @@ const checkDuplicateItems = async (req, res) => {
         woItems = typeof wo.wo_items === 'string' ? JSON.parse(wo.wo_items) : (wo.wo_items || []);
       } catch { woItems = []; }
 
-      const fixedCount   = woItems.filter(i => i.status === 'fixed').length;
+      const fixedCount = woItems.filter(i => i.status === 'fixed').length;
       const pendingCount = woItems.filter(i => i.status === 'pending' || i.status === 'in_progress').length;
 
       for (const item of woItems) {
@@ -330,23 +357,23 @@ const checkDuplicateItems = async (req, res) => {
           const key = (item.name || '').trim().toLowerCase();
           if (key && !activeItemMap[key]) {
             activeItemMap[key] = {
-              wo_id:                wo.id,
-              wo_name:              wo.nama_wo,
-              wo_status:            wo.status,
-              wo_urgensi:           wo.urgensi,
-              wo_dept_target:       wo.departemen_tujuan,
-              wo_created_at:        wo.created_at,
-              wo_total_items:       wo.total_wo_items,
-              wo_fixed_items:       fixedCount,
-              wo_pending_items:     pendingCount,
+              wo_id: wo.id,
+              wo_name: wo.nama_wo,
+              wo_status: wo.status,
+              wo_urgensi: wo.urgensi,
+              wo_dept_target: wo.departemen_tujuan,
+              wo_created_at: wo.created_at,
+              wo_total_items: wo.total_wo_items,
+              wo_fixed_items: fixedCount,
+              wo_pending_items: pendingCount,
               // Data sesi checklist asal
               checklist_session_id: wo.checklist_session_id,
-              session_date:         wo.session_date,
-              session_shift:        wo.session_shift,
-              template_name:        wo.template_name,
-              submitted_by_name:    wo.submitted_by_name,
+              session_date: wo.session_date,
+              session_shift: wo.session_shift,
+              template_name: wo.template_name,
+              submitted_by_name: wo.submitted_by_name,
               // Status item spesifik ini
-              item_status:          item.status
+              item_status: item.status
             };
           }
         }
@@ -363,9 +390,9 @@ const checkDuplicateItems = async (req, res) => {
     }
 
     res.json({
-      has_duplicates:  Object.keys(duplicates).length > 0,
+      has_duplicates: Object.keys(duplicates).length > 0,
       duplicates,
-      safe_items:      safeItems,
+      safe_items: safeItems,
       active_wo_count: activeWOs.length
     });
   } catch (err) {

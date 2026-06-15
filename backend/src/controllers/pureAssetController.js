@@ -10,7 +10,7 @@ exports.getAssets = async (req, res) => {
       .leftJoin('pa_categories', 'pa_assets.category_id', 'pa_categories.id')
       .leftJoin('pa_locations', 'pa_assets.location_id', 'pa_locations.id')
       .leftJoin('pa_vendors', 'pa_assets.vendor_id', 'pa_vendors.id')
-      .leftJoin('departments', 'pa_assets.department_id', 'departments.id')
+      .leftJoin('pa_departments', 'pa_assets.department_id', 'pa_departments.id')
       .leftJoin('pa_conditions', 'pa_assets.condition_id', 'pa_conditions.id');
 
     if (is_master !== undefined) {
@@ -22,7 +22,7 @@ exports.getAssets = async (req, res) => {
       'pa_categories.category_name',
       'pa_locations.location_name',
       'pa_vendors.vendor_name',
-      'departments.name as department_name',
+      'pa_departments.name as department_name',
       'pa_conditions.condition_name'
     );
     res.json(assets);
@@ -37,7 +37,7 @@ exports.getAssetById = async (req, res) => {
       .leftJoin('pa_categories', 'pa_assets.category_id', 'pa_categories.id')
       .leftJoin('pa_locations', 'pa_assets.location_id', 'pa_locations.id')
       .leftJoin('pa_vendors', 'pa_assets.vendor_id', 'pa_vendors.id')
-      .leftJoin('departments', 'pa_assets.department_id', 'departments.id')
+      .leftJoin('pa_departments', 'pa_assets.department_id', 'pa_departments.id')
       .leftJoin('pa_conditions', 'pa_assets.condition_id', 'pa_conditions.id')
       .where('pa_assets.id', req.params.id)
       .select(
@@ -45,7 +45,7 @@ exports.getAssetById = async (req, res) => {
         'pa_categories.category_name',
         'pa_locations.location_name',
         'pa_vendors.vendor_name',
-        'departments.name as department_name',
+        'pa_departments.name as department_name',
         'pa_conditions.condition_name'
       ).first();
       
@@ -118,7 +118,7 @@ exports.downloadExcel = async (req, res) => {
       .leftJoin('pa_categories', 'pa_assets.category_id', 'pa_categories.id')
       .leftJoin('pa_locations', 'pa_assets.location_id', 'pa_locations.id')
       .leftJoin('pa_vendors', 'pa_assets.vendor_id', 'pa_vendors.id')
-      .leftJoin('departments', 'pa_assets.department_id', 'departments.id')
+      .leftJoin('pa_departments', 'pa_assets.department_id', 'pa_departments.id')
       .leftJoin('pa_conditions', 'pa_assets.condition_id', 'pa_conditions.id')
       .where('pa_assets.is_master', 0)
       .select(
@@ -127,7 +127,7 @@ exports.downloadExcel = async (req, res) => {
         'pa_categories.category_name',
         'pa_locations.location_name',
         'pa_vendors.vendor_name',
-        'departments.name as department_name',
+        'pa_departments.name as department_name',
         'pa_conditions.condition_name'
       );
 
@@ -148,7 +148,7 @@ exports.downloadExcel = async (req, res) => {
           .orWhere('pa_assets.register_no', 'like', term)
           .orWhere('pa_categories.category_name', 'like', term)
           .orWhere('pa_locations.location_name', 'like', term)
-          .orWhere('departments.name', 'like', term);
+          .orWhere('pa_departments.name', 'like', term);
       });
     }
 

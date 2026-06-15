@@ -188,7 +188,7 @@ const DashboardHome = () => {
     const items = arr.filter(s => 
       (s.progres === label) || 
       (s.status === label) || 
-      ((label === 'Menunggu Approval') && (s.progres === 'Menunggu Persetujuan' || s.progres === 'Menunggu Approval' || s.status === 'Menunggu Approval')) ||
+      ((label === 'Menunggu Approval') && (s.progres === 'Menunggu Persetujuan' || s.progres === 'Menunggu Approval' || s.progres === 'Menunggu Approval Penyelesaian' || s.progres === 'Menunggu Approval (Dikirim)' || s.status === 'Menunggu Approval')) ||
       ((label === 'Diproses') && (s.progres === 'Sedang Dikerjakan' || s.progres === 'Berlangsung' || s.status === 'Sedang Dikerjakan' || s.status === 'Diproses'))
     );
     return items.reduce((acc, item) => acc + Number(item.total || item.count || 0), 0);

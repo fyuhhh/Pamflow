@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { getSocket } from '../services/socket';
 import Skeleton from './common/Skeleton';
-import { Search, SlidersHorizontal, FileText, X, Calendar, ChevronRight } from 'lucide-react';
+import { Search, SlidersHorizontal, FileText, X, Calendar, ChevronRight, ChevronLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const MobileTasks = () => {
@@ -91,9 +91,30 @@ const MobileTasks = () => {
         case 'Terjadwal': matchesTab = progres === 'Terbuka' && tMulai > today; break;
         case 'Terbuka': matchesTab = progres === 'Terbuka' && (!tMulai || tMulai <= today); break;
         case 'Berlangsung': matchesTab = progres === 'Berlangsung' || progres === 'Menunggu Material'; break;
-        case 'Menunggu Persetujuan': matchesTab = progres === 'Selesai' && task.butuh_persetujuan === 1 && task.approval_status !== 'Approved' && status !== 'Ditolak'; break;
-        case 'Ditolak': matchesTab = status === 'Ditolak' || task.approval_status === 'Rejected'; break;
-        case 'Selesai': matchesTab = progres === 'Selesai' && (task.butuh_persetujuan === 0 || task.approval_status === 'Approved' || status === 'Selesai'); break;
+        case 'Menunggu Persetujuan': 
+          matchesTab = 
+            progres === 'Menunggu Approval' || 
+            progres === 'Menunggu Approval Penyelesaian' || 
+            progres === 'Menunggu Approval (Dikirim)' || 
+            progres === 'Menunggu Approval Kirim' ||
+            progres === 'Menunggu Persetujuan' ||
+            (progres === 'Selesai' && task.butuh_persetujuan === 1 && task.approval_status !== 'Approved' && status !== 'Ditolak');
+          break;
+        case 'Ditolak': 
+          matchesTab = 
+            status === 'Ditolak' || 
+            task.approval_status === 'Rejected' || 
+            progres === 'Ditolak' || 
+            progres === 'Rejected'; 
+          break;
+        case 'Selesai': 
+          matchesTab = 
+            (progres === 'Selesai' && (task.butuh_persetujuan === 0 || task.approval_status === 'Approved' || status === 'Selesai')) &&
+            status !== 'Ditolak' && 
+            task.approval_status !== 'Rejected' &&
+            progres !== 'Ditolak' &&
+            progres !== 'Rejected'; 
+          break;
         default: matchesTab = true;
       }
 
@@ -146,6 +167,17 @@ const MobileTasks = () => {
         className="px-6 pb-4 space-y-4 sticky top-0 z-20 backdrop-blur-md bg-[#F5F8FA]/90 border-b border-slate-200 shadow-sm"
         style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}
       >
+        {/* Title & Back Button */}
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => navigate('/demo/mobile')} 
+            className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Daftar Tugas</h1>
+        </div>
+
         <div className="flex items-center gap-3">
           <div className="flex-1 bg-white border border-slate-200 rounded-2xl px-4 py-3.5 flex items-center gap-3 shadow-sm focus-within:border-[#0095E8] focus-within:ring-2 focus-within:ring-[#0095E8]/20 transition-all">
             <Search size={18} className="text-slate-400" />
@@ -278,14 +310,19 @@ const MobileTasks = () => {
                         let label = '';
                         let colorClass = '';
 
-                        if (status === 'Ditolak' || task.approval_status === 'Rejected') {
+                        if (status === 'Ditolak' || task.approval_status === 'Rejected' || progres === 'Ditolak' || progres === 'Rejected') {
                           label = 'Ditolak'; colorClass = 'bg-[#FFF5F8] text-[#F1416C] border-[#F1416C]/20';
+                        } else if (
+                          progres === 'Menunggu Approval' || 
+                          progres === 'Menunggu Approval Penyelesaian' || 
+                          progres === 'Menunggu Approval (Dikirim)' || 
+                          progres === 'Menunggu Approval Kirim' ||
+                          progres === 'Menunggu Persetujuan' ||
+                          (progres === 'Selesai' && task.butuh_persetujuan === 1 && task.approval_status !== 'Approved')
+                        ) {
+                          label = 'Menunggu'; colorClass = 'bg-[#F8E3FF] text-[#7239EA] border-[#7239EA]/20';
                         } else if (progres === 'Selesai') {
-                          if (task.butuh_persetujuan === 1 && task.approval_status !== 'Approved') {
-                            label = 'Menunggu'; colorClass = 'bg-[#F8E3FF] text-[#7239EA] border-[#7239EA]/20';
-                          } else {
-                            label = 'Selesai'; colorClass = 'bg-[#E8FFF3] text-[#50CD89] border-[#50CD89]/20';
-                          }
+                          label = 'Selesai'; colorClass = 'bg-[#E8FFF3] text-[#50CD89] border-[#50CD89]/20';
                         } else if (progres === 'Berlangsung' || progres === 'Menunggu Material') {
                           label = progres === 'Menunggu Material' ? 'Cek Material' : 'Proses'; 
                           colorClass = 'bg-[#FFF8DD] text-[#FFC700] border-[#FFC700]/20';

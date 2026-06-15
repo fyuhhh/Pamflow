@@ -123,8 +123,7 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
       subItems: [
         { label: 'Dashboard Checklist Harian', path: '/tugas-departemen/dashboard-checklist', alwaysShow: true },
         { label: 'Checklist Harian', path: '/tugas-departemen/checklist-harian', alwaysShow: true },
-        { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true },
-        { label: 'Hak Akses Checklist Harian', path: '/tugas-departemen/hak-akses-checklist', alwaysShow: true },
+        { label: 'Riwayat Checklist', path: '/tugas-departemen/checklist-riwayat', alwaysShow: true }
       ]
     },
     {
@@ -236,6 +235,10 @@ const Dashboard = ({ children, onLogout, isHub = false }) => {
   const filterSubItems = (subItems) => {
     return subItems.filter(sub => {
       if (sub.path === '/tugas-departemen/checklist-harian') {
+        const role = user?.role?.toLowerCase() || '';
+        const isAdmin = isSuperAdmin || role === 'l3 - admin dept';
+        if (isAdmin) return false;
+
         const isTargetOnly = deptRelations.isTarget && !deptRelations.isSource && !isSuperAdmin;
         if (isTargetOnly) return false;
       }

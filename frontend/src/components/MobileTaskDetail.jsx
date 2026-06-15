@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Phone, MoreHorizontal, ChevronDown, ChevronUp, Clock, MapPin, CheckCircle2, Check, HelpCircle, Info } from 'lucide-react';
+import { ChevronLeft, Phone, MoreHorizontal, ChevronDown, ChevronUp, Clock, MapPin, CheckCircle2, Check, HelpCircle, Info } from 'lucide-react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { saveOfflineData } from '../services/offlineDB';
@@ -385,7 +385,7 @@ const MobileTaskDetail = () => {
         })
       });
       if (response.ok) {
-        setTask(prev => ({ ...prev, progres: 'Menunggu Approval' }));
+        setTask(prev => ({ ...prev, progres: 'Menunggu Approval Penyelesaian' }));
         setBannerText("Tugas diajukan ulang untuk approval");
         setShowBanner(true);
         setTimeout(() => {
@@ -625,11 +625,11 @@ const MobileTaskDetail = () => {
   const isWaitingMaterial = task.progres === 'Menunggu Material' && !task.waktu_material_dicek;
   const isFillingForm = (isAuditTask ? (hasReachedMaterialCheck || task.waktu_material_dicek) : hasStarted) && (task.progres === 'Berlangsung' || (isAuditTask && task.progres === 'Menunggu Material' && task.waktu_material_dicek));
   
-  const isStarted = isWaitingMaterial || task.progres === 'Berlangsung' || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Ditolak' || (isAuditTask && task.progres === 'Menunggu Material' && task.waktu_material_dicek);
-  const isMaterialChecked = (isAuditTask ? (task.waktu_material_dicek != null) : false) || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Ditolak';
+  const isStarted = isWaitingMaterial || task.progres === 'Berlangsung' || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Menunggu Approval Penyelesaian' || task.progres === 'Ditolak' || (isAuditTask && task.progres === 'Menunggu Material' && task.waktu_material_dicek);
+  const isMaterialChecked = (isAuditTask ? (task.waktu_material_dicek != null) : false) || task.progres === 'Selesai' || task.progres === 'Menunggu Approval' || task.progres === 'Menunggu Approval Penyelesaian' || task.progres === 'Ditolak';
   
   const isFinished = task.progres === 'Selesai';
-  const isWaitingApproval = task.progres === 'Menunggu Approval';
+  const isWaitingApproval = task.progres === 'Menunggu Approval' || task.progres === 'Menunggu Approval Penyelesaian';
   const isRejected = task.progres === 'Ditolak';
   const isFormFilled = !!task.waktu_dikirim;
   const canApprove = user?.can_approve === 1 || user?.can_approve === true;
@@ -688,18 +688,21 @@ const MobileTaskDetail = () => {
 
       <div className="bg-white font-sans flex flex-col relative">
         {/* Header */}
-        <header className="sticky top-0 bg-white z-40 px-6 py-4 flex items-center justify-between border-b border-slate-50"
-                style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
-        <div className="flex items-center gap-4">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-            <ArrowLeft size={24} className="text-slate-800" />
+        <header className="sticky top-0 bg-white z-40 px-6 pb-4 pt-8 flex items-center justify-between border-b border-slate-200 shadow-sm"
+                style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate(-1)} 
+              className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Detail Tugas</h1>
+          </div>
+          <button className="p-1">
+            <MoreHorizontal size={24} className="text-slate-400" />
           </button>
-          <h1 className="text-lg font-bold text-slate-800">Detail Tugas</h1>
-        </div>
-        <button className="p-1">
-          <MoreHorizontal size={24} className="text-slate-400" />
-        </button>
-      </header>
+        </header>
 
       {/* Main Content Area */}
       <div className="flex-1 px-6 pt-6 overflow-y-auto no-scrollbar">

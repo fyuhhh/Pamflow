@@ -115,6 +115,94 @@ const approveOrRejectTask = async (req, res) => {
     const current = await taskService.getTaskById(req.params.id);
     if (!current) return res.status(404).json({ message: 'Task not found' });
 
+    // Handle Inter-department dispatch approval
+    if (current.is_dept_dispatch_approval) {
+      const id = req.params.id;
+      if (approval_status === 'Approved') {
+        await db.query(
+          `UPDATE department_tasks SET 
+            status = 'Baru',
+            dispatch_approval_status = 'Approved',
+            dispatch_approved_by_id = ?,
+            dispatch_approved_by_name = ?,
+            dispatch_approval_notes = ?,
+            dispatch_approved_at = NOW()
+          WHERE id = ?`,
+          [user_id, user_name, notes || 'Tugas disetujui untuk dikirim', id]
+        );
+
+        // Real-time Sync
+        socketService.emitToCompany(current.company_id, 'dept-task-created', {
+          id: current.id,
+          nama_wo: current.nama_tugas,
+          departemen_asal: current.departemen
+        });
+
+        // Notify target department users via Push
+        try {
+          const [targetUsers] = await db.query(
+            'SELECT id FROM users WHERE company_id = ? AND department = ? AND status = "Aktif"',
+            [current.company_id, current.departemen_tujuan]
+          );
+
+          const targetUserIds = targetUsers.map(u => u.id);
+          if (targetUserIds.length > 0) {
+            await notifyUsers(db, targetUserIds, {
+              title: `Work Order Baru: ${current.departemen}`,
+              body: `${current.nama_tugas} telah dikirim ke departemen Anda.`,
+              url: `/tugas-departemen/diterima`
+            });
+          }
+        } catch (pushErr) {
+          console.error('[DeptTaskController] Push error:', pushErr.message);
+        }
+
+        // Log Activity
+        await logAudit({
+          entity_type: 'dept_task',
+          entity_id: id,
+          user_id: user_id,
+          user_name: user_name,
+          action: 'APPROVE_DISPATCH',
+          notes: notes || 'Persetujuan pengiriman tugas antar departemen',
+          req
+        });
+
+      } else {
+        // Rejected
+        await db.query(
+          `UPDATE department_tasks SET 
+            status = 'Ditolak',
+            dispatch_approval_status = 'Rejected',
+            dispatch_approved_by_id = ?,
+            dispatch_approved_by_name = ?,
+            dispatch_approval_notes = ?,
+            dispatch_approved_at = NOW()
+          WHERE id = ?`,
+          [user_id, user_name, notes || 'Tugas ditolak untuk dikirim', id]
+        );
+
+        // Log Activity
+        await logAudit({
+          entity_type: 'dept_task',
+          entity_id: id,
+          user_id: user_id,
+          user_name: user_name,
+          action: 'REJECT_DISPATCH',
+          notes: notes || 'Penolakan pengiriman tugas antar departemen',
+          req
+        });
+      }
+
+      // Real-time Sync for Approval List
+      socketService.emitToCompany(current?.company_id, 'task-approval-updated', {
+        id: req.params.id,
+        status: approval_status
+      });
+
+      return res.status(200).json({ message: `Task dispatch ${approval_status.toLowerCase()} successfully` });
+    }
+
     if (approval_status === 'Approved') {
       // Set progres to Selesai
       await db.query('UPDATE tasks SET progres = ?, approval_status = ? WHERE id = ?', ['Selesai', 'Approved', req.params.id]);
@@ -193,23 +281,23 @@ const approveOrRejectTask = async (req, res) => {
 const getPendingApproval = async (req, res) => {
   const { company_id, departemen } = req.query;
   try {
-    let query = `SELECT * FROM tasks WHERE progres = 'Menunggu Approval'`;
-    let params = [];
+    // 1. Fetch agent tasks waiting for completion approval (now renamed to 'Menunggu Approval Penyelesaian')
+    let queryTasks = `SELECT * FROM tasks WHERE progres IN ('Menunggu Approval', 'Menunggu Approval Penyelesaian')`;
+    let paramsTasks = [];
 
     if (company_id) {
-      query += ' AND company_id = ?';
-      params.push(company_id);
+      queryTasks += ' AND company_id = ?';
+      paramsTasks.push(company_id);
     }
     if (departemen) {
-      query += ' AND departemen = ?';
-      params.push(departemen);
+      queryTasks += ' AND departemen = ?';
+      paramsTasks.push(departemen);
     }
+    queryTasks += ' ORDER BY waktu_selesai_aktual DESC';
+    const [taskRows] = await db.query(queryTasks, paramsTasks);
 
-    query += ' ORDER BY waktu_selesai_aktual DESC';
-    const [rows] = await db.query(query, params);
-
-    // Enrich each task with agent name from history
-    for (const task of rows) {
+    // Enrich agent tasks
+    for (const task of taskRows) {
       const [historyRows] = await db.query(
         'SELECT nama_agen, waktu_mulai, waktu_selesai, submission_data FROM task_history WHERE task_id = ? ORDER BY created_at DESC LIMIT 1',
         [task.id]
@@ -218,7 +306,6 @@ const getPendingApproval = async (req, res) => {
       task.history_waktu_mulai = historyRows[0]?.waktu_mulai;
       task.history_waktu_selesai = historyRows[0]?.waktu_selesai;
 
-      // Parse JSON fields for frontend consumption
       if (typeof task.agen_id === 'string') {
         try { task.agen_id = JSON.parse(task.agen_id); } catch (e) { }
       }
@@ -230,7 +317,57 @@ const getPendingApproval = async (req, res) => {
       }
     }
 
-    res.json(rows);
+    // 2. Fetch department tasks waiting for dispatch approval ('Menunggu Approval (Dikirim)')
+    let queryDept = `
+      SELECT dt.*, d_asal.dept_id as dept_id_asal
+      FROM department_tasks dt
+      LEFT JOIN departments d_asal ON d_asal.name = dt.departemen_asal AND d_asal.company_id = dt.company_id
+      WHERE dt.status = 'Menunggu Approval (Dikirim)'
+    `;
+    let paramsDept = [];
+    if (company_id) {
+      queryDept += ' AND dt.company_id = ?';
+      paramsDept.push(company_id);
+    }
+    if (departemen) {
+      queryDept += ' AND dt.departemen_asal = ?';
+      paramsDept.push(departemen);
+    }
+    queryDept += ' ORDER BY dt.created_at DESC';
+    const [deptRows] = await db.query(queryDept, paramsDept);
+
+    const mappedDeptTasks = deptRows.map(dt => {
+      const prefix = dt.jenis_tugas === 'checklist' ? 'CHK' : 'WO';
+      const deptCode = dt.dept_id_asal || dt.departemen_asal?.substring(0, 3).toUpperCase() || 'GEN';
+      const nomor = `${prefix}-${deptCode}${String(dt.id).padStart(5, '0')}`;
+
+      return {
+        id: dt.id,
+        company_id: dt.company_id,
+        perusahaan: dt.perusahaan,
+        departemen: dt.departemen_asal,
+        departemen_tujuan: dt.departemen_tujuan,
+        nama_tugas: dt.nama_wo,
+        nama_wo: dt.nama_wo,
+        jenis_tugas: dt.jenis_tugas,
+        urgensi: dt.urgensi,
+        nomor_perintah_kerja: nomor,
+        deskripsi: dt.deskripsi,
+        lokasi: dt.lokasi,
+        detail_alamat: dt.detail_alamat,
+        tanggal_mulai: dt.tanggal_mulai,
+        tanggal_selesai: dt.tanggal_selesai,
+        progres: dt.status,
+        status: dt.status,
+        agent_name: dt.nama_peminta,
+        waktu_selesai_aktual: dt.created_at,
+        is_dept_dispatch_approval: true
+      };
+    });
+
+    // Combine both lists
+    const combined = [...taskRows, ...mappedDeptTasks];
+    res.json(combined);
   } catch (err) {
     console.error('Fetch pending approval error:', err.message);
     res.status(500).json({ message: 'Internal server error' });
@@ -240,36 +377,100 @@ const getPendingApproval = async (req, res) => {
 const getApprovalHistory = async (req, res) => {
   const { company_id, departemen } = req.query;
   try {
-    let query = `
+    // 1. Fetch agent tasks history
+    let queryTasks = `
       SELECT t.*, ta.approval_status AS ta_status, ta.approved_by_name, ta.notes AS approval_notes, ta.approved_at
       FROM tasks t
       INNER JOIN task_approvals ta ON ta.task_id = t.id
       WHERE 1=1
     `;
-    let params = [];
-
+    let paramsTasks = [];
     if (company_id) {
-      query += ' AND t.company_id = ?';
-      params.push(company_id);
+      queryTasks += ' AND t.company_id = ?';
+      paramsTasks.push(company_id);
     }
     if (departemen) {
-      query += ' AND t.departemen = ?';
-      params.push(departemen);
+      queryTasks += ' AND t.departemen = ?';
+      paramsTasks.push(departemen);
     }
+    queryTasks += ' ORDER BY ta.approved_at DESC';
+    const [taskHistoryRows] = await db.query(queryTasks, paramsTasks);
 
-    query += ' ORDER BY ta.approved_at DESC';
-    const [rows] = await db.query(query, params);
-
-    // Enrich with agent name
-    for (const task of rows) {
+    // Enrich agent tasks history (agent name, parsed JSON fields, etc.)
+    for (const task of taskHistoryRows) {
       const [historyRows] = await db.query(
-        'SELECT nama_agen FROM task_history WHERE task_id = ? ORDER BY created_at DESC LIMIT 1',
+        'SELECT nama_agen, waktu_mulai, waktu_selesai, submission_data FROM task_history WHERE task_id = ? ORDER BY created_at DESC LIMIT 1',
         [task.id]
       );
       task.agent_name = historyRows[0]?.nama_agen || '-';
+      task.history_waktu_mulai = historyRows[0]?.waktu_mulai;
+      task.history_waktu_selesai = historyRows[0]?.waktu_selesai;
+
+      if (typeof task.agen_id === 'string') {
+        try { task.agen_id = JSON.parse(task.agen_id); } catch (e) { }
+      }
+      if (typeof task.details === 'string') {
+        try { task.details = JSON.parse(task.details); } catch (e) { }
+      }
+      if (typeof task.submission_data === 'string') {
+        try { task.submission_data = JSON.parse(task.submission_data); } catch (e) { }
+      }
     }
 
-    res.json(rows);
+    // 2. Fetch department tasks dispatch history
+    let queryDept = `
+      SELECT dt.*, d_asal.dept_id as dept_id_asal
+      FROM department_tasks dt
+      LEFT JOIN departments d_asal ON d_asal.name = dt.departemen_asal AND d_asal.company_id = dt.company_id
+      WHERE dt.dispatch_approval_status IN ('Approved', 'Rejected')
+    `;
+    let paramsDept = [];
+    if (company_id) {
+      queryDept += ' AND dt.company_id = ?';
+      paramsDept.push(company_id);
+    }
+    if (departemen) {
+      queryDept += ' AND dt.departemen_asal = ?';
+      paramsDept.push(departemen);
+    }
+    queryDept += ' ORDER BY dt.dispatch_approved_at DESC';
+    const [deptHistoryRows] = await db.query(queryDept, paramsDept);
+
+    const mappedDeptHistory = deptHistoryRows.map(dt => {
+      const prefix = dt.jenis_tugas === 'checklist' ? 'CHK' : 'WO';
+      const deptCode = dt.dept_id_asal || dt.departemen_asal?.substring(0, 3).toUpperCase() || 'GEN';
+      const nomor = `${prefix}-${deptCode}${String(dt.id).padStart(5, '0')}`;
+
+      return {
+        id: dt.id,
+        company_id: dt.company_id,
+        perusahaan: dt.perusahaan,
+        departemen: dt.departemen_asal,
+        departemen_tujuan: dt.departemen_tujuan,
+        nama_tugas: dt.nama_wo,
+        nama_wo: dt.nama_wo,
+        jenis_tugas: dt.jenis_tugas,
+        urgensi: dt.urgensi,
+        nomor_perintah_kerja: nomor,
+        deskripsi: dt.deskripsi,
+        lokasi: dt.lokasi,
+        detail_alamat: dt.detail_alamat,
+        tanggal_mulai: dt.tanggal_mulai,
+        tanggal_selesai: dt.tanggal_selesai,
+        progres: dt.status,
+        status: dt.status,
+        agent_name: dt.nama_peminta,
+        waktu_selesai_aktual: dt.created_at,
+        is_dept_dispatch_approval: true,
+        ta_status: dt.dispatch_approval_status,
+        approved_by_name: dt.dispatch_approved_by_name,
+        approval_notes: dt.dispatch_approval_notes,
+        approved_at: dt.dispatch_approved_at
+      };
+    });
+
+    const combinedHistory = [...taskHistoryRows, ...mappedDeptHistory];
+    res.json(combinedHistory);
   } catch (err) {
     console.error('Fetch approval history error:', err.message);
     res.status(500).json({ message: 'Internal server error' });

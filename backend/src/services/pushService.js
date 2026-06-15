@@ -61,6 +61,27 @@ async function sendNotification(pool, userId, payload) {
     });
 
     await Promise.all(notificationPromises);
+
+    // Send native push notifications via Firebase Cloud Messaging (FCM)
+    try {
+      const [fcmRows] = await pool.query(
+        'SELECT token FROM fcm_tokens WHERE user_id = ?',
+        [userId]
+      );
+      if (fcmRows && fcmRows.length > 0) {
+        const tokens = fcmRows.map(row => row.token);
+        const { sendFcmNotification } = require('./firebaseService');
+        await sendFcmNotification(tokens, {
+          title: payload.title,
+          body: payload.body,
+          data: {
+            url: payload.url || '/'
+          }
+        });
+      }
+    } catch (err) {
+      console.error('[PushService] Error querying/sending FCM:', err.message);
+    }
   } catch (err) {
     console.error('[PushService] Error in sendNotification:', err.message);
   }

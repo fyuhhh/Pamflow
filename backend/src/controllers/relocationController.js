@@ -22,7 +22,7 @@ exports.getRelocations = async (req, res) => {
 
     let query = knex('pa_mutations')
       .leftJoin('pa_locations as dest_loc', 'pa_mutations.destination_location_id', 'dest_loc.id')
-      .leftJoin('departments as dest_dept', 'pa_mutations.destination_department_id', 'dest_dept.id')
+      .leftJoin('pa_departments as dest_dept', 'pa_mutations.destination_department_id', 'dest_dept.id')
       .leftJoin('users as creator', 'pa_mutations.created_by', 'creator.id')
       .leftJoin('users as approver', 'pa_mutations.approved_by', 'approver.id')
       .select(
@@ -68,7 +68,7 @@ exports.getRelocationById = async (req, res) => {
   try {
     const mutation = await knex('pa_mutations')
       .leftJoin('pa_locations as dest_loc', 'pa_mutations.destination_location_id', 'dest_loc.id')
-      .leftJoin('departments as dest_dept', 'pa_mutations.destination_department_id', 'dest_dept.id')
+      .leftJoin('pa_departments as dest_dept', 'pa_mutations.destination_department_id', 'dest_dept.id')
       .leftJoin('users as creator', 'pa_mutations.created_by', 'creator.id')
       .leftJoin('users as approver', 'pa_mutations.approved_by', 'approver.id')
       .where('pa_mutations.id', req.params.id)
@@ -87,7 +87,7 @@ exports.getRelocationById = async (req, res) => {
     const items = await knex('pa_mutation_items')
       .join('pa_assets', 'pa_mutation_items.asset_id', 'pa_assets.id')
       .leftJoin('pa_locations as prev_loc', 'pa_mutation_items.previous_location_id', 'prev_loc.id')
-      .leftJoin('departments as prev_dept', 'pa_mutation_items.previous_department_id', 'prev_dept.id')
+      .leftJoin('pa_departments as prev_dept', 'pa_mutation_items.previous_department_id', 'prev_dept.id')
       .where('pa_mutation_items.mutation_id', mutation.id)
       .select(
         'pa_mutation_items.*',

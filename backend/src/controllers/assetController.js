@@ -48,7 +48,7 @@ const assetController = {
       // Process base64 images to files
       let processedLampiran = null;
       if (Array.isArray(lampiran)) {
-        processedLampiran = lampiran.map(img => saveBase64Image(img, 'assets'));
+        processedLampiran = await Promise.all(lampiran.map(img => saveBase64Image(img, 'assets')));
       }
 
       const [result] = await pool.query(
@@ -229,7 +229,7 @@ const assetController = {
       // Process base64 images to files
       let processedLampiran = null;
       if (Array.isArray(lampiran)) {
-        processedLampiran = lampiran.map(img => saveBase64Image(img, 'assets'));
+        processedLampiran = await Promise.all(lampiran.map(img => saveBase64Image(img, 'assets')));
       }
 
       await pool.query(
@@ -539,7 +539,7 @@ const assetController = {
       // Process base64 images to files
       let processedPhotos = null;
       if (Array.isArray(photos)) {
-        processedPhotos = photos.map(img => saveBase64Image(img, 'logs'));
+        processedPhotos = await Promise.all(photos.map(img => saveBase64Image(img, 'logs')));
       }
 
       await pool.query(
@@ -574,7 +574,7 @@ const assetController = {
       // Process base64 images to files
       let processedPhotos = null;
       if (Array.isArray(photos)) {
-        processedPhotos = photos.map(img => saveBase64Image(img, 'logs'));
+        processedPhotos = await Promise.all(photos.map(img => saveBase64Image(img, 'logs')));
       }
 
       await pool.query(

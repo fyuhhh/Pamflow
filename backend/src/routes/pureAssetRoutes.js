@@ -7,31 +7,31 @@ const { checkPermission } = require('../middleware/permissionMiddleware');
 
 // MASTER DATA
 // Categories
-router.get('/categories', checkPermission('pure_asset_master', 'Lihat'), pureAssetMasterCtrl.getCategories);
+router.get('/categories', checkPermission(['pure_asset_master', 'pure_asset_register'], 'Lihat'), pureAssetMasterCtrl.getCategories);
 router.post('/categories', checkPermission('pure_asset_master', 'Buat'), pureAssetMasterCtrl.createCategory);
 router.put('/categories/:id', checkPermission('pure_asset_master', 'Edit'), pureAssetMasterCtrl.updateCategory);
 router.delete('/categories/:id', checkPermission('pure_asset_master', 'Hapus'), pureAssetMasterCtrl.deleteCategory);
 
 // Locations
-router.get('/locations', checkPermission('pure_asset_master', 'Lihat'), pureAssetMasterCtrl.getLocations);
+router.get('/locations', checkPermission(['pure_asset_master', 'pure_asset_register'], 'Lihat'), pureAssetMasterCtrl.getLocations);
 router.post('/locations', checkPermission('pure_asset_master', 'Buat'), pureAssetMasterCtrl.createLocation);
 router.put('/locations/:id', checkPermission('pure_asset_master', 'Edit'), pureAssetMasterCtrl.updateLocation);
 router.delete('/locations/:id', checkPermission('pure_asset_master', 'Hapus'), pureAssetMasterCtrl.deleteLocation);
 
 // Vendors
-router.get('/vendors', checkPermission('pure_asset_master', 'Lihat'), pureAssetMasterCtrl.getVendors);
+router.get('/vendors', checkPermission(['pure_asset_master', 'pure_asset_register'], 'Lihat'), pureAssetMasterCtrl.getVendors);
 router.post('/vendors', checkPermission('pure_asset_master', 'Buat'), pureAssetMasterCtrl.createVendor);
 router.put('/vendors/:id', checkPermission('pure_asset_master', 'Edit'), pureAssetMasterCtrl.updateVendor);
 router.delete('/vendors/:id', checkPermission('pure_asset_master', 'Hapus'), pureAssetMasterCtrl.deleteVendor);
 
 // Conditions
-router.get('/conditions', checkPermission('pure_asset_master', 'Lihat'), pureAssetMasterCtrl.getConditions);
+router.get('/conditions', checkPermission(['pure_asset_master', 'pure_asset_register'], 'Lihat'), pureAssetMasterCtrl.getConditions);
 router.post('/conditions', checkPermission('pure_asset_master', 'Buat'), pureAssetMasterCtrl.createCondition);
 router.put('/conditions/:id', checkPermission('pure_asset_master', 'Edit'), pureAssetMasterCtrl.updateCondition);
 router.delete('/conditions/:id', checkPermission('pure_asset_master', 'Hapus'), pureAssetMasterCtrl.deleteCondition);
 
 // Departments
-router.get('/departments', checkPermission('pure_asset_master', 'Lihat'), pureAssetMasterCtrl.getDepartments);
+router.get('/departments', checkPermission(['pure_asset_master', 'pure_asset_register'], 'Lihat'), pureAssetMasterCtrl.getDepartments);
 router.post('/departments', checkPermission('pure_asset_master', 'Buat'), pureAssetMasterCtrl.createDepartment);
 router.put('/departments/:id', checkPermission('pure_asset_master', 'Edit'), pureAssetMasterCtrl.updateDepartment);
 router.delete('/departments/:id', checkPermission('pure_asset_master', 'Hapus'), pureAssetMasterCtrl.deleteDepartment);

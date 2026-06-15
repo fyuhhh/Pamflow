@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Search, Filter, ChevronRight, Info } from 'lucide-react';
+import { ChevronLeft, Search, Filter, ChevronRight, Info } from 'lucide-react';
 import API_URL from '../config';
 
 const MobileDeptTaskList = () => {
@@ -78,15 +78,18 @@ const MobileDeptTaskList = () => {
   return (
     <div className="bg-[#F8FAFC] min-h-screen font-sans flex flex-col pb-20">
       {/* Header */}
-      <header className="sticky top-0 bg-white z-40 px-6 py-4 flex flex-col border-b border-slate-100 shadow-sm"
-              style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
-        <div className="flex items-center gap-4 mb-4">
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1 active:scale-95 transition-transform">
-            <ArrowLeft size={24} className="text-slate-800" />
+      <header className="sticky top-0 bg-white z-40 px-6 pb-4 pt-8 flex flex-col border-b border-slate-200 shadow-sm"
+              style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}>
+        <div className="flex items-center gap-3 mb-4">
+          <button 
+            onClick={() => navigate(-1)} 
+            className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} />
           </button>
           <div className="flex flex-col">
-            <h1 className="text-[17px] font-bold text-slate-800">Tugas Diterima</h1>
-            <span className="text-[11px] text-slate-400 font-medium">Permintaan dari Departemen Lain</span>
+            <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Tugas Diterima</h1>
+            <span className="text-[11px] text-slate-400 font-medium mt-0.5">Permintaan dari Departemen Lain</span>
           </div>
         </div>
         

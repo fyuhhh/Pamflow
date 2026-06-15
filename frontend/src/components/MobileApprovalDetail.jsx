@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Check, Clock, MapPin, FileText, User, Building2, Hash, History } from 'lucide-react';
+import { ChevronLeft, Check, Clock, MapPin, FileText, User, Building2, Hash, History, Image, X } from 'lucide-react';
 import { getImageUrl } from '../utils/imageUrl';
+import API_URL from '../config';
 
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
 
 const MobileApprovalDetail = () => {
   const navigate = useNavigate();
-  const { taskId } = useParams();
+  const params = useParams();
   const location = useLocation();
+  const pathParts = location.pathname.split('/');
+  // URL format: /demo/mobile/approval/123
+  const taskId = params.taskId || pathParts[pathParts.length - 1];
   const [task, setTask] = useState(location.state?.task || null);
   const [loading, setLoading] = useState(!task);
   const [showApprovalModal, setShowApprovalModal] = useState(false);
@@ -18,12 +22,17 @@ const MobileApprovalDetail = () => {
   const [bannerText, setBannerText] = useState('');
   const [bannerColor, setBannerColor] = useState('#2E7D32');
   const [auditLogs, setAuditLogs] = useState([]);
+  const [zoomedImage, setZoomedImage] = useState(null);
   const user = JSON.parse(localStorage.getItem('user') || 'null');
 
+  const isImageFile = (filename) => {
+    if (!filename) return false;
+    const ext = filename.split('.').pop().toLowerCase();
+    return ['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext);
+  };
+
   useEffect(() => {
-    if (!task) {
-      fetchTask();
-    }
+    fetchTask();
     fetchAuditLogs();
   }, [taskId]);
 
@@ -32,14 +41,16 @@ const MobileApprovalDetail = () => {
       const response = await authFetch(`/api/tasks/${taskId}`);
       if (response.ok) {
         const data = await response.json();
-        // Also fetch history for agent name
-        const histResponse = await authFetch(`/api/tasks/${taskId}/history`);
-        if (histResponse.ok) {
-          const history = await histResponse.json();
-          const lastEntry = history.find(h => h.progres === 'Menunggu Approval') || history[0];
-          data.agent_name = lastEntry?.nama_agen || '-';
-          data.history_waktu_mulai = lastEntry?.waktu_mulai;
-          data.history_waktu_selesai = lastEntry?.waktu_selesai;
+        if (!data.is_dept_dispatch_approval) {
+          // Also fetch history for agent name
+          const histResponse = await authFetch(`/api/tasks/${taskId}/history`);
+          if (histResponse.ok) {
+            const history = await histResponse.json();
+            const lastEntry = history.find(h => h.progres === 'Menunggu Approval' || h.progres === 'Menunggu Approval Penyelesaian') || history[0];
+            data.agent_name = lastEntry?.nama_agen || '-';
+            data.history_waktu_mulai = lastEntry?.waktu_mulai;
+            data.history_waktu_selesai = lastEntry?.waktu_selesai;
+          }
         }
         setTask(data);
       }
@@ -195,12 +206,15 @@ const MobileApprovalDetail = () => {
 
       <div className="bg-white font-sans min-h-screen">
         {/* Header */}
-        <header className="sticky top-0 bg-white z-40 px-5 py-4 flex items-center gap-4 border-b border-slate-50"
-                style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
-          <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-            <ArrowLeft size={24} className="text-slate-800" />
+        <header className="sticky top-0 bg-white z-40 px-6 pb-4 pt-8 flex items-center gap-3 border-b border-slate-200 shadow-sm"
+                style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}>
+          <button 
+            onClick={() => navigate(-1)} 
+            className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+          >
+            <ChevronLeft size={20} />
           </button>
-          <h1 className="text-lg font-bold text-slate-800">Detail Approval</h1>
+          <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Detail Approval</h1>
         </header>
 
         {/* Content */}
@@ -215,7 +229,9 @@ const MobileApprovalDetail = () => {
               </div>
               <div>
                 <p className="text-[16px] font-bold">{task.agent_name || '-'}</p>
-                <p className="text-[12px] text-white/70">{task.departemen} · {task.nomor_perintah_kerja}</p>
+                <p className="text-[12px] text-white/70">
+                  {task.is_dept_dispatch_approval ? `${task.departemen} → ${task.departemen_tujuan}` : task.departemen} · {task.nomor_perintah_kerja}
+                </p>
               </div>
             </div>
           </div>
@@ -223,18 +239,18 @@ const MobileApprovalDetail = () => {
           {/* Badges */}
           <div className="flex gap-2 flex-wrap">
             <span className={`text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase ${
-              task.progres === 'Selesai' ? 'bg-[#E8FFF3] text-[#50CD89]' :
-              task.progres === 'Ditolak' ? 'bg-[#FFF5F8] text-[#F1416C]' :
+              task.progres === 'Selesai' || task.status === 'Baru' ? 'bg-[#E8FFF3] text-[#50CD89]' :
+              task.progres === 'Ditolak' || task.status === 'Ditolak' ? 'bg-[#FFF5F8] text-[#F1416C]' :
               'bg-[#FFF8E1] text-[#FF8F00]'
             }`}>
-              {task.ta_status === 'Approved' ? 'Disetujui' : task.ta_status === 'Rejected' ? 'Ditolak' : task.progres || 'Menunggu Approval'}
+              {task.ta_status === 'Approved' ? 'Disetujui' : task.ta_status === 'Rejected' ? 'Ditolak' : (task.progres === 'Menunggu Approval (Dikirim)' ? 'Menunggu Approval Kirim' : (task.progres || 'Menunggu Approval'))}
             </span>
             <span className={`text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase ${
               task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C]' : 'bg-[#E8EAF6] text-[#283593]'
             }`}>
               Urgensi {task.urgensi}
             </span>
-            {task.jenis_tugas === 'wo' ? (
+            {(task.jenis_tugas || '').toLowerCase() === 'wo' ? (
               <span className="text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase bg-[#F8E3FF] text-[#7239EA]">WO</span>
             ) : (
               <span className="text-[10px] font-bold px-3 py-1.5 rounded-lg uppercase bg-[#F1FAFF] text-[#0095E8]">Checklist</span>
@@ -249,11 +265,14 @@ const MobileApprovalDetail = () => {
             <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Informasi Umum</h3>
             {[
               { icon: Building2, label: 'Perusahaan', value: task.perusahaan },
-              { icon: Hash, label: 'Departemen', value: task.departemen },
+              task.is_dept_dispatch_approval
+                ? { icon: Hash, label: 'Departemen Asal', value: task.departemen }
+                : { icon: Hash, label: 'Departemen', value: task.departemen },
+              task.is_dept_dispatch_approval && { icon: Hash, label: 'Departemen Tujuan', value: task.departemen_tujuan },
               { icon: FileText, label: 'Nomor Perintah Kerja', value: task.nomor_perintah_kerja },
               { icon: FileText, label: 'Deskripsi', value: task.deskripsi || '-' },
               { icon: MapPin, label: 'Lokasi', value: `${task.lokasi || '-'}${task.detail_alamat ? ', ' + task.detail_alamat : ''}` },
-            ].map((item, idx) => (
+            ].filter(Boolean).map((item, idx) => (
               <div key={idx} className="flex items-start gap-3">
                 <item.icon size={14} className="text-[#B5B5C3] mt-0.5 shrink-0" />
                 <div className="flex-1 min-w-0">
@@ -265,36 +284,92 @@ const MobileApprovalDetail = () => {
           </div>
 
           {/* Jadwal & Waktu Pengerjaan */}
-          <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-3">
-            <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Waktu Pengerjaan</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <p className="text-[10px] text-[#A1A5B7]">Jadwal Mulai</p>
-                <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDate(task.tanggal_mulai)} {formatTime(task.waktu_mulai)}</p>
+          {!task.is_dept_dispatch_approval ? (
+            <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-3">
+              <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Waktu Pengerjaan</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-[#A1A5B7]">Jadwal Mulai</p>
+                  <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDate(task.tanggal_mulai)} {formatTime(task.waktu_mulai)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#A1A5B7]">Jadwal Selesai</p>
+                  <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDate(task.tanggal_selesai)} {formatTime(task.waktu_selesai)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#A1A5B7]">Waktu Dimulai</p>
+                  <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDateTime(task.history_waktu_mulai || task.waktu_dimulai)}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#A1A5B7]">Waktu Diselesaikan</p>
+                  <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDateTime(task.waktu_selesai_aktual)}</p>
+                </div>
               </div>
-              <div>
-                <p className="text-[10px] text-[#A1A5B7]">Jadwal Selesai</p>
-                <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDate(task.tanggal_selesai)} {formatTime(task.waktu_selesai)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-[#A1A5B7]">Waktu Dimulai</p>
-                <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDateTime(task.history_waktu_mulai || task.waktu_dimulai)}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-[#A1A5B7]">Waktu Diselesaikan</p>
-                <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDateTime(task.waktu_selesai_aktual)}</p>
+              <div className="pt-2 border-t border-[#E8ECF0]">
+                <p className="text-[10px] text-[#A1A5B7]">Durasi Pengerjaan</p>
+                <p className="text-[13px] font-bold text-[#0095E8] mt-0.5">
+                  {calculateDuration(task.history_waktu_mulai || task.waktu_dimulai, task.waktu_selesai_aktual)}
+                </p>
               </div>
             </div>
-            <div className="pt-2 border-t border-[#E8ECF0]">
-              <p className="text-[10px] text-[#A1A5B7]">Durasi Pengerjaan</p>
-              <p className="text-[13px] font-bold text-[#0095E8] mt-0.5">
-                {calculateDuration(task.history_waktu_mulai || task.waktu_dimulai, task.waktu_selesai_aktual)}
-              </p>
+          ) : (
+            <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-3">
+              <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Jadwal Rencana</h3>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-[#A1A5B7]">Jadwal Mulai</p>
+                  <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDate(task.tanggal_mulai)} {formatTime(task.waktu_mulai) || '08:00'}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[#A1A5B7]">Jadwal Selesai</p>
+                  <p className="text-[12px] font-semibold text-[#3F4254] mt-0.5">{formatDate(task.tanggal_selesai)} {formatTime(task.waktu_selesai) || '17:00'}</p>
+                </div>
+              </div>
             </div>
-          </div>
+          )}
 
-          {/* Form yang diisi (Submission Data) */}
-          {taskDetails.length > 0 && (
+          {/* Lampiran Tugas */}
+          {task.lampiran && (
+            <div className="bg-white rounded-xl border border-[#F1F1F4] overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="px-4 py-3 bg-[#F9FEFF] border-b border-[#EFF2F5]">
+                <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Lampiran Acuan</h3>
+              </div>
+              <div className="p-4 flex items-center gap-3">
+                {isImageFile(task.lampiran) ? (
+                  <div 
+                    className="w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shrink-0 cursor-pointer"
+                    onClick={() => setZoomedImage(getImageUrl(task.lampiran))}
+                  >
+                    <img 
+                      src={getImageUrl(task.lampiran)} 
+                      alt="Lampiran" 
+                      className="w-full h-full object-cover" 
+                    />
+                  </div>
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-[#FFF5F8] border border-[#FFD6E0] flex items-center justify-center shrink-0">
+                    <FileText size={24} className="text-[#F1416C]" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-[12px] font-semibold text-slate-700 truncate">
+                    {task.lampiran.split('/').pop()}
+                  </p>
+                  <a 
+                    href={`${API_URL}${task.lampiran}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[11px] text-[#0095E8] font-bold mt-1 inline-block hover:underline"
+                  >
+                    Buka Dokumen ↗
+                  </a>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Form yang diisi (Submission Data) - untuk approval setelah pengerjaan */}
+          {!task.is_dept_dispatch_approval && taskDetails.length > 0 && (
             <div className="bg-white rounded-xl border border-[#F1F1F4] overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
               <div className="px-4 py-3 bg-[#F9FEFF] border-b border-[#EFF2F5]">
                 <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Hasil Pengerjaan</h3>
@@ -314,13 +389,13 @@ const MobileApprovalDetail = () => {
                             Array.isArray(value) ? (
                               <div className="grid grid-cols-3 gap-2">
                                 {value.map((img, idx) => (
-                                  <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-200">
+                                  <div key={idx} className="aspect-square rounded-lg overflow-hidden border border-slate-200 cursor-pointer" onClick={() => setZoomedImage(getImageUrl(img))}>
                                     <img src={getImageUrl(img)} className="w-full h-full object-cover" alt={`Lampiran ${idx + 1}`} />
                                   </div>
                                 ))}
                               </div>
                             ) : (
-                              <div className="w-[200px] rounded-lg overflow-hidden border border-slate-200">
+                              <div className="w-[200px] rounded-lg overflow-hidden border border-slate-200 cursor-pointer" onClick={() => setZoomedImage(getImageUrl(value))}>
                                 <img src={getImageUrl(value)} className="w-full object-cover" alt="Lampiran" />
                               </div>
                             )
@@ -338,19 +413,87 @@ const MobileApprovalDetail = () => {
             </div>
           )}
 
+          {/* Daftar Item Checklist (Template/Form) - untuk approval kirim checklist */}
+          {task.is_dept_dispatch_approval && taskDetails.length > 0 && (
+            <div className="bg-white rounded-xl border border-[#F1F1F4] overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="px-4 py-3 bg-[#F1FAFF] border-b border-[#EFF2F5]">
+                <h3 className="text-[13px] font-bold text-[#0095E8] uppercase tracking-wider">Daftar Item Checklist</h3>
+              </div>
+              <div className="divide-y divide-[#F5F5F5]">
+                {taskDetails.map((field, index) => (
+                  <div key={field.id || index} className="px-4 py-3.5 space-y-1">
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="text-[13px] font-bold text-[#3F4254]">
+                        {index + 1}. {field.nama_detail || `Item ${index + 1}`}
+                      </p>
+                      {field.wajib_diisi && (
+                        <span className="text-[9px] font-bold bg-[#FFF5F8] text-[#F1416C] px-1.5 py-0.5 rounded uppercase">
+                          Wajib
+                        </span>
+                      )}
+                    </div>
+                    {field.deskripsi && (
+                      <p className="text-[11px] text-[#7E8299]">{field.deskripsi}</p>
+                    )}
+                    <div className="flex items-center gap-2 mt-1">
+                      <span className="text-[10px] font-semibold text-[#A1A5B7] bg-[#F5F8FA] px-2 py-0.5 rounded">
+                        Tipe: {field.bentuk_laporan || 'Text Field'}
+                      </span>
+                      {field.bentuk_laporan === 'Pilihan Ganda' && field.options && field.options.length > 0 && (
+                        <p className="text-[10px] text-[#7E8299] italic">
+                          Opsi: {field.options.join(', ')}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Item Temuan / Subtugas (wo_items) for Dispatch Approval */}
+          {task.is_dept_dispatch_approval && task.wo_items && task.wo_items.length > 0 && (
+            <div className="bg-white rounded-xl border border-[#F1F1F4] overflow-hidden" style={{ boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
+              <div className="px-4 py-3 bg-[#FFF5F8] border-b border-[#EFF2F5]">
+                <h3 className="text-[13px] font-bold text-[#F1416C] uppercase tracking-wider">Item Temuan / Subtugas</h3>
+              </div>
+              <div className="divide-y divide-[#F5F5F5]">
+                {task.wo_items.map((item, index) => (
+                  <div key={index} className="px-4 py-4 space-y-2">
+                    <p className="text-[13px] font-bold text-[#181C32]">{item.name}</p>
+                    {item.original_notes && (
+                      <p className="text-[12px] text-[#7E8299] bg-[#F8FAFC] px-3 py-1.5 rounded-lg border border-slate-100">
+                        Catatan: {item.original_notes}
+                      </p>
+                    )}
+                    {item.original_photos && item.original_photos.length > 0 && (
+                      <div className="grid grid-cols-3 gap-2 mt-2">
+                        {item.original_photos.map((photo, pIdx) => (
+                          <div key={pIdx} className="aspect-square rounded-lg overflow-hidden border border-slate-200 cursor-pointer" onClick={() => setZoomedImage(getImageUrl(photo))}>
+                            <img src={getImageUrl(photo)} className="w-full h-full object-cover" alt={`Lampiran ${pIdx + 1}`} />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Verifikasi */}
           <div className="bg-[#F8FAFC] rounded-xl p-4 space-y-2">
-            <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Verifikasi</h3>
+            <h3 className="text-[13px] font-bold text-[#181C32] uppercase tracking-wider">Verifikasi & Keamanan</h3>
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-[#A1A5B7]">Verifikasi Kehadiran</span>
+              <span className="text-[12px] text-[#A1A5B7]">Verifikasi Kehadiran (GPS)</span>
               <span className="text-[12px] font-semibold text-[#3F4254]">{task.verifikasi_kehadiran ? 'Ya' : 'Tidak'}</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-[12px] text-[#A1A5B7]">Selfie</span>
-              <span className="text-[12px] font-semibold text-[#3F4254]">{task.selfie || '-'}</span>
+              <span className="text-[12px] font-semibold text-[#3F4254]">{task.selfie === 'Ya' || task.selfie === true || task.selfie === 'Wajib' ? 'Wajib' : 'Tidak Wajib'}</span>
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-[12px] text-[#A1A5B7]">Persetujuan</span>
+              <span className="text-[12px] text-[#A1A5B7]">Persetujuan Atasan</span>
               <span className="text-[12px] font-semibold text-[#50CD89]">Wajib</span>
             </div>
           </div>
@@ -424,7 +567,7 @@ const MobileApprovalDetail = () => {
         </div>
 
         {/* Bottom Action Bar */}
-        {task.progres === 'Menunggu Approval' ? (
+        {(task.progres === 'Menunggu Approval' || task.progres === 'Menunggu Approval (Dikirim)' || task.progres === 'Menunggu Approval Penyelesaian') ? (
           <div 
             className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 px-5 py-3 flex gap-3 z-50 shadow-[0_-4px_20px_rgba(0,0,0,0.05)]"
             style={{ paddingBottom: '6px' }}
@@ -450,14 +593,14 @@ const MobileApprovalDetail = () => {
             style={{ paddingBottom: '6px' }}
           >
             <div className={`flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[14px] ${
-              task.ta_status === 'Approved' || task.progres === 'Selesai'
+              task.ta_status === 'Approved' || task.progres === 'Selesai' || task.status === 'Baru'
                 ? 'bg-[#E8FFF3] text-[#2E7D32]'
                 : 'bg-[#FFF5F8] text-[#F1416C]'
             }`}>
-              {task.ta_status === 'Approved' || task.progres === 'Selesai' ? (
-                <><Check size={18} strokeWidth={3} /> Tugas Disetujui</>
+              {task.ta_status === 'Approved' || task.progres === 'Selesai' || task.status === 'Baru' ? (
+                <><Check size={18} strokeWidth={3} /> {task.is_dept_dispatch_approval ? 'Pengiriman Disetujui' : 'Tugas Disetujui'}</>
               ) : (
-                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> Tugas Ditolak</>
+                <><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg> {task.is_dept_dispatch_approval ? 'Pengiriman Ditolak' : 'Tugas Ditolak'}</>
               )}
             </div>
             {task.approved_by_name && (
@@ -484,13 +627,19 @@ const MobileApprovalDetail = () => {
             </div>
 
             <h3 className="text-xl font-medium text-[#181C32] mb-2">
-              {approvalAction === 'approve' ? 'Setujui Tugas?' : 'Tolak Tugas?'}
+              {approvalAction === 'approve'
+                ? (task.is_dept_dispatch_approval ? 'Setujui Pengiriman?' : 'Setujui Tugas?')
+                : (task.is_dept_dispatch_approval ? 'Tolak Pengiriman?' : 'Tolak Tugas?')}
             </h3>
             <p className="text-[13px] text-[#7E8299] mb-1 font-bold">{task.nama_tugas}</p>
             <p className="text-[12px] text-[#A1A5B7] mb-4">
               {approvalAction === 'approve'
-                ? 'Tugas akan ditandai sebagai selesai dan tidak dapat diubah lagi.'
-                : 'Tugas akan dikembalikan ke agen untuk diperbaiki dan diajukan ulang.'}
+                ? (task.is_dept_dispatch_approval
+                  ? 'Tugas akan disetujui untuk dikirimkan ke departemen tujuan.'
+                  : 'Tugas akan ditandai sebagai selesai dan tidak dapat diubah lagi.')
+                : (task.is_dept_dispatch_approval
+                  ? 'Pengiriman tugas ini akan ditolak.'
+                  : 'Tugas akan dikembalikan ke agen untuk diperbaiki.')}
             </p>
 
             <textarea
@@ -518,6 +667,26 @@ const MobileApprovalDetail = () => {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Zoomed Image Lightbox Modal */}
+      {zoomedImage && (
+        <div 
+          className="fixed inset-0 bg-black/95 z-[99999] flex items-center justify-center p-4 cursor-pointer"
+          onClick={() => setZoomedImage(null)}
+        >
+          <button 
+            className="absolute top-6 right-6 text-white bg-white/10 hover:bg-white/20 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+            onClick={() => setZoomedImage(null)}
+          >
+            <X size={18} />
+          </button>
+          <img 
+            src={zoomedImage} 
+            alt="Zoomed preview" 
+            className="max-w-full max-h-[85vh] object-contain rounded-lg shadow-2xl" 
+          />
         </div>
       )}
 

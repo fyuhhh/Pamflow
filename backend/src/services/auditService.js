@@ -74,6 +74,28 @@ const logAudit = async ({ entity_type, entity_id, user_id, user_name, action, ac
     const user_agent_raw = req ? req.headers['user-agent'] : null;
     const { browser, os, device_brand, device_name } = parseUserAgent(user_agent_raw);
 
+    // Resolve user details
+    let resolvedUserId = user_id;
+    let resolvedUserName = user_name;
+
+    if (!resolvedUserId && req?.user?.id) {
+      resolvedUserId = req.user.id;
+    }
+
+    if (resolvedUserId && !resolvedUserName) {
+      try {
+        const [rows] = await db.query('SELECT firstName, lastName, username FROM users WHERE id = ?', [resolvedUserId]);
+        if (rows && rows.length > 0) {
+          resolvedUserName = `${rows[0].firstName || ''} ${rows[0].lastName || ''}`.trim() || rows[0].username;
+        }
+      } catch (userErr) {
+        console.error('Audit Log User Resolution Error:', userErr.message);
+      }
+    }
+
+    // Fallbacks
+    if (!resolvedUserName) resolvedUserName = 'Sistem';
+
     // Allow page_url from body if not passed as param (for navigation logs)
     const resolvedPageUrl = page_url || (req?.body?.page_url) || null;
     const resolvedSessionId = session_id || (req?.body?.session_id) || null;
@@ -85,8 +107,8 @@ const logAudit = async ({ entity_type, entity_id, user_id, user_name, action, ac
     `, [
       entity_type,
       entity_id || null,
-      user_id,
-      user_name,
+      resolvedUserId || null,
+      resolvedUserName,
       action,
       action_label || null,
       old_value ? (typeof old_value === 'object' ? JSON.stringify(old_value) : String(old_value)) : null,

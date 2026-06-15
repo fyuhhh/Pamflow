@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { Info, MapPin, ChevronDown, ChevronRight, ChevronLeft, ChevronUp, AlertTriangle, GripVertical, Link as LinkIcon, Trash2, Plus, Copy, CheckCircle, X } from 'lucide-react';
+import { Info, MapPin, ChevronDown, ChevronRight, ChevronLeft, ChevronUp, AlertTriangle, GripVertical, Link as LinkIcon, Trash2, Plus, Copy, CheckCircle, X, FileText, Image } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { hasPermission } from '../utils/permissions';
 import { useModal } from '../context/ModalContext';
@@ -40,6 +40,10 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
   const [managers, setManagers] = useState([]);
   const [sourceDeptTask, setSourceDeptTask] = useState(null);
   const user = JSON.parse(localStorage.getItem('user'));
+  
+  const [uploading, setUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const fileInputRef = React.useRef(null);
 
   const currentCompanyId = user?.company_id || 1;
   const role = user?.role?.toLowerCase();
@@ -114,6 +118,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
       deskripsi: '',
       lokasi: '',
       detail_alamat: '',
+      lampiran: null,
       aturan_waktu: 'Sesuai Waktu',
       tanggal_mulai: '',
       waktu_mulai: '',
@@ -675,6 +680,19 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
           agen_id: data.agen_id && data.agen_id.length > 0 ? data.agen_id[0] : ''
         };
         setFormData(formattedData);
+
+        if (data.lampiran) {
+          const urlParts = data.lampiran.split('/');
+          const filename = urlParts[urlParts.length - 1];
+          setUploadedFile({
+            url: data.lampiran,
+            filename: filename,
+            size: 0,
+            type: data.lampiran.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'image/jpeg'
+          });
+        } else {
+          setUploadedFile(null);
+        }
       }
     } catch (err) {
       console.error('Error fetching task details:', err);
@@ -793,6 +811,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
     deskripsi: '',
     lokasi: '',
     detail_alamat: '',
+    lampiran: null,
     aturan_waktu: 'Sesuai Waktu',
     tanggal_mulai: '',
     waktu_mulai: '',
@@ -822,6 +841,67 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
         isExpanded: true
       }
     ]
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowed = ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'];
+    if (!allowed.includes(file.type)) {
+      showError('Format Tidak Didukung', 'Format file tidak didukung. Gunakan PDF, PNG, JPG, atau JPEG.');
+      return;
+    }
+
+    // Validate file size
+    const maxSize = file.type === 'application/pdf' ? 10 * 1024 * 1024 : 3 * 1024 * 1024;
+    if (file.size > maxSize) {
+      showError('File Terlalu Besar', file.type === 'application/pdf' ? 'PDF maksimum 10 MB' : 'Gambar maksimum 3 MB');
+      return;
+    }
+
+    setUploading(true);
+    const formPayload = new FormData();
+    formPayload.append('file', file);
+
+    try {
+      const response = await authFetch('/api/upload', {
+        method: 'POST',
+        body: formPayload
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUploadedFile({
+          url: data.url,
+          filename: data.filename,
+          size: data.size,
+          type: file.type
+        });
+        setFormData(prev => ({ ...prev, lampiran: data.url }));
+      } else {
+        showError('Gagal', 'Gagal mengunggah file.');
+      }
+    } catch (err) {
+      console.error('Upload error:', err);
+      showError('Kesalahan Unggah', 'Terjadi kesalahan saat mengunggah file.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = () => {
+    setUploadedFile(null);
+    setFormData(prev => ({ ...prev, lampiran: null }));
+  };
+
+  const formatFileSize = (bytes) => {
+    if (bytes === 0) return '0 Bytes';
+    const k = 1024;
+    const sizes = ['Bytes', 'KB', 'MB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
   const handleSubmit = async (statusOverride = null) => {
@@ -870,6 +950,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
         } else {
           success('Berhasil', 'Tugas berhasil dibuat!');
           setFormData(initialFormData);
+          setUploadedFile(null);
           setStep(1);
           setErrors({});
           setShowModal(false);
@@ -1198,7 +1279,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                     <span className="text-xs text-[#B5B5C3]">Masukkan nama tugas yang akan dikerjakan oleh agen</span>
                   </div>
                   <div className="flex-1">
-                    <input type="text" name="nama_tugas" value={formData.nama_tugas} onChange={handleChange} placeholder="Masukkan nama tugas" className={`w-full px-4 py-3 border rounded-lg text-sm outline-none ${errors.nama_tugas ? 'border-[#F1416C]' : 'border-[#E4E6EF] focus:border-[#0095E8]'}`} />
+                    <input type="text" name="nama_tugas" value={formData.nama_tugas} onChange={handleChange} placeholder="Masukkan nama tugas" className={`w-full px-4 py-3 border rounded-lg text-sm font-normal outline-none placeholder:font-normal ${errors.nama_tugas ? 'border-[#F1416C]' : 'border-[#E4E6EF] focus:border-[#0095E8]'}`} />
                     {errors.nama_tugas && <p className="text-[#F1416C] text-xs mt-1">{errors.nama_tugas}</p>}
                   </div>
                 </div>
@@ -1235,7 +1316,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                 <div className="flex items-start gap-8">
                   <label className="w-56 text-sm text-[#3F4254] pt-3">Deskripsi tugas</label>
                   <div className="flex-1">
-                    <textarea name="deskripsi" value={formData.deskripsi} onChange={handleChange} placeholder="Masukkan deskripsi tugas" rows="5" className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none resize-y min-h-[100px]"></textarea>
+                    <textarea name="deskripsi" value={formData.deskripsi} onChange={handleChange} placeholder="Masukkan deskripsi tugas" rows="5" className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm font-normal focus:border-[#0095E8] outline-none resize-y min-h-[100px] placeholder:font-normal"></textarea>
                     <div className="text-right text-xs text-[#B5B5C3] mt-1">{formData.deskripsi.length}/1000</div>
                   </div>
                 </div>
@@ -1248,7 +1329,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                   <div className="flex-1 space-y-3">
                     <div className="relative">
                       <MapPin size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A1A5B7]" />
-                      <input type="text" name="lokasi" value={formData.lokasi} onChange={handleChange} placeholder="Nama jalan / lokasi / gedung" className="w-full pl-10 pr-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none" />
+                      <input type="text" name="lokasi" value={formData.lokasi} onChange={handleChange} placeholder="Nama jalan / lokasi / gedung" className="w-full pl-10 pr-4 py-3 border border-[#E4E6EF] rounded-lg text-sm font-normal focus:border-[#0095E8] outline-none placeholder:font-normal" />
                     </div>
                     <button type="button" className="px-4 py-2 border border-[#E4E6EF] rounded-lg text-sm font-semibold mb-2 flex items-center gap-2 hover:bg-gray-50">
                       <MapPin size={16} className="text-[#3F4254]" /> Pilih Lewat Peta
@@ -1259,8 +1340,75 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                 <div className="flex items-start gap-8">
                   <label className="w-56 text-sm text-[#3F4254] pt-3">Detail alamat</label>
                   <div className="flex-1">
-                    <textarea name="detail_alamat" value={formData.detail_alamat} onChange={handleChange} placeholder="Masukkan detail alamat ..." rows="4" className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none resize-y min-h-[100px]"></textarea>
+                    <textarea name="detail_alamat" value={formData.detail_alamat} onChange={handleChange} placeholder="Masukkan detail alamat ..." rows="4" className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm font-normal focus:border-[#0095E8] outline-none resize-y min-h-[100px] placeholder:font-normal"></textarea>
                     <div className="text-right text-xs text-[#B5B5C3] mt-1">{formData.detail_alamat.length}/1000</div>
+                  </div>
+                </div>
+
+                {/* Lampiran */}
+                <div className="flex items-start gap-8">
+                  <div className="w-56">
+                    <label className="text-sm text-[#3F4254] block mb-1">Lampiran</label>
+                    <p className="text-[10px] text-[#A1A5B7] mt-0.5 leading-tight">Pastikan file yang diunggah sesuai dengan panduan kriteria</p>
+                  </div>
+                  <div className="flex-1">
+                    {uploadedFile ? (
+                      <div className="flex items-center gap-4 bg-[#F1FAFF] border border-[#D6EEFB] rounded-xl px-5 py-4">
+                        <div className="w-10 h-10 rounded-lg bg-white border border-[#E4E6EF] flex items-center justify-center flex-shrink-0">
+                          {uploadedFile.type === 'application/pdf' 
+                            ? <FileText size={20} className="text-[#F1416C]" />
+                            : <Image size={20} className="text-[#0095E8]" />
+                          }
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[13px] font-semibold text-[#3F4254] truncate">{uploadedFile.filename}</p>
+                          <p className="text-[11px] text-[#A1A5B7]">{formatFileSize(uploadedFile.size)}</p>
+                        </div>
+                        <button 
+                          type="button"
+                          onClick={removeFile}
+                          className="w-7 h-7 rounded-full bg-white border border-[#E4E6EF] flex items-center justify-center text-[#A1A5B7] hover:text-[#F1416C] hover:border-[#F1416C] transition-all flex-shrink-0"
+                        >
+                          <X size={14} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-6">
+                        <div 
+                          className={`bg-[#F1FAFF] border-2 border-dashed border-[#B5D8F5] rounded-xl p-6 flex flex-col items-center gap-3 min-w-[200px] cursor-pointer hover:bg-[#E1F1FF] transition-colors ${uploading ? 'opacity-50 pointer-events-none' : ''}`}
+                          onClick={() => fileInputRef.current?.click()}
+                        >
+                          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#0095E8" strokeWidth="1.5">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                            <polyline points="14 2 14 8 20 8" />
+                            <line x1="12" y1="18" x2="12" y2="12" />
+                            <line x1="9" y1="15" x2="12" y2="12" />
+                            <line x1="15" y1="15" x2="12" y2="12" />
+                          </svg>
+                          <p className="text-[11px] text-[#3F4254] text-center">
+                            {uploading ? 'Mengunggah...' : 'Pilih atau letakkan PDF atau gambar'}
+                          </p>
+                          <button 
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+                            className="px-4 py-1.5 bg-white border border-[#0095E8] rounded-lg text-[11px] text-[#0095E8] font-bold hover:bg-[#F1FAFF] transition-colors"
+                          >
+                            Pilih file
+                          </button>
+                          <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".pdf,.png,.jpg,.jpeg"
+                            onChange={handleFileUpload}
+                            className="hidden"
+                          />
+                        </div>
+                        <div className="flex flex-col justify-center gap-2 text-[11px] text-[#7E8299]">
+                          <p>• PDF Maksimum 10 MB</p>
+                          <p>• PNG, JPG, JPEG maksimum 3 MB</p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1760,7 +1908,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                           value={detail.nama_detail}
                           onChange={(e) => updateDetail(detail.id, 'nama_detail', e.target.value)}
                           placeholder="Masukkan nama detail tugas"
-                          className="flex-1 px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none"
+                          className="flex-1 px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm font-normal focus:border-[#0095E8] outline-none placeholder:font-normal"
                         />
                       </div>
 
@@ -1836,7 +1984,7 @@ const BuatTugas = ({ taskType = 'checklist' }) => {
                             onChange={(e) => updateDetail(detail.id, 'deskripsi', e.target.value)}
                             placeholder="Masukkan deskripsi detail tugas"
                             rows="4"
-                            className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm focus:border-[#0095E8] outline-none resize-y min-h-[100px]"
+                            className="w-full px-4 py-3 border border-[#E4E6EF] rounded-lg text-sm font-normal focus:border-[#0095E8] outline-none resize-y min-h-[100px] placeholder:font-normal"
                           ></textarea>
                           <div className="text-right text-[10px] text-[#B5B5C3] mt-1">{detail.deskripsi.length}/500</div>
                         </div>

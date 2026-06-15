@@ -1,4 +1,5 @@
 const fs = require('fs');
+const fsPromises = fs.promises;
 const path = require('path');
 const crypto = require('crypto');
 
@@ -7,9 +8,9 @@ const crypto = require('crypto');
  * Saves a base64 string as a file.
  * @param {string} base64Data - The base64 string (can include data:image/png;base64, prefix)
  * @param {string} subFolder - Subfolder inside uploads (e.g., 'assets', 'tasks')
- * @returns {string|null} - The relative URL path to the saved file or null if failed
+ * @returns {Promise<string|null>} - The relative URL path to the saved file or null if failed
  */
-const saveBase64Media = (base64Data, subFolder = 'misc') => {
+const saveBase64Media = async (base64Data, subFolder = 'misc') => {
   if (!base64Data || typeof base64Data !== 'string') {
     return base64Data;
   }
@@ -24,7 +25,7 @@ const saveBase64Media = (base64Data, subFolder = 'misc') => {
   try {
     const uploadsDir = path.join(__dirname, '../../uploads', subFolder);
     if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+      await fsPromises.mkdir(uploadsDir, { recursive: true });
     }
 
     // Extract format and actual base64 content
@@ -49,7 +50,7 @@ const saveBase64Media = (base64Data, subFolder = 'misc') => {
     const fileName = `${crypto.randomUUID()}.${extension}`;
     const filePath = path.join(uploadsDir, fileName);
 
-    fs.writeFileSync(filePath, buffer);
+    await fsPromises.writeFile(filePath, buffer);
 
     // Return the relative URL path
     return `/uploads/${subFolder}/${fileName}`;
@@ -60,13 +61,14 @@ const saveBase64Media = (base64Data, subFolder = 'misc') => {
 };
 
 /**
- * Recursively scans an object/array and replaces base64 strings with file paths.
+ * Recursively scans an object/array and replaces base64 strings with file paths asynchronously.
  */
-const processBase64InObject = (obj, subFolder = 'tasks') => {
+const processBase64InObject = async (obj, subFolder = 'tasks') => {
   if (!obj) return obj;
 
   if (Array.isArray(obj)) {
-    return obj.map(item => processBase64InObject(item, subFolder));
+    const promises = obj.map(item => processBase64InObject(item, subFolder));
+    return Promise.all(promises);
   }
 
   if (typeof obj === 'object') {
@@ -75,9 +77,9 @@ const processBase64InObject = (obj, subFolder = 'tasks') => {
       const val = newObj[key];
       const isMedia = typeof val === 'string' && (val.startsWith('data:image') || val.startsWith('data:video'));
       if (isMedia) {
-        newObj[key] = saveBase64Media(val, subFolder);
+        newObj[key] = await saveBase64Media(val, subFolder);
       } else if (typeof val === 'object') {
-        newObj[key] = processBase64InObject(val, subFolder);
+        newObj[key] = await processBase64InObject(val, subFolder);
       }
     }
     return newObj;

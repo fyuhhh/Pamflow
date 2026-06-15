@@ -389,11 +389,11 @@ const BuatTugasDepartemen = ({ taskType = 'wo' }) => {
     }
   };
 
-  const inputClass = (field) => `w-full px-5 py-4 rounded-2xl border text-[14px] font-bold outline-none transition-all ${
+  const inputClass = (field) => `w-full px-5 py-4 rounded-2xl border text-[14px] font-normal outline-none transition-all ${
     errors[field] 
       ? 'border-[#F1416C] bg-[#FFF5F8] text-[#F1416C]' 
       : 'border-slate-100 bg-slate-50 focus:bg-white focus:border-[#0095E8] focus:ring-4 focus:ring-blue-50 text-slate-700'
-  } placeholder:text-slate-300 placeholder:font-medium`;
+  } placeholder:text-slate-300 placeholder:font-normal`;
 
   const labelClass = `${isMobile ? 'w-full' : 'w-48'} text-[13px] text-[#3F4254]`;
   const requiredStar = <span className="text-[#F1416C] ml-0.5">*</span>;

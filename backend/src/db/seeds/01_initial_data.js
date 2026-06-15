@@ -47,21 +47,6 @@ exports.seed = async function(knex) {
     await knex('departments').insert(deptInserts);
   }
 
-  // 4. Seed Initial User
-  const [adminUser] = await knex('users').where('email', 'adil@gmail.com');
-  if (!adminUser) {
-    const hashedPassword = await bcrypt.hash('adil', 10);
-    await knex('users').insert({
-      orgId: 'PAM',
-      company_id: pamId,
-      email: 'adil@gmail.com',
-      password: hashedPassword,
-      firstName: 'Adil',
-      role: 'Super Admin',
-      department: 'IT',
-      userType: 'admin'
-    });
-  }
 
   // 5. Seed Default Asset Priorities
   const prioCount = await knex('asset_priorities').count('id as count').first();

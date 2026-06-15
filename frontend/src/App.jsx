@@ -66,6 +66,7 @@ import UtilityAir from './components/UtilityAir';
 
 import DashboardHome from './components/DashboardHome';
 import PortalHub from './components/PortalHub';
+import ConnectionGuard from './components/ConnectionGuard';
 
 const isMobileDevice = () => {
   return /Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
@@ -319,7 +320,13 @@ function App() {
         <RouteTracker />
         <OfflineIndicator />
         <OfflineSyncManager />
-        {appMode === 'mobile' ? <MobileLayout /> : <PCLayout />}
+        {appMode === 'mobile' ? (
+          <ConnectionGuard>
+            <MobileLayout />
+          </ConnectionGuard>
+        ) : (
+          <PCLayout />
+        )}
       </ModalProvider>
     </Router>
   );

@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logAudit } = require('../services/auditService');
 const socketService = require('../services/socketService');
 const { notifyUsers } = require('../services/pushService');
 const { processBase64InObject } = require('../utils/fileHelper');
@@ -98,15 +99,15 @@ const createDeptTask = async (req, res) => {
     const totalWoItems = Array.isArray(wo_items) ? wo_items.length : 0;
 
     // Process base64 in lampiran
-    const processedLampiran = processBase64InObject(lampiran, 'dept-tasks');
+    const processedLampiran = await processBase64InObject(lampiran, 'dept-tasks');
 
     const [result] = await db.query(
       `INSERT INTO department_tasks (
         perusahaan, company_id, departemen_asal, nama_peminta, departemen_tujuan, template, template_id,
         nama_wo, jenis_tugas, deskripsi, lokasi, detail_alamat, lampiran,
         tanggal_mulai, tanggal_selesai, urgensi,
-        wo_items, partial_submissions, total_wo_items, checklist_session_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?)`,
+        wo_items, partial_submissions, total_wo_items, checklist_session_id, status
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '[]', ?, ?, 'Menunggu Approval (Dikirim)')`,
       [
         perusahaan, company_id, departemen_asal, nama_peminta, departemen_tujuan, template || null, template_id || null,
         nama_wo, jenis_tugas || 'wo', deskripsi || null, lokasi || null, detail_alamat || null, 
@@ -115,33 +116,45 @@ const createDeptTask = async (req, res) => {
         woItemsJson, totalWoItems, checklist_session_id || null
       ]
     );
-    // Real-time Sync
-    socketService.emitToCompany(company_id, 'dept-task-created', {
+
+    // Sync to sender company for general updates
+    socketService.emitToCompany(company_id, 'dept-task-created-for-approval', {
       id: result.insertId,
       nama_wo,
       departemen_asal
     });
 
-    // Notify target department users via Push
+    // Notify sender department managers/supervisors/atasans
     try {
-      const [targetUsers] = await db.query(
-        'SELECT id FROM users WHERE company_id = ? AND department = ? AND status = "Aktif"',
-        [company_id, departemen_tujuan]
+      const [approvers] = await db.query(
+        `SELECT id FROM users 
+         WHERE company_id = ? AND department = ? AND status = 'Aktif'
+           AND (role LIKE '%manager%' OR role LIKE '%supervisor%' OR role LIKE '%kepala%' OR role LIKE '%atasan%')`,
+        [company_id, departemen_asal]
       );
-
-      const targetUserIds = targetUsers.map(u => u.id);
-      if (targetUserIds.length > 0) {
-        await notifyUsers(db, targetUserIds, {
-          title: `Work Order Baru: ${departemen_asal}`,
-          body: `${nama_wo} telah dikirim ke departemen Anda.`,
-          url: `/tugas-departemen/diterima`
+      const approverIds = approvers.map(u => u.id);
+      if (approverIds.length > 0) {
+        await notifyUsers(db, approverIds, {
+          title: `WO/Checklist Butuh Approval: ${nama_wo}`,
+          body: `Permintaan dari ${nama_peminta} menunggu persetujuan Anda untuk dikirim.`,
+          url: `/demo/mobile/approvals`
         });
       }
     } catch (pushErr) {
-      console.error('[DeptTaskController] Push error:', pushErr.message);
+      console.error('[DeptTaskController] Push approvers error:', pushErr.message);
     }
 
-    res.status(201).json({ message: 'Department task created successfully', id: result.insertId });
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: result.insertId,
+      action: 'CREATE',
+      new_value: { nama_wo, departemen_asal, departemen_tujuan, urgensi, jenis_tugas },
+      notes: `Membuat Tugas Departemen (WO) baru: "${nama_wo}" dari ${departemen_asal} ke ${departemen_tujuan}`,
+      req
+    });
+
+    res.status(201).json({ message: 'Department task created successfully, pending approval', id: result.insertId });
   } catch (err) {
     console.error('Create department task error:', err.message);
     res.status(500).json({ message: 'Internal server error' });
@@ -164,6 +177,15 @@ const acceptDeptTask = async (req, res) => {
     const [taskRows] = await db.query('SELECT company_id FROM department_tasks WHERE id = ?', [req.params.id]);
     socketService.emitToCompany(taskRows[0]?.company_id, 'dept-task-updated', { id: req.params.id, status: 'Diterima' });
 
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      action: 'ACCEPT',
+      notes: `Tugas Departemen disetujui/diterima oleh ${accepted_by_name}`,
+      req
+    });
+
     res.status(200).json({ message: 'Task accepted successfully' });
   } catch (err) {
     console.error('Accept department task error:', err.message);
@@ -183,6 +205,15 @@ const rejectDeptTask = async (req, res) => {
       WHERE id = ?`,
       [rejected_by_id, rejected_by_name, req.params.id]
     );
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      action: 'REJECT',
+      notes: `Tugas Departemen ditolak oleh ${rejected_by_name}`,
+      req
+    });
+
     res.status(200).json({ message: 'Task rejected successfully' });
   } catch (err) {
     console.error('Reject department task error:', err.message);
@@ -193,6 +224,16 @@ const rejectDeptTask = async (req, res) => {
 const removeDeptTask = async (req, res) => {
   try {
     await db.query('DELETE FROM department_tasks WHERE id = ?', [req.params.id]);
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: req.params.id,
+      action: 'DELETE',
+      notes: `Menghapus Tugas Departemen (ID: ${req.params.id})`,
+      req
+    });
+
     res.status(200).json({ message: 'Department task deleted successfully' });
   } catch (err) {
     console.error('Delete department task error:', err.message);
@@ -251,6 +292,15 @@ const claimAndStartDeptTask = async (req, res) => {
     socketService.emitToCompany(dt.company_id, 'dept-task-updated', { id, status: 'Berlangsung' });
     socketService.emitToCompany(dt.company_id, 'task-created', { id: newTaskId, nama_tugas: dt.nama_wo });
 
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: id,
+      action: 'CLAIM',
+      notes: `Agen ${agent_name} mengklaim dan mulai mengerjakan Tugas Departemen: "${dt.nama_wo}"`,
+      req
+    });
+
     res.status(200).json({
       message: 'Task claimed and started successfully',
       taskId: newTaskId
@@ -307,7 +357,7 @@ const submitPartial = async (req, res) => {
     const totalCount = woItems.length;
 
     // Process base64 in photo_urls
-    const processedPhotos = processBase64InObject(photo_urls, 'dept-tasks');
+    const processedPhotos = await processBase64InObject(photo_urls, 'dept-tasks');
 
     // Record partial submission ke history
     partialSubs.push({
@@ -349,6 +399,15 @@ const submitPartial = async (req, res) => {
       id, status: 'Partial WO', fixed: fixedCount, total: totalCount
     });
 
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: id,
+      action: 'UPDATE',
+      notes: `Engineering (${submitted_by_name}) menyelesaikan progress sebagian: ${fixedCount} dari ${totalCount} item selesai. Catatan: ${notes || '-'}`,
+      req
+    });
+
     res.json({
       message: `Progress disimpan: ${fixedCount} dari ${totalCount} item selesai`,
       fixed_count: fixedCount,
@@ -387,7 +446,7 @@ const submitFinal = async (req, res) => {
 
     await db.query(
       `UPDATE department_tasks SET
-        status = 'Menunggu Approval',
+        status = 'Menunggu Approval Penyelesaian',
         fixed_wo_items = total_wo_items,
         waktu_diterima = NOW()
        WHERE id = ?`,
@@ -415,7 +474,17 @@ const submitFinal = async (req, res) => {
     }
 
     socketService.emitToCompany(task.company_id, 'dept-task-updated', {
-      id, status: 'Menunggu Approval'
+      id, status: 'Menunggu Approval Penyelesaian'
+    });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: id,
+      action: 'UPDATE_STATUS',
+      new_value: 'Menunggu Approval Penyelesaian',
+      notes: `Engineering (${submitted_by_name}) melakukan submit final untuk WO: "${task.nama_wo}". Menunggu approval atasan. Catatan: ${notes || '-'}`,
+      req
     });
 
     res.json({ message: 'WO berhasil disubmit final. Menunggu approval atasan.' });
@@ -524,6 +593,15 @@ const reopenWO = async (req, res) => {
 
     socketService.emitToCompany(parent.company_id, 'dept-task-created', {
       id: newWoId, nama_wo: newNamaWo, is_reopen: true, parent_wo_id: parentId
+    });
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'task',
+      entity_id: newWoId,
+      action: 'REOPEN',
+      notes: `Tugas/WO "${parent.nama_wo}" diajukan ulang (re-open) oleh ${reopen_by_name} karena ${problemItems.length} item masih bermasalah.`,
+      req
     });
 
     res.status(201).json({

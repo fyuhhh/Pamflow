@@ -49,6 +49,59 @@ const getTaskById = async (id) => {
     if (typeof task.details === 'string') task.details = JSON.parse(task.details);
     return task;
   }
+
+  // Try to search in department_tasks for dispatch approval
+  const [dtRows] = await db.query(
+    `SELECT dt.*, d_asal.dept_id as dept_id_asal
+     FROM department_tasks dt
+     LEFT JOIN departments d_asal ON d_asal.name = dt.departemen_asal AND d_asal.company_id = dt.company_id
+     WHERE dt.id = ?`,
+    [id]
+  );
+  if (dtRows.length > 0) {
+    const dt = dtRows[0];
+    const prefix = dt.jenis_tugas === 'checklist' ? 'CHK' : 'WO';
+    const deptCode = dt.dept_id_asal || dt.departemen_asal?.substring(0, 3).toUpperCase() || 'GEN';
+    const nomor = `${prefix}-${deptCode}${String(dt.id).padStart(5, '0')}`;
+
+    let details = [];
+    if (dt.template_id) {
+      try {
+        const [tplRows] = await db.query('SELECT details FROM task_templates WHERE id = ?', [dt.template_id]);
+        if (tplRows.length > 0) {
+          const tplDetails = tplRows[0].details;
+          details = typeof tplDetails === 'string' ? JSON.parse(tplDetails) : (tplDetails || []);
+        }
+      } catch (err) {
+        console.error('Error fetching template details for dept task:', err.message);
+      }
+    }
+
+    return {
+      id: dt.id,
+      company_id: dt.company_id,
+      perusahaan: dt.perusahaan,
+      departemen: dt.departemen_asal,
+      departemen_tujuan: dt.departemen_tujuan,
+      nama_tugas: dt.nama_wo,
+      jenis_tugas: dt.jenis_tugas,
+      urgensi: dt.urgensi,
+      nomor_perintah_kerja: nomor,
+      deskripsi: dt.deskripsi,
+      lokasi: dt.lokasi,
+      detail_alamat: dt.detail_alamat,
+      lampiran: dt.lampiran,
+      tanggal_mulai: dt.tanggal_mulai,
+      tanggal_selesai: dt.tanggal_selesai,
+      progres: dt.status,
+      status: dt.status,
+      agent_name: dt.nama_peminta,
+      waktu_selesai_aktual: dt.created_at,
+      is_dept_dispatch_approval: true,
+      wo_items: typeof dt.wo_items === 'string' ? JSON.parse(dt.wo_items) : (dt.wo_items || []),
+      details: details
+    };
+  }
   return null;
 };
 
@@ -113,7 +166,7 @@ const createTask = async (taskData) => {
     tanggal_selesai, waktu_selesai, pengulangan, jenis_pengulangan, waktu_berakhir,
     tanggal_pengulangan_berakhir, kali_pengulangan, tugas_departemen, dept_task_id,
     agen_id, verifikasi_kehadiran, maksimum_radius, selfie, persetujuan, admin_pemeriksa_id,
-    details, status, jenis_tugas
+    details, status, jenis_tugas, lampiran
   } = taskData;
 
   // Auto-generate the task code
@@ -122,16 +175,16 @@ const createTask = async (taskData) => {
   const [result] = await db.query(
     `INSERT INTO tasks (
       perusahaan, company_id, departemen, nama_tugas, jenis_tugas, urgensi, nomor_perintah_kerja,
-      deskripsi, lokasi, detail_alamat, aturan_waktu, tanggal_mulai, waktu_mulai,
+      deskripsi, lokasi, detail_alamat, lampiran, aturan_waktu, tanggal_mulai, waktu_mulai,
       tanggal_selesai, waktu_selesai, pengulangan, jenis_pengulangan, waktu_berakhir,
       tanggal_pengulangan_berakhir, kali_pengulangan, tugas_departemen, dept_task_id,
       checklist_session_id,
       agen_id, verifikasi_kehadiran, maksimum_radius, selfie, butuh_persetujuan, admin_pemeriksa_id, approval_status,
       details, progres, status
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       perusahaan, company_id, departemen, nama_tugas, jenis_tugas || 'checklist', urgensi, nomor_perintah_kerja,
-      deskripsi, lokasi, detail_alamat, aturan_waktu,
+      deskripsi, lokasi, detail_alamat, lampiran || null, aturan_waktu,
       tanggal_mulai || null, waktu_mulai || null,
       tanggal_selesai || null, waktu_selesai || null,
       pengulangan || false, jenis_pengulangan || null, waktu_berakhir || null,
@@ -190,7 +243,7 @@ const createTask = async (taskData) => {
 const updateTask = async (id, taskData) => {
   const {
     perusahaan, company_id, departemen, nama_tugas, urgensi,
-    deskripsi, lokasi, detail_alamat, aturan_waktu, tanggal_mulai, waktu_mulai,
+    deskripsi, lokasi, detail_alamat, lampiran, aturan_waktu, tanggal_mulai, waktu_mulai,
     tanggal_selesai, waktu_selesai, pengulangan, jenis_pengulangan, waktu_berakhir,
     tanggal_pengulangan_berakhir, kali_pengulangan, tugas_departemen,
     agen_id, verifikasi_kehadiran, maksimum_radius, selfie, persetujuan, admin_pemeriksa_id,
@@ -213,7 +266,7 @@ const updateTask = async (id, taskData) => {
   await db.query(
     `UPDATE tasks SET 
       perusahaan=?, company_id=?, departemen=?, nama_tugas=?, jenis_tugas=?, urgensi=?, nomor_perintah_kerja=?,
-      deskripsi=?, lokasi=?, detail_alamat=?, aturan_waktu=?, tanggal_mulai=?, waktu_mulai=?,
+      deskripsi=?, lokasi=?, detail_alamat=?, lampiran=?, aturan_waktu=?, tanggal_mulai=?, waktu_mulai=?,
       tanggal_selesai=?, waktu_selesai=?, pengulangan=?, jenis_pengulangan=?, waktu_berakhir=?,
       tanggal_pengulangan_berakhir=?, kali_pengulangan=?, tugas_departemen=?,
       agen_id=?, verifikasi_kehadiran=?, maksimum_radius=?, selfie=?, butuh_persetujuan=?, admin_pemeriksa_id=?, 
@@ -221,7 +274,7 @@ const updateTask = async (id, taskData) => {
     WHERE id=?`,
     [
       perusahaan, company_id, departemen, nama_tugas, jenisNow, urgensi, nomor_perintah_kerja,
-      deskripsi, lokasi, detail_alamat, aturan_waktu,
+      deskripsi, lokasi, detail_alamat, lampiran || null, aturan_waktu,
       tanggal_mulai || null, waktu_mulai || null,
       tanggal_selesai || null, waktu_selesai || null,
       pengulangan || false, jenis_pengulangan || null, waktu_berakhir || null,
@@ -363,7 +416,7 @@ const updateMaterialNote = async (id, { catatan_material }) => {
 
 const submitTask = async (id, { submission_data, nama_agen, agent_id }) => {
   // Process base64 images in submission_data to files
-  const processedData = processBase64InObject(submission_data, 'tasks');
+  const processedData = await processBase64InObject(submission_data, 'tasks');
   const submissionJson = JSON.stringify(processedData || []);
 
   await db.query(
@@ -393,7 +446,7 @@ const submitTask = async (id, { submission_data, nama_agen, agent_id }) => {
 
 const finishTask = async (id, { nama_agen, agent_id, latitude, longitude }) => {
   let query = 'UPDATE tasks SET progres = ?, waktu_selesai_aktual = CURRENT_TIMESTAMP';
-  let params = ['Menunggu Approval'];
+  let params = ['Menunggu Approval Penyelesaian'];
 
   if (agent_id) {
     query += ', agen_id = ?';
@@ -419,25 +472,25 @@ const finishTask = async (id, { nama_agen, agent_id, latitude, longitude }) => {
   if (nama_agen) {
     const [historyRows] = await db.query(
       'UPDATE task_history SET progres = ?, waktu_selesai = COALESCE(waktu_selesai, CURRENT_TIMESTAMP), submission_data = COALESCE(submission_data, ?) WHERE task_id = ? AND nama_agen = ? AND progres = ?',
-      ['Menunggu Approval', subData, id, nama_agen, 'Berlangsung']
+      ['Menunggu Approval Penyelesaian', subData, id, nama_agen, 'Berlangsung']
     );
 
     if (historyRows.affectedRows === 0) {
       await db.query(
         'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai, waktu_selesai, submission_data) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)',
-        [id, nama_agen, 'Menunggu Approval', currentTask[0]?.waktu_dimulai || null, subData]
+        [id, nama_agen, 'Menunggu Approval Penyelesaian', currentTask[0]?.waktu_dimulai || null, subData]
       );
     }
   } else {
     const [historyRows] = await db.query(
       'UPDATE task_history SET progres = ?, waktu_selesai = COALESCE(waktu_selesai, CURRENT_TIMESTAMP), submission_data = COALESCE(submission_data, ?) WHERE task_id = ? AND progres = ? ORDER BY created_at DESC LIMIT 1',
-      ['Menunggu Approval', subData, id, 'Berlangsung']
+      ['Menunggu Approval Penyelesaian', subData, id, 'Berlangsung']
     );
 
     if (historyRows.affectedRows === 0) {
       await db.query(
         'INSERT INTO task_history (task_id, nama_agen, progres, waktu_mulai, waktu_selesai, submission_data) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP, ?)',
-        [id, 'Sistem', 'Menunggu Approval', currentTask[0]?.waktu_dimulai || null, subData]
+        [id, 'Sistem', 'Menunggu Approval Penyelesaian', currentTask[0]?.waktu_dimulai || null, subData]
       );
     }
   }

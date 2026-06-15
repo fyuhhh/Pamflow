@@ -271,14 +271,16 @@ const DiterimaDetail = () => {
                 <p className="text-[13px] text-[#3F4254]">
                     Diterima oleh <span className="font-semibold">{task.accepted_by_name || 'Admin'}</span> pada {formatDateTime(task.waktu_diterima)}
                 </p>
-                <div className="mt-3">
-                    <button 
-                        onClick={() => navigate(`/tugas-agen/${task.jenis_tugas === 'wo' ? 'buat-wo' : 'buat'}?from_dept_task=${task.id}`)}
-                        className="px-4 py-1.5 bg-[#0095E8] rounded-lg text-[12px] text-white font-bold hover:bg-[#0084CC] transition-colors"
-                    >
-                        Buat {task.jenis_tugas === 'checklist' ? 'Checklist' : 'WO'}
-                    </button>
-                </div>
+                {task.status === 'Diterima' && (
+                  <div className="mt-3">
+                      <button 
+                          onClick={() => navigate(`/tugas-agen/${task.jenis_tugas === 'wo' ? 'buat-wo' : 'buat'}?from_dept_task=${task.id}`)}
+                          className="px-4 py-1.5 bg-[#0095E8] rounded-lg text-[12px] text-white font-bold hover:bg-[#0084CC] transition-colors"
+                      >
+                          Buat {task.jenis_tugas === 'checklist' ? 'Checklist' : 'WO'}
+                      </button>
+                  </div>
+                )}
 
             </div>
         </div>

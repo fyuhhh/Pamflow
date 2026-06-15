@@ -16,7 +16,8 @@ import {
   User,
   Calendar,
   FileText,
-  Info
+  Info,
+  Lock
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
@@ -334,7 +335,7 @@ const RegisterAset = () => {
     ...pa,
     isRegistered: allAssets.some(a => 
       a.nama_mesin?.toLowerCase() === pa.asset_name?.toLowerCase() &&
-      (a.serial_number || '').toLowerCase() === (pa.register_no || '').toLowerCase()
+      (a.serial_number || '').toLowerCase() === (pa.serial_number || pa.register_no || '').toLowerCase()
     )
   }));
 
@@ -360,7 +361,7 @@ const RegisterAset = () => {
       nama_mesin: asset.asset_name,
       brand: asset.brand || '',
       model_tipe: asset.model_tipe || '',
-      serial_number: asset.serial_number || '',
+      serial_number: asset.serial_number || asset.register_no || '',
       lokasi: asset.location_name || prev.lokasi,
     }));
     setShowPureAssetDropdown(false);
@@ -566,18 +567,34 @@ const RegisterAset = () => {
                   
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-2">
-                      <label className="text-sm font-normal text-[#3F4254]">Brand</label>
-                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Merk..." value={formData.brand} onChange={(e) => setFormData({...formData, brand: e.target.value})} />
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-normal text-[#3F4254]">Brand</label>
+                      </div>
+                      <div className="relative">
+                        <input type="text" className="w-full pl-4 pr-10 py-3 bg-[#F1F1F4]/50 border border-transparent rounded-xl text-sm font-light text-[#A1A5B7] outline-none transition-all cursor-not-allowed" placeholder="Merk..." value={formData.brand} readOnly />
+                        <Lock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7]/50 pointer-events-none" />
+                      </div>
                     </div>
                     <div className="space-y-2">
-                      <label className="text-sm font-normal text-[#3F4254]">Model/Tipe</label>
-                      <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border-transparent rounded-xl text-sm font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="Tipe..." value={formData.model_tipe} onChange={(e) => setFormData({...formData, model_tipe: e.target.value})} />
+                      <div className="flex items-center justify-between">
+                        <label className="text-sm font-normal text-[#3F4254]">Model/Tipe</label>
+                      </div>
+                      <div className="relative">
+                        <input type="text" className="w-full pl-4 pr-10 py-3 bg-[#F1F1F4]/50 border-transparent rounded-xl text-sm font-light text-[#A1A5B7] outline-none transition-all cursor-not-allowed" placeholder="Tipe..." value={formData.model_tipe} readOnly />
+                        <Lock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7]/50 pointer-events-none" />
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-2">
-                    <label className="text-sm font-normal text-[#3F4254]">Serial Number</label>
-                    <input type="text" className="w-full px-4 py-3 bg-[#F9F9F9] border border-transparent rounded-xl text-sm font-mono font-light focus:bg-white focus:border-[#0095E8]/20 outline-none transition-all" placeholder="SN..." value={formData.serial_number} onChange={(e) => setFormData({...formData, serial_number: e.target.value})} />
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm font-normal text-[#3F4254]">Serial Number</label>
+                    </div>
+                    <div className="relative">
+                      <input type="text" className="w-full pl-4 pr-10 py-3 bg-[#F1F1F4]/50 border border-transparent rounded-xl text-sm font-mono font-light text-[#A1A5B7] outline-none transition-all cursor-not-allowed" placeholder="SN..." value={formData.serial_number} readOnly />
+                      <Lock size={16} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#A1A5B7]/50 pointer-events-none" />
+                    </div>
+                    <p className="text-[10px] font-bold text-[#A1A5B7] italic leading-tight">* Kolom tergembok dikunci secara otomatis mengikuti data master Manajemen Aset.</p>
                   </div>
 
                   <div className="space-y-2">

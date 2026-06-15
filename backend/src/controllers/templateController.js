@@ -1,4 +1,5 @@
 const db = require('../config/db');
+const { logAudit } = require('../services/auditService');
 
 const getTemplates = async (req, res) => {
   const { company_id, department_id, jenis_template } = req.query;
@@ -73,6 +74,17 @@ const createTemplate = async (req, res) => {
       'INSERT INTO task_templates (company_id, department_id, jenis_template, name, details) VALUES (?, ?, ?, ?, ?)',
       [company_id, department_id, jenis_template || 'checklist', name, JSON.stringify(details)]
     );
+
+    // Log Audit
+    await logAudit({
+      entity_type: 'template',
+      entity_id: result.insertId,
+      action: 'CREATE',
+      new_value: { name, jenis_template, department_id },
+      notes: `Membuat template baru: "${name}" (${jenis_template})`,
+      req
+    });
+
     res.status(201).json({ id: result.insertId, message: 'Template created successfully' });
   } catch (err) {
     console.error('Error creating template:', err.message);
@@ -83,10 +95,25 @@ const createTemplate = async (req, res) => {
 const updateTemplate = async (req, res) => {
   const { company_id, department_id, jenis_template, name, details } = req.body;
   try {
+    const [oldRows] = await db.query('SELECT * FROM task_templates WHERE id = ?', [req.params.id]);
     await db.query(
       'UPDATE task_templates SET company_id = ?, department_id = ?, jenis_template = ?, name = ?, details = ? WHERE id = ?',
       [company_id, department_id, jenis_template, name, JSON.stringify(details), req.params.id]
     );
+
+    // Log Audit
+    if (oldRows.length > 0) {
+      await logAudit({
+        entity_type: 'template',
+        entity_id: req.params.id,
+        action: 'UPDATE',
+        old_value: oldRows[0],
+        new_value: { name, jenis_template, department_id },
+        notes: `Memperbarui template: "${name}" (${jenis_template})`,
+        req
+      });
+    }
+
     res.status(200).json({ message: 'Template updated successfully' });
   } catch (err) {
     console.error('Error updating template:', err.message);
@@ -96,7 +123,21 @@ const updateTemplate = async (req, res) => {
 
 const removeTemplate = async (req, res) => {
   try {
+    const [oldRows] = await db.query('SELECT * FROM task_templates WHERE id = ?', [req.params.id]);
     await db.query('DELETE FROM task_templates WHERE id = ?', [req.params.id]);
+
+    // Log Audit
+    if (oldRows.length > 0) {
+      await logAudit({
+        entity_type: 'template',
+        entity_id: req.params.id,
+        action: 'DELETE',
+        old_value: oldRows[0],
+        notes: `Menghapus template: "${oldRows[0].name}"`,
+        req
+      });
+    }
+
     res.status(200).json({ message: 'Template deleted successfully' });
   } catch (err) {
     console.error('Error deleting template:', err.message);

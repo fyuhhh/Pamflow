@@ -6,7 +6,8 @@ import {
   User,
   Shield,
   Building2,
-  Lock
+  Lock,
+  Check
 } from 'lucide-react';
 import { authFetch } from '../services/api';
 import { useModal } from '../context/ModalContext';
@@ -45,7 +46,8 @@ const AdminForm = () => {
     company_id: currentCompanyId || '',
     department: 'IT',
     userType: isAgen ? 'agen' : 'admin',
-    status: 'Aktif'
+    status: 'Aktif',
+    permissions: {}
   });
 
   useEffect(() => {
@@ -95,7 +97,16 @@ const AdminForm = () => {
       const response = await authFetch(`/api/users/${id}`);
       if (response.ok) {
         const data = await response.json();
-        setFormData({ ...data, password: '', userType: data.userType || (isAgen ? 'agen' : 'admin'), status: data.status || 'Aktif' });
+        const parsedPerms = data.permissions 
+          ? (typeof data.permissions === 'string' ? JSON.parse(data.permissions) : data.permissions) 
+          : {};
+        setFormData({ 
+          ...data, 
+          password: '', 
+          userType: data.userType || (isAgen ? 'agen' : 'admin'), 
+          status: data.status || 'Aktif',
+          permissions: parsedPerms
+        });
       } else {
         navigate(listLink);
       }
@@ -113,6 +124,19 @@ const AdminForm = () => {
     } else {
       setFormData({ ...formData, [name]: value });
     }
+  };
+
+  const handleAppToggle = (appId) => {
+    const currentPerms = { ...(formData.permissions || {}) };
+    if (currentPerms[appId]?.includes('Lihat')) {
+      delete currentPerms[appId];
+    } else {
+      currentPerms[appId] = ['Lihat'];
+    }
+    setFormData(prev => ({
+      ...prev,
+      permissions: currentPerms
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -213,6 +237,45 @@ const AdminForm = () => {
               </div>
            </div>
         </div>
+
+         {/* Accessible Apps Checkboxes */}
+         {!isAgen && (
+           <div className="bg-white rounded-xl border border-[#E1E3EA] p-8">
+              <div className="mb-8 pb-4 border-b border-[#F5F8FA]">
+                 <h3 className="text-[14px] font-semibold text-[#181C32]">Aplikasi yang Dapat Diakses</h3>
+                 <p className="text-[12px] text-[#A1A5B7]">Pilih modul aplikasi PamFlow yang dapat diakses oleh admin ini</p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                 {[
+                   { id: 'dashboard', label: 'WO & Checklist' },
+                   { id: 'checklist_harian_akses', label: 'Checklist Harian' },
+                   { id: 'aset_monitoring', label: 'Maintenance Aset' },
+                   { id: 'pure_asset_dashboard', label: 'Manajemen Aset' }
+                 ].map(app => {
+                   const hasAccess = formData.permissions?.[app.id]?.includes('Lihat');
+                   return (
+                     <div 
+                       key={app.id} 
+                       onClick={() => handleAppToggle(app.id)}
+                       className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
+                         hasAccess 
+                           ? 'border-[#0095E8] bg-[#0095E8]/5 text-[#0095E8] font-bold shadow-sm' 
+                           : 'border-[#E1E3EA] bg-white text-[#3F4254] hover:bg-slate-50'
+                       }`}
+                     >
+                       <div className={`w-5 h-5 rounded-md border flex items-center justify-center transition-all ${
+                         hasAccess ? 'bg-[#0095E8] border-[#0095E8]' : 'bg-white border-[#E1E3EA]'
+                       }`}>
+                         {hasAccess && <Check size={14} className="text-white" />}
+                       </div>
+                       <span className="text-[13px]">{app.label}</span>
+                     </div>
+                   );
+                 })}
+              </div>
+           </div>
+         )}
 
         <div className="flex justify-end gap-3 pt-4">
            <button type="button" onClick={() => navigate(listLink)} className="px-6 py-3 bg-white border border-[#E1E3EA] text-[#7E8299] rounded-lg text-[13px] font-bold hover:bg-[#F5F8FA] transition-colors">Batal</button>

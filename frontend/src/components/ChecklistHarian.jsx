@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
-  CheckCircle2, XCircle, ChevronDown, AlertCircle, AlertTriangle,
-  ClipboardList, Send, Clock, Info, Users, Plus, Calendar, ChevronRight, Search,
+  CheckCircle2, XCircle, ChevronDown, ChevronLeft, AlertCircle, AlertTriangle,
+  ClipboardList, Send, Clock, Info, Users, Plus, Calendar, ChevronRight, Search, X,
   FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ import SearchableSelect from './SearchableSelect';
 import ChecklistField from './ChecklistField';
 import CustomTimePicker from './CustomTimePicker';
 import { getImageUrl } from '../utils/imageUrl';
+
 
 
 // Helper: always return a proper array (handles JSON strings from API)
@@ -39,6 +40,9 @@ const ChecklistHarian = () => {
 
   const [step, setStep] = useState(isHistoryMode ? 'history' : 'setup');   // history | setup | checklist | result | wo-form
   const [templates, setTemplates] = useState([]);
+  const operasionalTemplates = (templates || []).filter(tpl =>
+    tpl.department_name?.toLowerCase()?.includes('operasional')
+  );
   const [selectedTemplate, setSelectedTemplate] = useState(null);
   const [shift, setShift] = useState('pagi');
   const [sessionDate, setSessionDate] = useState(new Date().toISOString().split('T')[0]);
@@ -58,6 +62,7 @@ const ChecklistHarian = () => {
   const [isExporting, setIsExporting] = useState(false);
   const [zoomedImage, setZoomedImage] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
 
   // History list state
   const [historySessions, setHistorySessions] = useState([]);
@@ -71,14 +76,14 @@ const ChecklistHarian = () => {
   const filteredSessions = (historySessions || []).filter(s => {
     const matchesSearch = !s.template_name ? true : s.template_name.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesShift = filterShift === 'Semua' || s.session_shift?.toLowerCase() === filterShift.toLowerCase();
-    
+
     let matchesStatus = true;
     if (filterStatus === 'Bermasalah') {
       matchesStatus = s.broken_count > 0;
     } else if (filterStatus === 'OK') {
       matchesStatus = s.broken_count === 0;
     }
-    
+
     return matchesSearch && matchesShift && matchesStatus;
   });
 
@@ -98,7 +103,8 @@ const ChecklistHarian = () => {
   const [selectedSafeItems, setSelectedSafeItems] = useState([]);
 
   const isSuperAdmin = user?.role?.toLowerCase() === 'super admin';
-  const isReadOnly = relationsLoaded && relations.length === 0 && !isSuperAdmin;
+  const isEngineering = user?.department?.toLowerCase()?.includes('engineering');
+  const isReadOnly = isEngineering && !isSuperAdmin;
 
   const requiredStar = <span className="text-[#F1416C] ml-0.5">*</span>;
 
@@ -137,8 +143,7 @@ const ChecklistHarian = () => {
         );
         setRelations(myRels);
 
-        const isReadOnlyUser = myRels.length === 0 && !isSuperAdmin;
-        if (isHistoryMode || isReadOnlyUser) {
+        if (isHistoryMode) {
           setStep('history');
           fetchHistory();
         } else if (!saved) {
@@ -405,15 +410,15 @@ const ChecklistHarian = () => {
 
     navigate(route, {
       state: {
-        fromAudit:    true,
-        isBatchWO:    false, // Single item mode
-        session_id:   submittedSession?.session_id,
-        template_id:  selectedTemplate?.id,
-        brokenItems:  [item], // Only one item
+        fromAudit: true,
+        isBatchWO: false, // Single item mode
+        session_id: submittedSession?.session_id,
+        template_id: selectedTemplate?.id,
+        brokenItems: [item], // Only one item
         templateName: selectedTemplate?.name,
-        shift:        submittedSession?.session_shift || shift,
-        deptAsal:     user?.department || 'OPERASIONAL',
-        targetDept:   defaultTarget,
+        shift: submittedSession?.session_shift || shift,
+        deptAsal: user?.department || 'OPERASIONAL',
+        targetDept: defaultTarget,
         availableTargetDepts: relations.map(r => r.target_name)
       }
     });
@@ -636,7 +641,7 @@ const ChecklistHarian = () => {
                       <div className="flex flex-col gap-2">
                         {safeNames.map(name => (
                           <label key={name} className={`flex items-center gap-3 px-4 py-3 rounded-xl border transition-all cursor-pointer ${selectedSafeItems.includes(name) ? 'bg-white border-[#50CD89]/40 shadow-sm' : 'bg-transparent border-transparent hover:bg-white/50'}`}>
-                            <input 
+                            <input
                               type="checkbox"
                               checked={selectedSafeItems.includes(name)}
                               onChange={(e) => {
@@ -713,46 +718,55 @@ const ChecklistHarian = () => {
     return (
       <div className="bg-[#F5F8FA] min-h-screen flex flex-col relative">
         {/* Sticky Header with Glassmorphism */}
-        <div 
+        <div
           className={`sticky top-0 z-30 px-6 pb-4 bg-[#F5F8FA]/80 backdrop-blur-md border-b border-slate-200 shadow-sm ${isMobile ? 'pt-8' : 'pt-10'}`}
           style={isMobile ? { paddingTop: 'calc(20px + env(safe-area-inset-top))' } : {}}
         >
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[20px] font-black text-slate-800 tracking-tight leading-tight">Riwayat Checklist</h2>
-              <p className="text-[12px] text-slate-400 font-bold mt-0.5 uppercase tracking-wider">Audit {dept_name}</p>
+          <div className="flex items-center gap-3">
+            {isMobile && (
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => navigate('/demo/mobile')}
+                className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+              >
+                <ChevronLeft size={20} />
+              </motion.button>
+            )}
+            <div className="flex-1">
+              <h2 className="text-[18px] md:text-[22px] font-semibold text-slate-800 tracking-tight leading-tight">Riwayat Checklist Operasional</h2>
+              <p className="text-[11px] md:text-[12px] text-slate-400 font-medium mt-0.5 uppercase tracking-wider">Audit {dept_name}</p>
             </div>
-            
+
             <div className="flex items-center gap-2.5">
               {/* Segmented View Mode Toggle */}
-              <div className="flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 shadow-sm shrink-0">
-                <button
-                  onClick={() => setViewMode('card')}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-black transition-all ${
-                    viewMode === 'card' 
-                      ? 'bg-white text-slate-800 shadow-sm font-extrabold' 
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  Kartu
-                </button>
-                <button
-                  onClick={() => setViewMode('table')}
-                  className={`px-3 py-1 rounded-lg text-[11px] font-black transition-all ${
-                    viewMode === 'table' 
-                      ? 'bg-white text-slate-800 shadow-sm font-extrabold' 
-                      : 'text-slate-500 hover:text-slate-800'
-                  }`}
-                >
-                  Tabel
-                </button>
-              </div>
+              {!isMobile && (
+                <div className="flex bg-slate-100 border border-slate-200 rounded-xl p-0.5 shadow-sm shrink-0">
+                  <button
+                    onClick={() => setViewMode('card')}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${viewMode === 'card'
+                        ? 'bg-white text-slate-800 shadow-sm font-semibold'
+                        : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                  >
+                    Kartu
+                  </button>
+                  <button
+                    onClick={() => setViewMode('table')}
+                    className={`px-3 py-1 rounded-lg text-[11px] font-medium transition-all ${viewMode === 'table'
+                        ? 'bg-white text-slate-800 shadow-sm font-semibold'
+                        : 'text-slate-500 hover:text-slate-800'
+                      }`}
+                  >
+                    Tabel
+                  </button>
+                </div>
+              )}
 
-              {!isReadOnly && (
-                <motion.button 
+              {!isReadOnly && !isMobile && (
+                <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => { setStep('setup'); navigate(`${basePath}/checklist${isMobile ? '' : '-harian'}`); }}
-                  className="px-4 py-2 bg-[#0095E8] text-white rounded-xl text-[12px] font-black hover:bg-[#0084CC] transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
+                  className="px-4 py-2 bg-[#0095E8] text-white rounded-xl text-[12px] font-semibold hover:bg-[#0084CC] transition-all flex items-center gap-1.5 shadow-lg shadow-blue-500/20"
                 >
                   <Plus size={16} /> {isMobile ? 'Baru' : 'Mulai Baru'}
                 </motion.button>
@@ -765,15 +779,15 @@ const ChecklistHarian = () => {
             {/* Search Input */}
             <div className="relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
-              <input 
+              <input
                 type="text"
                 placeholder="Cari nama template..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-2xl text-[13px] font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#0095E8] focus:ring-1 focus:ring-[#0095E8]/20 transition-all shadow-sm"
+                className="w-full pl-11 pr-10 py-2.5 bg-white border border-slate-200 rounded-xl text-[13px] font-medium text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#0095E8] focus:ring-1 focus:ring-[#0095E8]/20 transition-all shadow-sm"
               />
               {searchQuery && (
-                <button 
+                <button
                   onClick={() => setSearchQuery('')}
                   className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
@@ -785,17 +799,16 @@ const ChecklistHarian = () => {
             {/* Filter Row */}
             <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
               {/* Shift Filter */}
-              <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shrink-0 shadow-sm">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase px-2">Shift</span>
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl p-0.5 shrink-0 shadow-sm">
+                <span className="text-[10px] font-medium text-slate-400 uppercase px-2">Shift</span>
                 {['Semua', 'Pagi', 'Siang', 'Malam'].map((sh) => (
                   <button
                     key={sh}
                     onClick={() => setFilterShift(sh)}
-                    className={`px-3 py-1 rounded-xl text-[11px] font-extrabold transition-all ${
-                      filterShift === sh 
-                        ? 'bg-[#0095E8] text-white shadow-sm' 
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${filterShift === sh
+                        ? 'bg-[#0095E8] text-white shadow-sm font-semibold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     {sh}
                   </button>
@@ -803,17 +816,16 @@ const ChecklistHarian = () => {
               </div>
 
               {/* Status Filter */}
-              <div className="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shrink-0 shadow-sm">
-                <span className="text-[10px] font-extrabold text-slate-400 uppercase px-2">Temuan</span>
+              <div className="flex items-center bg-white border border-slate-200 rounded-xl p-0.5 shrink-0 shadow-sm">
+                <span className="text-[10px] font-medium text-slate-400 uppercase px-2">Temuan</span>
                 {['Semua', 'Bermasalah', 'OK'].map((st) => (
                   <button
                     key={st}
                     onClick={() => setFilterStatus(st)}
-                    className={`px-3 py-1 rounded-xl text-[11px] font-extrabold transition-all ${
-                      filterStatus === st 
-                        ? 'bg-rose-500 text-white shadow-sm' 
+                    className={`px-3 py-1.5 rounded-lg text-[11px] font-medium transition-all ${filterStatus === st
+                        ? 'bg-[#F1416C] text-white shadow-sm font-semibold'
                         : 'text-slate-500 hover:text-slate-800'
-                    }`}
+                      }`}
                   >
                     {st === 'Bermasalah' ? 'Ada Rusak' : st}
                   </button>
@@ -827,62 +839,102 @@ const ChecklistHarian = () => {
         <div className={`flex-1 ${isMobile ? 'px-6 pt-6 pb-24' : 'p-8 px-10 pb-24'}`}>
           {viewMode === 'card' ? (
             /* Card View with Staggered Animation */
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               className="space-y-4"
             >
               {historyLoading ? (
                 <div className="flex flex-col items-center justify-center py-20 text-slate-400 gap-3">
-                   <div className="w-8 h-8 border-3 border-blue-100 border-t-[#0095E8] rounded-full animate-spin" />
-                   <p className="text-[13px] font-bold">Memuat riwayat...</p>
+                  <div className="w-8 h-8 border-3 border-blue-100 border-t-[#0095E8] rounded-full animate-spin" />
+                  <p className="text-[13px] font-bold">Memuat riwayat...</p>
                 </div>
               ) : historySessions.length === 0 ? (
                 <div className="bg-white rounded-[32px] p-10 text-center border border-slate-100 shadow-sm">
-                   <p className="text-slate-400 text-[14px] font-medium">Belum ada data riwayat.</p>
+                  <p className="text-slate-400 text-[14px] font-medium">Belum ada data riwayat.</p>
                 </div>
               ) : filteredSessions.length === 0 ? (
                 <div className="bg-white rounded-[32px] p-10 text-center border border-slate-100 shadow-sm flex flex-col items-center gap-3">
-                   <p className="text-slate-400 text-[13px] font-medium">Tidak ada data riwayat yang cocok.</p>
-                   <button 
-                     onClick={() => { setSearchQuery(''); setFilterShift('Semua'); setFilterStatus('Semua'); }}
-                     className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all shadow-sm"
-                   >
-                     Reset Filter
-                   </button>
+                  <p className="text-slate-400 text-[13px] font-medium">Tidak ada data riwayat yang cocok.</p>
+                  <button
+                    onClick={() => { setSearchQuery(''); setFilterShift('Semua'); setFilterStatus('Semua'); }}
+                    className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all shadow-sm"
+                  >
+                    Reset Filter
+                  </button>
                 </div>
               ) : filteredSessions.map((s, idx) => (
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 0, y: 15 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.05 }}
+                  transition={{ delay: Math.min(idx * 0.04, 0.4) }}
                   key={s.id}
                   onClick={() => handleViewDetail(s)}
-                  className="bg-white rounded-[28px] p-6 shadow-sm border border-slate-100 active:scale-[0.98] transition-all cursor-pointer"
+                  className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.02)] border border-slate-100 hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] active:scale-[0.99] transition-all cursor-pointer flex flex-col gap-3.5 group relative overflow-hidden"
                 >
-                  <div className="flex justify-between items-start mb-4">
-                    <div className="flex flex-col">
-                      <span className="text-[14px] font-black text-slate-800">{new Date(s.session_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</span>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <span className="text-[11px] text-[#0095E8] font-black uppercase">{s.session_shift}</span>
-                        <span className="text-[10px] text-slate-300">•</span>
-                        <span className="text-[11px] text-slate-400 font-bold">{s.session_time ? s.session_time.substring(0, 5) : '-'}</span>
-                      </div>
+                  {/* Decorative left-edge status line */}
+                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${s.broken_count > 0 ? 'bg-[#F1416C]' : 'bg-[#50CD89]'}`}></div>
+
+                  <div className="flex justify-between items-center gap-2 pl-1.5">
+                    {/* Date and Time Info */}
+                    <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-medium bg-slate-50 px-2.5 py-1 rounded-full border border-slate-100/80 shrink-0">
+                      <Calendar size={11} className="text-slate-400" />
+                      <span>{new Date(s.session_date).toLocaleDateString('id-ID', { day: '2-digit', month: 'short' })}</span>
+                      <span className="text-slate-300">•</span>
+                      <Clock size={11} className="text-slate-400" />
+                      <span>{s.session_time ? s.session_time.substring(0, 5) : '-'}</span>
                     </div>
+
+                    {/* Status Badge */}
                     {s.wo_id ? (
-                      <span className="px-3 py-1 bg-emerald-50 text-emerald-500 text-[10px] font-black uppercase rounded-xl border border-emerald-100">WO DIBUAT</span>
-                    ) : s.broken_count > 0 && (
-                      <span className="px-3 py-1 bg-rose-50 text-rose-500 text-[10px] font-black uppercase rounded-xl border border-rose-100">WO DIBUTUHKAN</span>
+                      <span className="flex items-center gap-1 px-2.5 py-1 bg-[#E8FFF3] text-[#50CD89] text-[10px] font-semibold uppercase rounded-full border border-[#50CD89]/20">
+                        <span className="w-1.5 h-1.5 bg-[#50CD89] rounded-full animate-pulse"></span>
+                        WO Dibuat
+                      </span>
+                    ) : s.broken_count > 0 ? (
+                      <span className="flex items-center gap-1 px-2.5 py-1 bg-[#FFF5F8] text-[#F1416C] text-[10px] font-semibold uppercase rounded-full border border-[#F1416C]/10">
+                        <span className="w-1.5 h-1.5 bg-[#F1416C] rounded-full animate-pulse"></span>
+                        Butuh WO
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 px-2.5 py-1 bg-[#F5F8FA] text-slate-500 text-[10px] font-semibold uppercase rounded-full border border-slate-200">
+                        Semua OK
+                      </span>
                     )}
                   </div>
-                  <h4 className="text-[16px] font-black text-slate-800 mb-4">{s.template_name}</h4>
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-50">
-                    <div className="flex items-center gap-4">
-                      <span className="text-[13px] font-black text-emerald-500">{s.ok_count} OK</span>
-                      {s.broken_count > 0 && <span className="text-[13px] font-black text-rose-500">{s.broken_count} Rusak</span>}
+
+                  {/* Template Name */}
+                  <h4 className="text-[14px] font-semibold text-slate-800 tracking-tight leading-snug group-hover:text-[#0095E8] transition-colors pl-1.5">
+                    {s.template_name}
+                  </h4>
+
+                  {/* Divider */}
+                  <div className="border-t border-slate-100 my-0.5"></div>
+
+                  {/* Footer Stats & Info */}
+                  <div className="flex items-center justify-between pl-1.5">
+                    <div className="flex items-center gap-2">
+                      {/* Shift Badge */}
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase border ${s.session_shift?.toLowerCase() === 'pagi' ? 'bg-amber-50 text-amber-600 border-amber-100/80' :
+                          s.session_shift?.toLowerCase() === 'siang' ? 'bg-orange-50 text-orange-600 border-orange-100/80' :
+                            'bg-indigo-50 text-indigo-600 border-indigo-100/80'
+                        }`}>
+                        {s.session_shift}
+                      </span>
+
+                      {/* OK / Broken Counts */}
+                      <span className="text-[11px] font-medium text-[#50CD89] bg-[#E8FFF3] px-2 py-0.5 rounded border border-[#50CD89]/20 flex items-center gap-1">
+                        <CheckCircle2 size={10} className="text-[#50CD89]" /> {s.ok_count} OK
+                      </span>
+                      {s.broken_count > 0 && (
+                        <span className="text-[11px] font-medium text-[#F1416C] bg-[#FFF5F8] px-2 py-0.5 rounded border border-[#F1416C]/10 flex items-center gap-1">
+                          <AlertTriangle size={10} className="text-[#F1416C]" /> {s.broken_count} Rusak
+                        </span>
+                      )}
                     </div>
-                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-300">
-                      <ChevronRight size={18} />
+
+                    <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#0095E8] group-hover:text-white transition-all shadow-sm">
+                      <ChevronRight size={14} />
                     </div>
                   </div>
                 </motion.div>
@@ -912,7 +964,7 @@ const ChecklistHarian = () => {
                       <td colSpan="6" className="py-20 text-center">
                         <div className="flex flex-col items-center justify-center gap-3">
                           <span className="text-[13px] text-[#A1A5B7] font-medium">Tidak ada hasil pencarian yang cocok.</span>
-                          <button 
+                          <button
                             onClick={() => { setSearchQuery(''); setFilterShift('Semua'); setFilterStatus('Semua'); }}
                             className="px-4 py-2 bg-[#F1FAFF] text-[#0095E8] rounded-xl text-[11px] font-bold hover:bg-[#0095E8] hover:text-white transition-all shadow-sm"
                           >
@@ -981,125 +1033,125 @@ const ChecklistHarian = () => {
         <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#7239EA]/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Sticky Header with Glassmorphism */}
-        <div 
+        <div
           className="sticky top-0 z-30 px-6 pb-6 bg-[#F5F8FA]/80 backdrop-blur-md border-b border-slate-200 shadow-sm pt-8"
           style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}
         >
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <h2 className="text-[22px] font-black text-slate-800 tracking-tight leading-tight">Checklist</h2>
-              <p className="text-[12px] text-slate-400 font-bold uppercase tracking-wider">Konfigurasi Audit</p>
-            </div>
-            <motion.button 
+          <div className="flex items-center gap-3 mb-2">
+            <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => navigate(`${basePath}/checklist-riwayat`)}
-              className="w-12 h-12 bg-white border border-slate-200 text-slate-400 rounded-2xl flex items-center justify-center shadow-sm"
+              onClick={() => navigate(isMobile ? '/demo/mobile' : `${basePath}/checklist-riwayat`)}
+              className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
             >
-              <XCircle size={24} />
+              <ChevronLeft size={20} />
             </motion.button>
+            <div>
+              <h2 className="text-[18px] font-semibold text-slate-800 tracking-tight leading-tight">Checklist Operasional</h2>
+              <p className="text-[11px] text-slate-400 font-medium uppercase tracking-wider">Konfigurasi Audit</p>
+            </div>
           </div>
         </div>
 
         <div className="flex-1 px-6 pt-6 pb-24 space-y-6 relative z-10 overflow-y-auto no-scrollbar">
           {/* Quick Stats Header for Mobile */}
           <div className="grid grid-cols-2 gap-4">
-             <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-blue-50 text-[#0095E8] flex items-center justify-center">
-                  <ClipboardList size={20} />
-                </div>
-                <div>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Templates</p>
-                   <p className="text-[15px] font-black text-slate-800 leading-none">{templates.length}</p>
-                </div>
-             </div>
-             <div className="bg-white p-4 rounded-3xl border border-slate-100 shadow-sm flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-red-50 text-[#F1416C] flex items-center justify-center">
-                  <AlertTriangle size={20} />
-                </div>
-                <div>
-                   <p className="text-[10px] font-bold text-slate-400 uppercase leading-none mb-1">Temuan</p>
-                   <p className="text-[15px] font-black text-slate-800 leading-none">8</p>
-                </div>
-             </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#0095E8] flex items-center justify-center">
+                <ClipboardList size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-slate-400 uppercase leading-none mb-1">Templates</p>
+                <p className="text-[14px] font-semibold text-slate-800 leading-none">{operasionalTemplates.length}</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-red-50 text-[#F1416C] flex items-center justify-center">
+                <AlertTriangle size={18} />
+              </div>
+              <div>
+                <p className="text-[10px] font-medium text-slate-400 uppercase leading-none mb-1">Temuan</p>
+                <p className="text-[14px] font-semibold text-slate-800 leading-none">8</p>
+              </div>
+            </div>
           </div>
 
           {/* Session Parameters Card */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-[32px] p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100"
+            className="bg-white rounded-2xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100"
           >
             <div className="space-y-6">
               <div className="space-y-3">
-                <label className="text-[13px] font-black text-slate-800 flex items-center gap-2">
+                <label className="text-[13px] font-semibold text-slate-700 flex items-center gap-2">
                   <Calendar size={16} className="text-[#0095E8]" /> Jadwal Audit
                 </label>
                 <div className="grid grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <span className="text-[9px] font-black text-slate-300 uppercase ml-1">Tanggal</span>
+                    <span className="text-[10px] font-medium text-slate-400 uppercase ml-1">Tanggal</span>
                     <CustomDatePicker value={sessionDate} onChange={setSessionDate} />
                   </div>
                   <div className="space-y-1">
-                    <span className="text-[9px] font-black text-slate-300 uppercase ml-1">Waktu</span>
+                    <span className="text-[10px] font-medium text-slate-400 uppercase ml-1">Waktu</span>
                     <CustomTimePicker value={sessionTime} onChange={setSessionTime} />
                   </div>
                 </div>
               </div>
 
               <div className="space-y-3">
-                <label className="text-[13px] font-black text-slate-800 flex items-center gap-2">
+                <label className="text-[13px] font-semibold text-slate-700 flex items-center gap-2">
                   <Send size={16} className="text-[#0095E8]" /> Shift Kerja
                 </label>
-                <div className="flex gap-2.5">
+                <div className="grid grid-cols-4 gap-2">
                   {shiftOptions.map(s => (
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       key={s}
                       onClick={() => setShift(s)}
-                      className={`flex-1 py-3.5 rounded-2xl text-[12px] font-black capitalize transition-all border-2 ${shift === s
-                        ? 'bg-[#E3F2FD] text-[#0095E8] border-[#0095E8] shadow-sm'
-                        : 'bg-[#F5F8FA] text-slate-400 border-transparent'
-                      }`}
+                      className={`py-2 rounded-xl text-[12px] font-medium capitalize transition-all border ${shift === s
+                        ? 'bg-[#0095E8] text-white border-[#0095E8] shadow-sm font-semibold'
+                        : 'bg-white text-slate-600 border-slate-200'
+                        }`}
                     >
                       {s}
                     </motion.button>
                   ))}
+                </div>
               </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
 
           {/* Template Selection Section */}
           <div className="space-y-4">
-             <label className="text-[13px] font-black text-slate-800 flex items-center gap-2 ml-1">
-               <ClipboardList size={16} className="text-[#0095E8]" /> Pilih Template Audit
-             </label>
-             <div className="grid grid-cols-1 gap-4">
-               {templates.map((tpl, idx) => (
-                 <motion.div
-                   key={tpl.id}
-                   initial={{ opacity: 0, x: -20 }}
-                   animate={{ opacity: 1, x: 0 }}
-                   transition={{ delay: idx * 0.1 }}
-                   whileTap={{ scale: 0.98 }}
-                   onClick={() => handleSelectTemplate(tpl)}
-                   className="bg-white p-5 rounded-[28px] border border-slate-100 shadow-sm flex items-center justify-between group active:bg-blue-50 transition-colors cursor-pointer"
-                 >
-                   <div className="flex items-center gap-4">
-                     <div className="w-12 h-12 rounded-2xl bg-[#F1FAFF] text-[#0095E8] flex items-center justify-center group-active:bg-white transition-colors">
-                        <FileText size={22} />
-                     </div>
-                     <div>
-                        <h4 className="text-[15px] font-black text-slate-800 leading-tight">{tpl.name}</h4>
-                        <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">{tpl.details?.length || 0} Item Checklist</p>
-                     </div>
-                   </div>
-                   <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center text-slate-300 group-active:bg-white group-active:text-[#0095E8]">
-                      <ChevronRight size={20} />
-                   </div>
-                 </motion.div>
-               ))}
-             </div>
+            <label className="text-[13px] font-semibold text-slate-700 flex items-center gap-2 ml-1">
+              <ClipboardList size={16} className="text-[#0095E8]" /> Pilih Template Audit
+            </label>
+            <div className="grid grid-cols-1 gap-4">
+              {operasionalTemplates.map((tpl, idx) => (
+                <motion.div
+                  key={tpl.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: Math.min(idx * 0.05, 0.4) }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={() => handleSelectTemplate(tpl)}
+                  className="bg-white p-4 rounded-2xl border border-slate-100 shadow-[0_4px_15px_rgba(0,0,0,0.01)] hover:shadow-md flex items-center justify-between group active:bg-slate-50 transition-all cursor-pointer"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-[#F1FAFF] text-[#0095E8] flex items-center justify-center transition-colors">
+                      <FileText size={18} />
+                    </div>
+                    <div>
+                      <h4 className="text-[14px] font-semibold text-slate-800 leading-tight">{tpl.name}</h4>
+                      <p className="text-[11px] text-slate-400 font-medium mt-1 uppercase tracking-wider">{tpl.details?.length || 0} Item Checklist</p>
+                    </div>
+                  </div>
+                  <div className="w-8 h-8 rounded-full bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-[#0095E8] group-hover:text-white transition-all shadow-sm">
+                    <ChevronRight size={14} />
+                  </div>
+                </motion.div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -1110,29 +1162,30 @@ const ChecklistHarian = () => {
   if (step === 'checklist') {
     return (
       <div className="bg-[#F5F8FA] min-h-screen flex flex-col relative overflow-hidden">
-        <div 
+        <div
           className="sticky top-0 z-30 px-6 pb-6 bg-white/80 backdrop-blur-md border-b border-slate-200 shadow-sm"
           style={{ paddingTop: 'calc(35px + env(safe-area-inset-top, 20px))' }}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <button 
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => {
                   if (confirm('Batal melakukan audit? Data yang belum di-submit akan hilang.')) {
                     setStep('setup');
                     localStorage.removeItem(`active_checklist_${user?.id}`);
                   }
-                }} 
-                className="w-10 h-10 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-500"
+                }}
+                className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
               >
-                <ChevronDown size={20} className="rotate-90" />
-              </button>
+                <ChevronLeft size={20} />
+              </motion.button>
               <div>
-                <h2 className="text-[17px] font-black text-slate-800 leading-tight">{selectedTemplate?.name}</h2>
+                <h2 className="text-[16px] font-semibold text-slate-800 leading-tight">{selectedTemplate?.name}</h2>
                 <div className="flex items-center gap-2 mt-0.5">
-                  <span className="text-[10px] font-black text-[#0095E8] uppercase">{shift}</span>
+                  <span className="text-[10px] font-semibold text-[#0095E8] uppercase">{shift}</span>
                   <span className="text-[10px] text-slate-300">•</span>
-                  <span className="text-[10px] font-bold text-slate-400 uppercase">{sessionTime.substring(0, 5)}</span>
+                  <span className="text-[10px] font-medium text-slate-400 uppercase">{sessionTime.substring(0, 5)}</span>
                 </div>
               </div>
             </div>
@@ -1159,11 +1212,11 @@ const ChecklistHarian = () => {
 
         <div className="flex-1 px-6 pt-6 pb-32 space-y-4 overflow-y-auto no-scrollbar">
           {items.map((item, idx) => (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: idx * 0.03 }}
-              key={item.id} 
+              key={item.id}
               className="relative"
             >
               <ChecklistField
@@ -1183,9 +1236,15 @@ const ChecklistHarian = () => {
           ))}
 
           <div className="pt-8 pb-12">
-            <motion.button 
+            <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={handleSubmitChecklist} 
+              onClick={() => {
+                if (isMobile) {
+                  setShowSubmitConfirm(true);
+                } else {
+                  handleSubmitChecklist();
+                }
+              }}
               disabled={submitting}
               className="w-full h-14 bg-[#0095E8] text-white rounded-2xl text-[16px] font-black flex items-center justify-center gap-3 shadow-lg shadow-blue-500/30 disabled:opacity-50 transition-all"
             >
@@ -1199,6 +1258,107 @@ const ChecklistHarian = () => {
               )}
             </motion.button>
           </div>
+          {/* Mobile Confirmation Modal */}
+          {showSubmitConfirm && (() => {
+            const baik = items.filter(i => i.status === 'ok').map(i => i.name);
+            const rusak = items.filter(i => i.status === 'rusak').map(i => i.name);
+            const hasSummary = baik.length > 0 || rusak.length > 0;
+
+            return (
+              <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                <div className="bg-white rounded-3xl w-full max-w-[360px] shadow-2xl overflow-hidden border border-slate-100 flex flex-col">
+                  {/* Header */}
+                  <div className="bg-gradient-to-r from-[#181C32] to-[#2D3155] px-6 py-5 text-white flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+                      <AlertTriangle size={20} />
+                    </div>
+                    <div>
+                      <h3 className="text-[16px] font-extrabold tracking-tight">Kirim Laporan Audit</h3>
+                      <p className="text-[11px] text-gray-400">Verifikasi ringkasan kondisi item</p>
+                    </div>
+                  </div>
+
+                  {/* Body */}
+                  <div className="p-6 flex-1 overflow-y-auto max-h-[60vh] space-y-4">
+                    {hasSummary ? (
+                      <div className="space-y-3">
+                        <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Ringkasan Temuan</p>
+                        <div className="max-h-[220px] overflow-y-auto bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-4 divide-y divide-slate-100/80">
+                          {/* Rusak Section */}
+                          {rusak.length > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-center gap-1.5 text-rose-500 font-bold text-[12px] uppercase tracking-wide">
+                                <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                                <span>Bermasalah / Rusak ({rusak.length})</span>
+                              </div>
+                              <div className="flex flex-col gap-1.5 pl-3">
+                                {rusak.map((name, i) => (
+                                  <div key={i} className="flex items-start gap-2 text-[12px] text-slate-700 font-semibold leading-tight">
+                                    <span className="text-rose-500 mt-0.5 shrink-0">✕</span>
+                                    <span>{name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Baik Section */}
+                          {baik.length > 0 && (
+                            <div className="space-y-2 pt-3 first:pt-0">
+                              <div className="flex items-center gap-1.5 text-emerald-500 font-bold text-[12px] uppercase tracking-wide">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                                <span>Kondisi Baik ({baik.length})</span>
+                              </div>
+                              <div className="flex flex-col gap-1.5 pl-3">
+                                {baik.map((name, i) => (
+                                  <div key={i} className="flex items-start gap-2 text-[12px] text-slate-600 font-medium leading-tight">
+                                    <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
+                                    <span>{name}</span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
+                        Apakah Anda yakin ingin mengirim laporan audit ini? Pastikan data yang diisi sudah benar.
+                      </p>
+                    )}
+
+                    <div className="bg-amber-50 border border-amber-200/40 p-3.5 rounded-2xl flex items-start gap-3">
+                      <Info size={18} className="text-amber-500 shrink-0 mt-0.5" />
+                      <p className="text-[11px] text-amber-700 leading-relaxed font-semibold">
+                        Laporan tidak dapat diubah kembali setelah dikirimkan.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Footer Actions */}
+                  <div className="border-t border-slate-100 bg-slate-50/50 p-5 flex gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setShowSubmitConfirm(false)}
+                      className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl text-[13px] font-bold active:scale-95 transition-all hover:bg-slate-50"
+                    >
+                      Periksa Kembali
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSubmitConfirm(false);
+                        handleSubmitChecklist();
+                      }}
+                      className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl text-[13px] font-extrabold active:scale-95 transition-all shadow-md shadow-blue-500/20 hover:bg-[#0084CC]"
+                    >
+                      Yakin, Kirim
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
         </div>
       </div>
     );
@@ -1224,29 +1384,30 @@ const ChecklistHarian = () => {
           </div>
         )}
 
-        <div 
+        <div
           className={`${isMobile ? 'px-4 pb-24' : 'p-8 px-10 pb-24'}`}
           style={isMobile ? { paddingTop: 'calc(35px + env(safe-area-inset-top, 20px))' } : {}}
         >
           {/* Header Detail */}
           <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-            <div className="flex items-center gap-4">
-              <button
+            <div className="flex items-center gap-3">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
                 onClick={() => isHistoryMode ? setStep('history') : setStep('setup')}
-                className="w-10 h-10 rounded-full bg-white border border-[#E4E6EF] flex items-center justify-center text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] transition-all"
+                className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
               >
-                <ChevronDown size={20} className="rotate-90" />
-              </button>
+                <ChevronLeft size={20} />
+              </motion.button>
               <div>
-                <h2 className="text-[20px] font-bold text-[#181C32]">Detail Hasil Checklist</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="px-2 py-0.5 bg-[#F1FAFF] text-[#0095E8] text-[11px] font-bold rounded uppercase">{shift}</span>
-                  <span className="text-[12px] text-[#A1A5B7]">•</span>
-                  <span className="text-[12px] text-[#7E8299] font-medium">{new Date(sessionDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
-                  <span className="text-[12px] text-[#A1A5B7]">•</span>
-                  <span className="text-[12px] text-[#7E8299] font-bold">{sessionTime?.substring(0, 5)}</span>
-                  <span className="text-[12px] text-[#A1A5B7]">•</span>
-                  <span className="text-[12px] text-[#7E8299] font-medium">{dept_name}</span>
+                <h2 className="text-[18px] md:text-[22px] font-semibold text-[#181C32] leading-tight">Detail Hasil Checklist</h2>
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-1 text-[11px] md:text-[12px]">
+                  <span className="px-2 py-0.5 bg-[#F1FAFF] text-[#0095E8] font-semibold rounded uppercase">{shift}</span>
+                  <span className="text-[#A1A5B7]">•</span>
+                  <span className="text-[#7E8299] font-medium">{new Date(sessionDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                  <span className="text-[#A1A5B7]">•</span>
+                  <span className="text-[#7E8299] font-semibold">{sessionTime?.substring(0, 5)}</span>
+                  <span className="text-[#A1A5B7]">•</span>
+                  <span className="text-[#7E8299] font-medium">{dept_name}</span>
                 </div>
               </div>
             </div>
@@ -1336,15 +1497,17 @@ const ChecklistHarian = () => {
                                 <p className="text-[11px] text-[#F1416C] font-medium">{item.notes}</p>
                               </div>
                             )}
-                            {(() => { const _urls = safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : []); return _urls.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {_urls.map((url, i) => (
-                                  <div key={i} className="w-24 h-16 rounded border border-[#F1416C]/20 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(url)}>
-                                    <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="Foto kerusakan" />
-                                  </div>
-                                ))}
-                              </div>
-                            ); })()}
+                            {(() => {
+                              const _urls = safeArr(item.photo_urls).length > 0 ? safeArr(item.photo_urls) : (item.photo_url ? [item.photo_url] : []); return _urls.length > 0 && (
+                                <div className="flex flex-wrap gap-2">
+                                  {_urls.map((url, i) => (
+                                    <div key={i} className="w-24 h-16 rounded border border-[#F1416C]/20 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity" onClick={() => setZoomedImage(url)}>
+                                      <img src={getImageUrl(url)} className="w-full h-full object-cover" alt="Foto kerusakan" />
+                                    </div>
+                                  ))}
+                                </div>
+                              );
+                            })()}
                             {item.video_url && (
                               <div className="mt-1.5 w-48 h-28 rounded-lg overflow-hidden border border-[#F1416C]/20 bg-black relative flex items-center justify-center">
                                 <video src={getImageUrl(item.video_url)} className="w-full h-full object-contain" controls playsInline webkit-playsinline="true" preload="metadata" />
@@ -1374,7 +1537,7 @@ const ChecklistHarian = () => {
 
             {/* Right: Actions & WO Recommendation */}
             <div className="space-y-6">
-              {brokenItems.length > 0 ? (
+              {brokenItems.length > 0 && !isMobile ? (
                 <div className="bg-[#181C32] rounded-2xl p-6 shadow-xl relative overflow-hidden text-white">
                   <div className="absolute right-[-20px] top-[-20px] w-32 h-32 bg-white/5 rounded-full blur-3xl"></div>
                   <div className="relative z-10">
@@ -1407,13 +1570,29 @@ const ChecklistHarian = () => {
                         </button>
                       )}
                       <button
-                        onClick={() => isHistoryMode ? setStep('history') : navigate(`${basePath}/checklist-riwayat`)}
+                        onClick={() => isHistoryMode ? setStep('history') : navigate(isMobile ? '/demo/mobile' : `${basePath}/checklist-riwayat`)}
                         className="w-full py-3.5 bg-white/5 hover:bg-white/10 text-white border border-white/10 rounded-xl text-[13px] font-bold transition-all"
                       >
-                        Kembali ke Riwayat
+                        {isHistoryMode ? 'Kembali ke Riwayat' : (isMobile ? 'Kembali ke Beranda' : 'Kembali ke Riwayat')}
                       </button>
                     </div>
                   </div>
+                </div>
+              ) : brokenItems.length > 0 && isMobile ? (
+                <div className="bg-[#FFF5F8] border border-[#F1416C]/20 rounded-2xl p-6 text-center">
+                  <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-sm">
+                    <AlertTriangle size={32} className="text-[#F1416C]" />
+                  </div>
+                  <h4 className="text-[16px] font-bold text-[#181C32] mb-2">Kerusakan Ditemukan</h4>
+                  <p className="text-[12px] text-[#7E8299] mb-6 leading-relaxed">
+                    Ditemukan {brokenItems.length} item bermasalah. Gunakan web portal PC untuk menindaklanjuti temuan menjadi Work Order.
+                  </p>
+                  <button
+                    onClick={() => isHistoryMode ? setStep('history') : navigate('/demo/mobile')}
+                    className="w-full py-3 bg-white border border-[#F1416C]/30 text-[#F1416C] rounded-xl text-[13px] font-bold hover:bg-[#F1416C] hover:text-white transition-all"
+                  >
+                    {isHistoryMode ? 'Kembali ke Riwayat' : 'Selesai'}
+                  </button>
                 </div>
               ) : brokenItems.length === 0 ? (
                 <div className="bg-[#E8FFF3] border border-[#50CD89]/20 rounded-2xl p-6 text-center">
@@ -1425,7 +1604,7 @@ const ChecklistHarian = () => {
                     Seluruh item dalam kondisi optimal. Tidak ada tindakan perbaikan yang diperlukan saat ini.
                   </p>
                   <button
-                    onClick={() => isHistoryMode ? setStep('history') : navigate(`${basePath}/checklist-riwayat`)}
+                    onClick={() => isHistoryMode ? setStep('history') : navigate(isMobile ? '/demo/mobile' : `${basePath}/checklist-riwayat`)}
                     className="w-full py-3 bg-white border border-[#50CD89]/30 text-[#50CD89] rounded-xl text-[13px] font-bold hover:bg-[#50CD89] hover:text-white transition-all"
                   >
                     Selesai
@@ -1473,15 +1652,17 @@ const ChecklistHarian = () => {
         <DuplicateModal />
         <div className={`${isMobile ? 'p-4 pb-24' : 'p-8 px-10 pb-24'}`}>
           <div className="max-w-3xl">
-            <div className="flex items-center gap-4 mb-8">
-              <button onClick={() => setStep('result')}
-                className="w-10 h-10 rounded-full bg-white border border-[#E4E6EF] flex items-center justify-center text-[#7E8299] hover:bg-[#F5F8FA] hover:text-[#0095E8] transition-all shadow-sm"
+            <div className="flex items-center gap-3 mb-8">
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setStep('result')}
+                className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
               >
-                <ChevronDown size={20} className="rotate-90" />
-              </button>
+                <ChevronLeft size={20} />
+              </motion.button>
               <div>
-                <h2 className="text-[20px] font-bold text-[#181C32]">Buat Tindakan Perbaikan (WO)</h2>
-                <p className="text-[12px] text-[#7E8299] mt-1">Mengonversi hasil temuan rusak menjadi perintah kerja</p>
+                <h2 className="text-[18px] md:text-[22px] font-semibold text-[#181C32] leading-tight">Buat Perintah Kerja (WO)</h2>
+                <p className="text-[11px] md:text-[12px] text-slate-400 font-medium mt-0.5">Konversi hasil temuan rusak menjadi perintah kerja</p>
               </div>
             </div>
 
@@ -1632,7 +1813,7 @@ const ChecklistHarian = () => {
   }
 
   return null;
-
 };
 
 export default ChecklistHarian;
+

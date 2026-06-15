@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { 
-  Search, 
-  Filter, 
-  ChevronRight, 
-  ChevronLeft, 
-  X, 
-  MapPin, 
-  Clock, 
-  Calendar, 
+import {
+  Search,
+  Filter,
+  ChevronRight,
+  ChevronLeft,
+  X,
+  MapPin,
+  Clock,
+  Calendar,
   Maximize2,
   ChevronDown,
   Edit2,
@@ -31,13 +31,13 @@ import { authFetch } from '../services/api';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { compressImage } from '../utils/imageOptimizer';
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
   ResponsiveContainer,
   Cell,
   PieChart,
@@ -47,6 +47,7 @@ import {
 } from 'recharts';
 import { useModal } from '../context/ModalContext';
 import { getSocket } from '../services/socket';
+import { useNavigate } from 'react-router-dom';
 
 
 const AssetAnalyticsDashboard = ({ data }) => {
@@ -58,18 +59,18 @@ const AssetAnalyticsDashboard = ({ data }) => {
       </div>
     </div>
   );
-  
+
   const { trend = [], asset = {} } = data;
-  
+
   // Calculate health score (0-100)
   const maintenanceCount = Array.isArray(trend) ? trend.reduce((sum, item) => sum + (item.count || 0), 0) : 0;
   const totalSeconds = (asset.maintenance_hours || 100) * 3600;
   const remainingPercent = asset.remaining_seconds !== undefined ? (asset.remaining_seconds / totalSeconds) * 100 : 0;
-  
+
   let healthScore = 100;
   healthScore -= (maintenanceCount * 10); // Each maintenance in last 12 months costs 10 points
   if (remainingPercent < 20) healthScore -= 30; // Heavy penalty for low timer
-  
+
   healthScore = Math.max(0, Math.min(100, healthScore));
 
   const getHealthStatus = (score) => {
@@ -84,81 +85,82 @@ const AssetAnalyticsDashboard = ({ data }) => {
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div className="flex items-center justify-between">
-         <div className="flex items-center gap-2">
-            <Activity size={18} className="text-[#0095E8]" />
-            <h4 className="text-xs font-black text-[#181C32] uppercase tracking-wider">Replacement Analysis</h4>
-         </div>
-         <div className={`px-4 py-1.5 rounded-full ${status.bg} ${status.color} text-[10px] font-black uppercase tracking-widest border border-current/10`}>
-           {status.label}
-         </div>
+        <div className="flex items-center gap-2">
+          <Activity size={18} className="text-[#0095E8]" />
+          <h4 className="text-xs font-black text-[#181C32] uppercase tracking-wider">Replacement Analysis</h4>
+        </div>
+        <div className={`px-4 py-1.5 rounded-full ${status.bg} ${status.color} text-[10px] font-black uppercase tracking-widest border border-current/10`}>
+          {status.label}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-4">
         <div className="p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Health Score</p>
-           <h5 className={`text-2xl font-black ${status.color}`}>{Math.round(healthScore)}%</h5>
+          <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Health Score</p>
+          <h5 className={`text-2xl font-black ${status.color}`}>{Math.round(healthScore)}%</h5>
         </div>
         <div className="p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Repair Freq (12m)</p>
-           <h5 className="text-2xl font-black text-slate-800">{maintenanceCount}x</h5>
+          <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Repair Freq (12m)</p>
+          <h5 className="text-2xl font-black text-slate-800">{maintenanceCount}x</h5>
         </div>
         <div className="p-4 bg-white border border-slate-100 rounded-3xl shadow-sm">
-           <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Asset Status</p>
-           <h5 className="text-[13px] font-black text-slate-700">{asset.status}</h5>
+          <p className="text-[10px] font-black text-slate-400 uppercase mb-1">Asset Status</p>
+          <h5 className="text-[13px] font-black text-slate-700">{asset.status}</h5>
         </div>
       </div>
 
       <div className="h-[220px] w-full bg-white rounded-[32px] p-6 border border-slate-100 shadow-sm relative overflow-hidden">
-         <div className="absolute top-4 left-6">
-            <span className="text-[10px] font-black text-slate-400 uppercase">Trend Frekuensi Kerusakan</span>
-         </div>
-         <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
-            <BarChart data={trend} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
-              <XAxis 
-                dataKey="month" 
-                axisLine={false} 
-                tickLine={false} 
-                tick={{fontSize: 9, fontWeight: 900, fill: '#A1A5B7'}} 
-                dy={10}
-              />
-              <YAxis hide />
-              <Tooltip 
-                cursor={{ fill: '#F9F9F9' }}
-                contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', padding: '16px' }}
-                itemStyle={{ fontSize: '11px', fontWeight: 900, color: '#181C32' }}
-              />
-              <Bar dataKey="count" fill="#0095E8" radius={[8, 8, 0, 0]} barSize={28}>
-                {trend.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.count >= 2 ? '#F1416C' : '#0095E8'} />
-                ))}
-              </Bar>
-            </BarChart>
-         </ResponsiveContainer>
+        <div className="absolute top-4 left-6">
+          <span className="text-[10px] font-black text-slate-400 uppercase">Trend Frekuensi Kerusakan</span>
+        </div>
+        <ResponsiveContainer width="100%" height="100%" minWidth={1} minHeight={1}>
+          <BarChart data={trend} margin={{ top: 20, right: 0, left: -20, bottom: 0 }}>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
+            <XAxis
+              dataKey="month"
+              axisLine={false}
+              tickLine={false}
+              tick={{ fontSize: 9, fontWeight: 900, fill: '#A1A5B7' }}
+              dy={10}
+            />
+            <YAxis hide />
+            <Tooltip
+              cursor={{ fill: '#F9F9F9' }}
+              contentStyle={{ borderRadius: '20px', border: 'none', boxShadow: '0 10px 30px rgba(0,0,0,0.05)', padding: '16px' }}
+              itemStyle={{ fontSize: '11px', fontWeight: 900, color: '#181C32' }}
+            />
+            <Bar dataKey="count" fill="#0095E8" radius={[8, 8, 0, 0]} barSize={28}>
+              {trend.map((entry, index) => (
+                <Cell key={`cell-${index}`} fill={entry.count >= 2 ? '#F1416C' : '#0095E8'} />
+              ))}
+            </Bar>
+          </BarChart>
+        </ResponsiveContainer>
       </div>
       <div className="p-5 bg-blue-50/50 rounded-3xl border border-blue-100/50">
-         <div className="flex gap-3">
-            <div className="w-8 h-8 bg-blue-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-100">
-               <Info size={16} />
-            </div>
-            <div>
-               <p className="text-[11px] font-black text-blue-900 uppercase tracking-widest mb-1">Rekomendasi Sistem</p>
-               <p className="text-[12px] text-blue-700 font-medium leading-relaxed">
-                 {healthScore < 40 ? 
-                   "Aset ini menunjukkan tingkat degradasi yang kritis. Frekuensi maintenance yang tinggi menandakan biaya operasional akan terus membengkak. Disarankan untuk segera merencanakan pengadaan unit baru." : 
-                   healthScore < 70 ? 
-                   "Aset dalam kondisi penurunan performa. Lakukan pengecekan komponen utama lebih sering untuk mencegah kerusakan total." : 
-                   "Aset dalam kondisi optimal. Terus pertahankan jadwal maintenance rutin untuk menjaga life-cycle mesin."
-                 }
-               </p>
-            </div>
-         </div>
+        <div className="flex gap-3">
+          <div className="w-8 h-8 bg-blue-500 text-white rounded-xl flex items-center justify-center shrink-0 shadow-lg shadow-blue-100">
+            <Info size={16} />
+          </div>
+          <div>
+            <p className="text-[11px] font-black text-blue-900 uppercase tracking-widest mb-1">Rekomendasi Sistem</p>
+            <p className="text-[12px] text-blue-700 font-medium leading-relaxed">
+              {healthScore < 40 ?
+                "Aset ini menunjukkan tingkat degradasi yang kritis. Frekuensi maintenance yang tinggi menandakan biaya operasional akan terus membengkak. Disarankan untuk segera merencanakan pengadaan unit baru." :
+                healthScore < 70 ?
+                  "Aset dalam kondisi penurunan performa. Lakukan pengecekan komponen utama lebih sering untuk mencegah kerusakan total." :
+                  "Aset dalam kondisi optimal. Terus pertahankan jadwal maintenance rutin untuk menjaga life-cycle mesin."
+              }
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
 };
 
 const MonitoringAset = () => {
+  const navigate = useNavigate();
   const [assets, setAssets] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -209,14 +211,14 @@ const MonitoringAset = () => {
       const aLock = a.remaining_seconds <= 0;
       const bLock = b.remaining_seconds <= 0;
       if (aLock !== bLock) return aLock ? -1 : 1;
-      
+
       const aIsChild = a.parent_id !== null && a.parent_id !== undefined;
       const bIsChild = b.parent_id !== null && b.parent_id !== undefined;
-      
+
       if (aIsChild !== bIsChild) {
         return aIsChild ? -1 : 1;
       }
-      
+
       return a.remaining_seconds - b.remaining_seconds;
     });
   }, [assetsLockout, assetsNeedingMaint]);
@@ -243,7 +245,7 @@ const MonitoringAset = () => {
       return fallback;
     }
   };
-  
+
   // Edit State
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [editingAsset, setEditingAsset] = useState(null);
@@ -264,7 +266,7 @@ const MonitoringAset = () => {
   const [newPrioLabel, setNewPrioLabel] = useState('');
 
   const { confirm, success, error: showError } = useModal();
-  
+
   // Filter states
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [activeFilters, setActiveFilters] = useState({ status: '', prioritas: '', lokasi: '' });
@@ -421,9 +423,9 @@ const MonitoringAset = () => {
       });
     } else {
       // Standalone asset
-      setToggleConfirm({ 
-        show: true, 
-        assetId, 
+      setToggleConfirm({
+        show: true,
+        assetId,
         action: asset.is_running ? 'Mematikan' : 'Menyalakan',
         selectedIds: [assetId]
       });
@@ -437,8 +439,8 @@ const MonitoringAset = () => {
     try {
       setIsToggling(true);
       setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null });
-      
-      const res = await authFetch(`/api/assets/${assetId}/toggle`, { 
+
+      const res = await authFetch(`/api/assets/${assetId}/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ selected_ids: selectedIds })
@@ -498,15 +500,15 @@ const MonitoringAset = () => {
         success('Data maintenance berhasil disimpan');
         setIsMaintModalOpen(false);
         setMaintFormData({ reason: '', responsible_person: '', actions_taken: '', photos: [], days: 0, hours: 0 });
-        
-        setAssets(prev => prev.map(a => a.id === assetId ? { 
-          ...a, 
-          remaining_seconds: data.remaining_seconds, 
+
+        setAssets(prev => prev.map(a => a.id === assetId ? {
+          ...a,
+          remaining_seconds: data.remaining_seconds,
           maintenance_hours: data.maintenance_hours,
           is_running: 0,
           last_started_at: null
         } : a));
-        
+
         fetchMaintLogs(assetId);
         fetchAssetLogs(assetId);
       }
@@ -540,7 +542,7 @@ const MonitoringAset = () => {
       const assetId = isMobile ? activeMobileAsset?.id : selectedAsset?.id;
       const res = await authFetch(`/api/assets/${assetId}/note`, {
         method: 'POST',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           note: newNote,
           photos: notePhotos
         })
@@ -627,7 +629,7 @@ const MonitoringAset = () => {
   const formatDateTime = (dateStr) => {
     if (!dateStr) return { date: '-', time: '-' };
     const d = new Date(dateStr);
-    return { 
+    return {
       date: d.toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }),
       time: d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
     };
@@ -693,8 +695,8 @@ const MonitoringAset = () => {
         // Update selected asset if viewing detail
         if (selectedAsset && selectedAsset.id === editingAsset.id) {
           const parentAsset = assets.find(a => a.id === editFormData.parent_id);
-          const updated = { 
-            ...selectedAsset, 
+          const updated = {
+            ...selectedAsset,
             ...editFormData,
             parent_name: parentAsset ? parentAsset.nama_mesin : null,
             remaining_seconds: (editFormData.maintenance_hours || 0) * 3600
@@ -703,8 +705,8 @@ const MonitoringAset = () => {
         }
         if (activeMobileAsset && activeMobileAsset.id === editingAsset.id) {
           const parentAsset = assets.find(a => a.id === editFormData.parent_id);
-          const updated = { 
-            ...activeMobileAsset, 
+          const updated = {
+            ...activeMobileAsset,
             ...editFormData,
             parent_name: parentAsset ? parentAsset.nama_mesin : null,
             remaining_seconds: (editFormData.maintenance_hours || 0) * 3600
@@ -753,17 +755,17 @@ const MonitoringAset = () => {
       statusCounts[asset.status] = (statusCounts[asset.status] || 0) + 1;
       priorityCounts[asset.prioritas] = (priorityCounts[asset.prioritas] || 0) + 1;
     });
-    return { 
+    return {
       statusChart: Object.keys(statusCounts).map(name => ({ name, value: statusCounts[name] })),
       priorityChart: Object.keys(priorityCounts).map(name => ({ name, value: priorityCounts[name] })),
-      total: assets.length 
+      total: assets.length
     };
   }, [assets]);
 
   const COLORS = ['#0095E8', '#50CD89', '#FFC700', '#F1416C', '#7239EA'];
 
   const filteredAssets = assets.filter(asset => {
-    const matchesSearch = 
+    const matchesSearch =
       asset.nama_mesin.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       asset.serial_number?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -799,15 +801,23 @@ const MonitoringAset = () => {
         {/* Header Section */}
         <div className="bg-white px-6 pb-6 rounded-b-[40px] shadow-sm border-b border-slate-100" style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}>
           <div className="flex items-center justify-between mb-6">
-            <div>
-              <h1 className="text-[20px] font-black text-[#1B3B6F] tracking-tight">Monitoring Mesin</h1>
-              <p className="text-slate-400 text-[12px] font-bold">Pilih aset untuk kontrol operasional</p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => navigate('/demo/mobile')}
+                className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+              >
+                <ChevronLeft size={20} />
+              </button>
+              <div>
+                <h1 className="text-[20px] font-black text-[#1B3B6F] tracking-tight">Pengoperasian Aset</h1>
+                <p className="text-slate-400 text-[12px] font-bold">Pilih aset untuk kontrol operasional</p>
+              </div>
             </div>
           </div>
 
           {/* Maintenance Alerts Notification */}
           {sortedAlertAssets.length > 0 && (
-            <motion.div 
+            <motion.div
               initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }}
               className="mb-6 bg-amber-50 border border-amber-100 rounded-2xl p-4 overflow-hidden"
             >
@@ -837,7 +847,7 @@ const MonitoringAset = () => {
 
           {/* Asset Selection Area */}
           <div className="relative">
-            <select 
+            <select
               className="w-full pl-12 pr-4 py-4 bg-slate-50 border-transparent rounded-2xl text-[15px] font-black text-slate-700 outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all appearance-none"
               value={activeMobileAsset?.id || ''}
               onChange={(e) => {
@@ -863,7 +873,7 @@ const MonitoringAset = () => {
 
         <AnimatePresence mode="wait">
           {!activeMobileAsset ? (
-            <motion.div 
+            <motion.div
               key="empty"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -879,7 +889,7 @@ const MonitoringAset = () => {
               </p>
             </motion.div>
           ) : (
-            <motion.div 
+            <motion.div
               key={activeMobileAsset.id}
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
@@ -899,8 +909,8 @@ const MonitoringAset = () => {
                 <div className={`px-4 py-2 rounded-xl flex items-center gap-2 border ${activeMobileAsset.is_running ? 'bg-green-50 border-green-100 text-green-600' : 'bg-slate-50 border-slate-100 text-slate-400'}`}>
                   <div className={`w-2 h-2 rounded-full ${activeMobileAsset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
                   <span className="text-[12px] font-black uppercase tracking-wide">
-                    {activeMobileAsset.is_running 
-                      ? `Running - ${activeMobileAsset.operatorName || activeMobileAsset.operatorFirstName || 'System'}` 
+                    {activeMobileAsset.is_running
+                      ? `Running - ${activeMobileAsset.operatorName || activeMobileAsset.operatorFirstName || 'System'}`
                       : 'Standby'}
                   </span>
                 </div>
@@ -916,13 +926,11 @@ const MonitoringAset = () => {
                       whileTap={{ scale: 0.9 }}
                       disabled={isToggling}
                       onClick={() => handleToggleStatus(activeMobileAsset.id)}
-                      className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${
-                        isToggling ? 'opacity-70 grayscale' : ''
-                      } ${
-                        activeMobileAsset.is_running 
-                          ? 'bg-red-500 border-red-100 shadow-red-200 text-white' 
+                      className={`w-44 h-44 rounded-full flex flex-col items-center justify-center gap-2 shadow-2xl transition-all duration-500 border-8 ${isToggling ? 'opacity-70 grayscale' : ''
+                        } ${activeMobileAsset.is_running
+                          ? 'bg-red-500 border-red-100 shadow-red-200 text-white'
                           : (activeMobileAsset.remaining_seconds <= 604800 ? 'bg-amber-500 border-amber-50 shadow-amber-100 text-white' : 'bg-white border-slate-50 shadow-slate-200 text-slate-300')
-                      }`}
+                        }`}
                     >
                       <Power size={48} strokeWidth={2.5} className={`${activeMobileAsset.is_running ? 'drop-shadow-lg' : ''} ${isToggling ? 'animate-spin-slow' : ''}`} />
                       <span className="text-[18px] font-black uppercase tracking-widest">
@@ -936,16 +944,15 @@ const MonitoringAset = () => {
                     <motion.button
                       whileTap={{ scale: 0.95 }}
                       onClick={() => setIsMaintModalOpen(true)}
-                      className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[14px] uppercase tracking-wider shadow-lg transition-all ${
-                        activeMobileAsset.remaining_seconds <= 0 
-                          ? 'bg-amber-500 text-white shadow-amber-100 w-64 h-64 rounded-full flex-col !gap-4' 
+                      className={`flex items-center gap-2 px-8 py-4 rounded-2xl font-black text-[14px] uppercase tracking-wider shadow-lg transition-all ${activeMobileAsset.remaining_seconds <= 0
+                          ? 'bg-amber-500 text-white shadow-amber-100 w-64 h-64 rounded-full flex-col !gap-4'
                           : 'bg-white text-amber-600 border border-amber-100'
-                      }`}
+                        }`}
                     >
                       {activeMobileAsset.remaining_seconds <= 0 ? (
                         <>
                           <AlertTriangle size={64} className="animate-pulse" />
-                          <span className="text-center">Maintenance Required<br/><span className="text-[10px] opacity-70">Unit Locked</span></span>
+                          <span className="text-center">Maintenance Required<br /><span className="text-[10px] opacity-70">Unit Locked</span></span>
                         </>
                       ) : (
                         <>
@@ -964,11 +971,16 @@ const MonitoringAset = () => {
                     <span className={`text-[56px] font-black leading-none tracking-tighter tabular-nums ${activeMobileAsset.is_running ? 'text-[#0095E8]' : 'text-slate-800'}`}>
                       {formatTime(timeLeft)}
                     </span>
+                    {timeLeft >= 86400 && (
+                      <span className="text-[14px] font-bold text-slate-400 mt-2 block">
+                        {Math.floor(timeLeft / 86400)} Hari
+                      </span>
+                    )}
                     <div className="w-full max-w-[200px] h-1.5 bg-slate-100 rounded-full mt-6 overflow-hidden">
-                      <motion.div 
+                      <motion.div
                         initial={{ width: 0 }}
                         animate={{ width: `${(activeMobileAsset.maintenance_hours && activeMobileAsset.maintenance_hours > 0) ? Math.min(100, (timeLeft / (activeMobileAsset.maintenance_hours * 3600)) * 100) : 0}%` }}
-                        className={`h-full ${timeLeft < 3600 ? 'bg-red-500' : 'bg-[#0095E8]'}`} 
+                        className={`h-full ${timeLeft < 3600 ? 'bg-red-500' : 'bg-[#0095E8]'}`}
                       />
                     </div>
                   </div>
@@ -1037,7 +1049,7 @@ const MonitoringAset = () => {
 
               {/* Action Tabs / Buttons */}
               <div className="grid grid-cols-2 gap-4">
-                <motion.button 
+                <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setIsNoteModalOpen(true)}
                   className="flex flex-col items-center gap-3 p-5 bg-white border border-slate-100 rounded-[28px] shadow-sm"
@@ -1048,7 +1060,7 @@ const MonitoringAset = () => {
                   <span className="text-[13px] font-black text-slate-700">Catatan Tim</span>
                 </motion.button>
 
-                <motion.button 
+                <motion.button
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setSelectedAsset(activeMobileAsset)}
                   className="flex flex-col items-center gap-3 p-5 bg-white border border-slate-100 rounded-[28px] shadow-sm"
@@ -1071,8 +1083,8 @@ const MonitoringAset = () => {
                   {assetLogs.filter(l => l.action === 'NOTE').slice(0, 3).map((note, idx) => (
                     <div key={idx} className="bg-white p-5 rounded-[24px] border border-slate-100 shadow-sm relative overflow-hidden">
                       <div className="flex items-center justify-between mb-2">
-                         <span className="text-[11px] font-black text-slate-700">{note.firstName}</span>
-                         <span className="text-[9px] font-bold text-slate-400">{formatDateTime(note.created_at).time}</span>
+                        <span className="text-[11px] font-black text-slate-700">{note.firstName}</span>
+                        <span className="text-[9px] font-bold text-slate-400">{formatDateTime(note.created_at).time}</span>
                       </div>
                       <p className="text-[13px] text-slate-600 font-medium leading-relaxed italic">
                         "{note.details}"
@@ -1093,52 +1105,52 @@ const MonitoringAset = () => {
           {isMaintModalOpen && (
             <div className="fixed inset-0 z-[3000] flex items-end justify-center">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/60 backdrop-blur-md" onClick={() => setIsMaintModalOpen(false)} />
-              <motion.div 
+              <motion.div
                 initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                 className="relative bg-white w-full rounded-t-[40px] p-6 pb-12 shadow-2xl max-h-[90vh] overflow-y-auto no-scrollbar"
                 style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}
               >
                 <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
                 <div className="flex items-center justify-between mb-8">
-                   <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center">
-                         <Settings size={20} />
-                      </div>
-                      <h3 className="text-[18px] font-black text-slate-800">Submit Maintenance</h3>
-                   </div>
-                   <button onClick={() => setIsMaintModalOpen(false)} className="text-slate-400 p-2"><X size={24} /></button>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-amber-50 text-amber-500 rounded-xl flex items-center justify-center">
+                      <Settings size={20} />
+                    </div>
+                    <h3 className="text-[18px] font-black text-slate-800">Submit Maintenance</h3>
+                  </div>
+                  <button onClick={() => setIsMaintModalOpen(false)} className="text-slate-400 p-2"><X size={24} /></button>
                 </div>
 
                 <div className="space-y-6">
                   {/* Form Fields */}
                   <div className="space-y-2">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Alasan Maintenance / Kerusakan</label>
-                    <textarea 
+                    <textarea
                       className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-amber-400/30 transition-all min-h-[100px]"
                       placeholder="Contoh: Penggantian oli berkala atau perbaikan rantai..."
                       value={maintFormData.reason}
-                      onChange={(e) => setMaintFormData({...maintFormData, reason: e.target.value})}
+                      onChange={(e) => setMaintFormData({ ...maintFormData, reason: e.target.value })}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Penanggung Jawab (PIC)</label>
-                    <input 
+                    <input
                       type="text"
                       className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-black text-slate-700 outline-none focus:bg-white focus:border-amber-400/30 transition-all"
                       placeholder="Nama lengkap teknisi..."
                       value={maintFormData.responsible_person}
-                      onChange={(e) => setMaintFormData({...maintFormData, responsible_person: e.target.value})}
+                      onChange={(e) => setMaintFormData({ ...maintFormData, responsible_person: e.target.value })}
                     />
                   </div>
 
                   <div className="space-y-2">
                     <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Tindakan Yang Dilakukan</label>
-                    <textarea 
+                    <textarea
                       className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-amber-400/30 transition-all min-h-[100px]"
                       placeholder="Detail perbaikan yang dikerjakan..."
                       value={maintFormData.actions_taken}
-                      onChange={(e) => setMaintFormData({...maintFormData, actions_taken: e.target.value})}
+                      onChange={(e) => setMaintFormData({ ...maintFormData, actions_taken: e.target.value })}
                     />
                   </div>
 
@@ -1149,8 +1161,8 @@ const MonitoringAset = () => {
                       {maintFormData.photos.map((img, idx) => (
                         <div key={idx} className="relative aspect-square">
                           <img src={getImageUrl(img)} className="w-full h-full object-cover rounded-2xl border border-slate-100" />
-                          <button 
-                            onClick={() => setMaintFormData({...maintFormData, photos: maintFormData.photos.filter((_, i) => i !== idx)})}
+                          <button
+                            onClick={() => setMaintFormData({ ...maintFormData, photos: maintFormData.photos.filter((_, i) => i !== idx) })}
                             className="absolute -top-1 -right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md border-2 border-white"
                           >
                             <X size={12} />
@@ -1161,8 +1173,8 @@ const MonitoringAset = () => {
                         <label className="aspect-square bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl flex flex-col items-center justify-center gap-1 cursor-pointer hover:bg-slate-100 transition-all">
                           <Camera size={24} className="text-slate-300" />
                           <span className="text-[10px] font-black text-slate-400">Upload</span>
-                          <input 
-                            type="file" accept="image/*" multiple className="hidden" 
+                          <input
+                            type="file" accept="image/*" multiple className="hidden"
                             onChange={async (e) => {
                               const files = Array.from(e.target.files).slice(0, 5 - maintFormData.photos.length);
                               try {
@@ -1180,7 +1192,7 @@ const MonitoringAset = () => {
                               } catch (err) {
                                 showError('Gagal memproses gambar');
                               }
-                            }} 
+                            }}
                           />
                         </label>
                       )}
@@ -1190,23 +1202,23 @@ const MonitoringAset = () => {
                   {/* New Interval Setting */}
                   <div className="bg-blue-50/50 rounded-[32px] p-6 space-y-4">
                     <div className="flex items-center gap-3 mb-2">
-                       <Clock size={18} className="text-[#0095E8]" />
-                       <h4 className="text-[14px] font-black text-slate-800">Atur Interval Selanjutnya</h4>
+                      <Clock size={18} className="text-[#0095E8]" />
+                      <h4 className="text-[14px] font-black text-slate-800">Atur Interval Selanjutnya</h4>
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
-                         <label className="text-[10px] font-black text-slate-400 uppercase">Hari</label>
-                         <input 
-                           type="number" className="w-full p-4 bg-white rounded-2xl text-center font-black text-slate-700 outline-none focus:ring-2 focus:ring-[#0095E8]/20"
-                           value={maintFormData.days} onChange={(e) => setMaintFormData({...maintFormData, days: e.target.value})}
-                         />
+                        <label className="text-[10px] font-black text-slate-400 uppercase">Hari</label>
+                        <input
+                          type="number" className="w-full p-4 bg-white rounded-2xl text-center font-black text-slate-700 outline-none focus:ring-2 focus:ring-[#0095E8]/20"
+                          value={maintFormData.days} onChange={(e) => setMaintFormData({ ...maintFormData, days: e.target.value })}
+                        />
                       </div>
                       <div className="space-y-2">
-                         <label className="text-[10px] font-black text-slate-400 uppercase">Jam</label>
-                         <input 
-                           type="number" className="w-full p-4 bg-white rounded-2xl text-center font-black text-slate-700 outline-none focus:ring-2 focus:ring-[#0095E8]/20"
-                           value={maintFormData.hours} onChange={(e) => setMaintFormData({...maintFormData, hours: e.target.value})}
-                         />
+                        <label className="text-[10px] font-black text-slate-400 uppercase">Jam</label>
+                        <input
+                          type="number" className="w-full p-4 bg-white rounded-2xl text-center font-black text-slate-700 outline-none focus:ring-2 focus:ring-[#0095E8]/20"
+                          value={maintFormData.hours} onChange={(e) => setMaintFormData({ ...maintFormData, hours: e.target.value })}
+                        />
                       </div>
                     </div>
                     <p className="text-[10px] text-center text-slate-400 font-bold italic">Waktu akan dikonversi menjadi total jam operasional baru.</p>
@@ -1238,7 +1250,7 @@ const MonitoringAset = () => {
           {isNoteModalOpen && (
             <div className="fixed inset-0 z-[1000] flex items-end justify-center">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsNoteModalOpen(false)} />
-              <motion.div 
+              <motion.div
                 initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
                 className="relative bg-white w-full rounded-t-[40px] p-6 pb-12 shadow-2xl"
                 style={{ paddingBottom: 'calc(32px + env(safe-area-inset-bottom))' }}
@@ -1248,7 +1260,7 @@ const MonitoringAset = () => {
                   <h3 className="text-[18px] font-black text-slate-800">Tambah Catatan Tim</h3>
                   <button onClick={() => setIsNoteModalOpen(false)} className="text-slate-400"><X size={24} /></button>
                 </div>
-                <textarea 
+                <textarea
                   className="w-full p-5 bg-slate-50 border-transparent rounded-2xl text-[14px] font-medium outline-none focus:bg-white focus:border-[#0095E8]/30 transition-all min-h-[120px]"
                   placeholder="Ketik pesan atau informasi tentang unit ini untuk tim lain..."
                   value={newNote}
@@ -1264,7 +1276,7 @@ const MonitoringAset = () => {
                     {notePhotos.map((img, idx) => (
                       <div key={idx} className="relative w-20 h-20 rounded-xl overflow-hidden border border-slate-100 shadow-sm">
                         <img src={getImageUrl(img)} className="w-full h-full object-cover" />
-                        <button 
+                        <button
                           onClick={() => setNotePhotos(prev => prev.filter((_, i) => i !== idx))}
                           className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center shadow-md"
                         >
@@ -1275,8 +1287,8 @@ const MonitoringAset = () => {
                     {notePhotos.length < 5 && (
                       <label className="w-20 h-20 bg-slate-50 rounded-xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer active:bg-slate-100 transition-all">
                         <Camera size={24} />
-                        <input 
-                          type="file" accept="image/*" multiple className="hidden" 
+                        <input
+                          type="file" accept="image/*" multiple className="hidden"
                           onChange={async (e) => {
                             const files = Array.from(e.target.files).slice(0, 5 - notePhotos.length);
                             try {
@@ -1294,7 +1306,7 @@ const MonitoringAset = () => {
                             } catch (err) {
                               showError('Gagal memproses gambar');
                             }
-                          }} 
+                          }}
                         />
                       </label>
                     )}
@@ -1335,8 +1347,8 @@ const MonitoringAset = () => {
                     <h2 className="text-[20px] font-black text-slate-800 leading-tight">{selectedAsset.nama_mesin}</h2>
                     <p className="text-slate-400 text-[13px] font-bold mt-1 uppercase">{selectedAsset.brand}</p>
                     <div className="mt-2 flex items-center gap-2">
-                       <div className={`w-2 h-2 rounded-full ${selectedAsset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
-                       <span className="text-[11px] font-black text-slate-500 uppercase">{selectedAsset.is_running ? 'Running' : 'Standby'}</span>
+                      <div className={`w-2 h-2 rounded-full ${selectedAsset.is_running ? 'bg-green-500 animate-pulse' : 'bg-slate-300'}`} />
+                      <span className="text-[11px] font-black text-slate-500 uppercase">{selectedAsset.is_running ? 'Running' : 'Standby'}</span>
                     </div>
                   </div>
                 </div>
@@ -1363,7 +1375,7 @@ const MonitoringAset = () => {
                     <Zap size={16} className="text-[#0095E8]" />
                     <h4 className="text-[13px] font-black text-slate-800 tracking-wide">Hubungan Aset & Timer</h4>
                   </div>
-                  
+
                   {selectedAsset.parent_id ? (
                     <div className="p-4 bg-blue-50 border border-blue-100 rounded-xl">
                       <p className="text-[12px] font-black text-blue-900">Aset Induk: {selectedAsset.parent_name || 'Terhubung'}</p>
@@ -1417,28 +1429,28 @@ const MonitoringAset = () => {
 
                 {/* Catatan Tim Section in Detail */}
                 <div className="space-y-4">
-                   <h4 className="text-[14px] font-black text-slate-800">Catatan Khusus Tim</h4>
-                   <div className="space-y-3">
-                      {assetLogs.filter(l => l.action === 'NOTE').map((note, idx) => (
-                        <div key={idx} className="p-4 bg-amber-50/30 border border-amber-100 rounded-2xl">
-                           <div className="flex justify-between items-center mb-2">
-                              <span className="text-[11px] font-black text-amber-700">{note.firstName} {note.lastName}</span>
-                              <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
-                           </div>
-                           <p className="text-[13px] text-slate-700 font-medium italic">"{note.details}"</p>
-                           {note.photos && safeParseJSON(note.photos).length > 0 && (
-                             <div className="grid grid-cols-3 gap-2 mt-3">
-                                {safeParseJSON(note.photos).map((img, i) => (
-                                  <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-amber-100" onClick={() => setZoomedImage(img)} />
-                                ))}
-                             </div>
-                           )}
+                  <h4 className="text-[14px] font-black text-slate-800">Catatan Khusus Tim</h4>
+                  <div className="space-y-3">
+                    {assetLogs.filter(l => l.action === 'NOTE').map((note, idx) => (
+                      <div key={idx} className="p-4 bg-amber-50/30 border border-amber-100 rounded-2xl">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-[11px] font-black text-amber-700">{note.firstName} {note.lastName}</span>
+                          <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
                         </div>
-                      ))}
-                      {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
-                        <div className="text-center py-6 text-slate-400 text-[12px] font-bold">Belum ada catatan tim.</div>
-                      )}
-                   </div>
+                        <p className="text-[13px] text-slate-700 font-medium italic">"{note.details}"</p>
+                        {note.photos && safeParseJSON(note.photos).length > 0 && (
+                          <div className="grid grid-cols-3 gap-2 mt-3">
+                            {safeParseJSON(note.photos).map((img, i) => (
+                              <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-amber-100" onClick={() => setZoomedImage(img)} />
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                    {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
+                      <div className="text-center py-6 text-slate-400 text-[12px] font-bold">Belum ada catatan tim.</div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Media Section */}
@@ -1458,47 +1470,47 @@ const MonitoringAset = () => {
 
                 {/* Maintenance History Section in Detail */}
                 <div className="space-y-4">
-                   <div className="flex items-center justify-between">
-                     <h4 className="text-[14px] font-black text-slate-800">Riwayat Maintenance</h4>
-                     <Zap size={16} className="text-amber-500" />
-                   </div>
-                   <div className="space-y-4">
-                      {maintLogs.length === 0 ? (
-                        <div className="py-6 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-center text-slate-400 text-[11px] font-bold italic">Belum ada riwayat maintenance.</div>
-                      ) : (
-                        maintLogs.map((log, idx) => (
-                          <div key={idx} className="p-5 bg-white border border-slate-100 rounded-[28px] shadow-sm space-y-3">
-                             <div className="flex justify-between items-center">
-                                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase">Service Done</span>
-                                <span className="text-[10px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
-                             </div>
-                             <div>
-                                <p className="text-[14px] font-black text-slate-800 leading-tight">{log.reason}</p>
-                                <p className="text-[12px] text-slate-500 font-medium mt-1">{log.actions_taken}</p>
-                                <div className="mt-2 flex items-center gap-2">
-                                   <Clock size={12} className="text-blue-500" />
-                                   <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-                                      Interval Reset: {Math.floor(log.old_remaining_seconds / 3600)}h → {Math.floor(log.new_remaining_seconds / 3600)}h
-                                   </span>
-                                </div>
-                             </div>
-                             <div className="flex items-center gap-2 pt-2 border-t border-slate-50">
-                                <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
-                                   <Settings size={12} />
-                                </div>
-                                <span className="text-[11px] font-bold text-slate-600">PIC: {log.responsible_person}</span>
-                             </div>
-                             {log.photos && safeParseJSON(log.photos).length > 0 && (
-                               <div className="grid grid-cols-3 gap-2 mt-2">
-                                  {safeParseJSON(log.photos).map((img, i) => (
-                                    <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-slate-100" onClick={() => setZoomedImage(img)} />
-                                  ))}
-                               </div>
-                             )}
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-[14px] font-black text-slate-800">Riwayat Maintenance</h4>
+                    <Zap size={16} className="text-amber-500" />
+                  </div>
+                  <div className="space-y-4">
+                    {maintLogs.length === 0 ? (
+                      <div className="py-6 bg-slate-50 rounded-3xl border border-dashed border-slate-200 text-center text-slate-400 text-[11px] font-bold italic">Belum ada riwayat maintenance.</div>
+                    ) : (
+                      maintLogs.map((log, idx) => (
+                        <div key={idx} className="p-5 bg-white border border-slate-100 rounded-[28px] shadow-sm space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-lg text-[10px] font-black uppercase">Service Done</span>
+                            <span className="text-[10px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
                           </div>
-                        )
+                          <div>
+                            <p className="text-[14px] font-black text-slate-800 leading-tight">{log.reason}</p>
+                            <p className="text-[12px] text-slate-500 font-medium mt-1">{log.actions_taken}</p>
+                            <div className="mt-2 flex items-center gap-2">
+                              <Clock size={12} className="text-blue-500" />
+                              <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
+                                Interval Reset: {Math.floor(log.old_remaining_seconds / 3600)}h → {Math.floor(log.new_remaining_seconds / 3600)}h
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 pt-2 border-t border-slate-50">
+                            <div className="w-6 h-6 bg-slate-100 rounded-full flex items-center justify-center text-slate-400">
+                              <Settings size={12} />
+                            </div>
+                            <span className="text-[11px] font-bold text-slate-600">PIC: {log.responsible_person}</span>
+                          </div>
+                          {log.photos && safeParseJSON(log.photos).length > 0 && (
+                            <div className="grid grid-cols-3 gap-2 mt-2">
+                              {safeParseJSON(log.photos).map((img, i) => (
+                                <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-slate-100" onClick={() => setZoomedImage(img)} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )
                       ))}
-                   </div>
+                  </div>
                 </div>
 
                 {/* Log Section */}
@@ -1508,10 +1520,9 @@ const MonitoringAset = () => {
                     {assetLogs.map((log, idx) => (
                       <div key={idx} className="p-4 bg-white border border-slate-100 rounded-2xl shadow-sm">
                         <div className="flex items-center justify-between mb-2">
-                          <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${
-                            log.action === 'STATUS_CHANGE' ? 'bg-blue-50 text-blue-600' : 
-                            log.action === 'NOTE' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'
-                          }`}>
+                          <span className={`text-[10px] font-black px-2 py-1 rounded-md uppercase ${log.action === 'STATUS_CHANGE' ? 'bg-blue-50 text-blue-600' :
+                              log.action === 'NOTE' ? 'bg-amber-50 text-amber-600' : 'bg-slate-50 text-slate-500'
+                            }`}>
                             {log.action.replace('_', ' ')}
                           </span>
                           <span className="text-[10px] font-bold text-slate-400">{formatDateTime(log.created_at).date}, {formatDateTime(log.created_at).time}</span>
@@ -1519,9 +1530,9 @@ const MonitoringAset = () => {
                         <p className="text-[13px] font-medium text-slate-700">{log.details}</p>
                         {log.action === 'NOTE' && log.photos && safeParseJSON(log.photos).length > 0 && (
                           <div className="grid grid-cols-3 gap-2 mt-2">
-                             {safeParseJSON(log.photos).map((img, i) => (
-                               <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl" onClick={() => setZoomedImage(img)} />
-                             ))}
+                            {safeParseJSON(log.photos).map((img, i) => (
+                              <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl" onClick={() => setZoomedImage(img)} />
+                            ))}
                           </div>
                         )}
                         <p className="text-[11px] font-bold text-slate-400 mt-2">— {log.firstName}</p>
@@ -1533,7 +1544,7 @@ const MonitoringAset = () => {
             </div>
           )}
         </AnimatePresence>
-        
+
         {/* Full Image Zoom for Mobile */}
         <AnimatePresence>
           {zoomedImage && isMobile && (
@@ -1543,19 +1554,19 @@ const MonitoringAset = () => {
             </div>
           )}
         </AnimatePresence>
-        
+
         {/* Selection Checkbox Modal (Mobile) */}
         <AnimatePresence>
           {toggleSelectModal.show && (
             <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })} />
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 className="relative bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl"
               >
                 <div className="text-center mb-6">
                   <div className={`w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
-                     <Power size={28} />
+                    <Power size={28} />
                   </div>
                   <h3 className="text-[18px] font-black text-slate-800 leading-tight">Kontrol Multi-Aset</h3>
                   <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Pilih unit yang ingin di{toggleSelectModal.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}</p>
@@ -1566,24 +1577,23 @@ const MonitoringAset = () => {
                     const isParent = !ast.parent_id;
                     const isChecked = toggleSelectModal.selectedIds.includes(ast.id);
                     return (
-                      <div 
-                        key={ast.id} 
+                      <div
+                        key={ast.id}
                         onClick={() => {
                           const alreadySelected = toggleSelectModal.selectedIds.includes(ast.id);
-                          const newIds = alreadySelected 
+                          const newIds = alreadySelected
                             ? toggleSelectModal.selectedIds.filter(id => id !== ast.id)
                             : [...toggleSelectModal.selectedIds, ast.id];
                           setToggleSelectModal(prev => ({ ...prev, selectedIds: newIds }));
                         }}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                          isChecked 
-                            ? 'bg-[#F1FAFF] border-[#0095E8]/30 shadow-sm' 
+                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isChecked
+                            ? 'bg-[#F1FAFF] border-[#0095E8]/30 shadow-sm'
                             : 'bg-slate-50/50 border-slate-100'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center gap-3">
-                          <input 
-                            type="checkbox" 
+                          <input
+                            type="checkbox"
                             checked={isChecked}
                             readOnly
                             className="w-4 h-4 rounded text-[#0095E8] border-slate-300 focus:ring-[#0095E8]"
@@ -1606,13 +1616,13 @@ const MonitoringAset = () => {
                 </p>
 
                 <div className="grid grid-cols-2 gap-3">
-                  <button 
+                  <button
                     onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })}
                     className="py-3.5 bg-slate-50 text-slate-500 rounded-2xl font-black text-[13px]"
                   >
                     Batal
                   </button>
-                  <button 
+                  <button
                     onClick={() => {
                       if (toggleSelectModal.selectedIds.length === 0) {
                         showError('Mohon pilih minimal 1 unit');
@@ -1641,12 +1651,12 @@ const MonitoringAset = () => {
           {toggleConfirm.show && (
             <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
               <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })} />
-              <motion.div 
+              <motion.div
                 initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
                 className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
               >
                 <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${toggleConfirm.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
-                   <Power size={40} />
+                  <Power size={40} />
                 </div>
                 <h3 className="text-[20px] font-black text-slate-800 mb-2">{toggleConfirm.action} Mesin?</h3>
                 <p className="text-[13px] text-slate-500 font-medium mb-6 leading-relaxed">
@@ -1660,11 +1670,10 @@ const MonitoringAset = () => {
                       {toggleConfirm.selectedIds.map(sid => {
                         const targetAsset = assets.find(a => a.id === sid);
                         return (
-                          <span key={sid} className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm border ${
-                            toggleConfirm.action === 'Mematikan' 
-                              ? 'bg-red-50 text-red-700 border-red-100' 
+                          <span key={sid} className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm border ${toggleConfirm.action === 'Mematikan'
+                              ? 'bg-red-50 text-red-700 border-red-100'
                               : 'bg-blue-50 text-blue-700 border-blue-100'
-                          }`}>
+                            }`}>
                             {targetAsset?.nama_mesin || 'Aset'}
                           </span>
                         );
@@ -1674,13 +1683,13 @@ const MonitoringAset = () => {
                 )}
 
                 <div className="grid grid-cols-2 gap-4">
-                  <button 
+                  <button
                     onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })}
                     className="py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[15px]"
                   >
                     Batal
                   </button>
-                  <button 
+                  <button
                     onClick={executeToggleStatus}
                     className={`py-4 text-white rounded-2xl font-black text-[15px] shadow-lg ${toggleConfirm.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
                   >
@@ -1704,35 +1713,34 @@ const MonitoringAset = () => {
           <h1 className="text-2xl font-bold text-[#181C32] mb-1">Monitoring Aset</h1>
           <p className="text-[#A1A5B7] text-sm font-medium">Pengawasan unit operasional secara real-time dan terstruktur.</p>
         </div>
-        
+
         {/* Maintenance Alert Banner for PC */}
         {sortedAlertAssets.length > 0 && (
-          <motion.div 
+          <motion.div
             initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }}
             className="flex items-start gap-4 bg-amber-50 border border-amber-100 p-4 rounded-2xl shadow-sm max-w-md shrink-0"
           >
             <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center text-white shrink-0 shadow-md">
-               <AlertTriangle size={20} />
+              <AlertTriangle size={20} />
             </div>
             <div>
-               <p className="text-[13px] font-black text-amber-900 leading-tight">
-                  {sortedAlertAssets.length} Unit Butuh Perhatian!
-               </p>
-               <p className="text-[11px] font-bold text-amber-700/80 mt-1 leading-normal">Berikut unit kritis teratas (Freon/Perintilan diprioritaskan):</p>
-               <div className="mt-2 flex flex-wrap gap-1.5">
-                 {sortedAlertAssets.slice(0, 3).map(a => (
-                   <span key={a.id} className={`px-2 py-0.5 rounded text-[9px] font-black uppercase shadow-sm border ${
-                     a.remaining_seconds <= 0 
-                       ? 'bg-red-500 text-white border-red-400' 
-                       : 'bg-amber-100 text-amber-800 border-amber-200'
-                   }`}>
-                     {a.nama_mesin}
-                   </span>
-                 ))}
-                 {sortedAlertAssets.length > 3 && (
-                   <span className="text-[9px] font-bold text-amber-500/80">+{sortedAlertAssets.length - 3} lagi</span>
-                 )}
-               </div>
+              <p className="text-[13px] font-black text-amber-900 leading-tight">
+                {sortedAlertAssets.length} Unit Butuh Perhatian!
+              </p>
+              <p className="text-[11px] font-bold text-amber-700/80 mt-1 leading-normal">Berikut unit kritis teratas (Freon/Perintilan diprioritaskan):</p>
+              <div className="mt-2 flex flex-wrap gap-1.5">
+                {sortedAlertAssets.slice(0, 3).map(a => (
+                  <span key={a.id} className={`px-2 py-0.5 rounded text-[9px] font-black uppercase shadow-sm border ${a.remaining_seconds <= 0
+                      ? 'bg-red-500 text-white border-red-400'
+                      : 'bg-amber-100 text-amber-800 border-amber-200'
+                    }`}>
+                    {a.nama_mesin}
+                  </span>
+                ))}
+                {sortedAlertAssets.length > 3 && (
+                  <span className="text-[9px] font-bold text-amber-500/80">+{sortedAlertAssets.length - 3} lagi</span>
+                )}
+              </div>
             </div>
           </motion.div>
         )}
@@ -1759,7 +1767,7 @@ const MonitoringAset = () => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#F1F1F4" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: '400', fill: '#A1A5B7' }} />
                 <YAxis hide />
-                <Tooltip 
+                <Tooltip
                   cursor={{ fill: '#F9F9F9' }}
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)', fontSize: '10px' }}
                 />
@@ -1794,11 +1802,11 @@ const MonitoringAset = () => {
                   ))}
                 </Pie>
                 <Tooltip />
-                <Legend 
-                  layout="vertical" 
-                  align="right" 
-                  verticalAlign="middle" 
-                  iconType="circle" 
+                <Legend
+                  layout="vertical"
+                  align="right"
+                  verticalAlign="middle"
+                  iconType="circle"
                   formatter={(value, entry) => {
                     const item = analyticsData.priorityChart.find(p => p.name === value);
                     return <span className="text-[10px] font-normal text-[#3F4254]">{value} ({item?.value || 0})</span>;
@@ -1814,15 +1822,15 @@ const MonitoringAset = () => {
       <div className="flex flex-col md:flex-row gap-4 mb-6">
         <div className="relative flex-1">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#A1A5B7]" size={18} />
-          <input 
-            type="text" 
+          <input
+            type="text"
             placeholder="Cari aset..."
             className="w-full pl-12 pr-4 py-3 bg-white border border-[#F1F1F4] rounded-xl text-sm font-light outline-none focus:border-[#0095E8]/30 transition-all shadow-sm"
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
           />
         </div>
-        <button 
+        <button
           onClick={() => setIsFilterOpen(!isFilterOpen)}
           className={`flex items-center gap-2 px-6 py-3 border rounded-xl text-sm font-light transition-all ${isFilterOpen ? 'bg-[#F1FAFF] border-[#0095E8] text-[#0095E8]' : 'bg-white border-[#F1F1F4] text-[#7E8299] hover:bg-[#F9F9F9]'}`}
         >
@@ -1838,21 +1846,21 @@ const MonitoringAset = () => {
             <div className="bg-white p-6 rounded-2xl border border-[#F1F1F4] shadow-sm grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="space-y-2">
                 <label className="text-xs font-normal text-[#7E8299] uppercase tracking-wider">Status</label>
-                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.status} onChange={(e) => setActiveFilters({...activeFilters, status: e.target.value})}>
+                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.status} onChange={(e) => setActiveFilters({ ...activeFilters, status: e.target.value })}>
                   <option value="">Semua Status</option>
                   {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-normal text-[#7E8299] uppercase tracking-wider">Prioritas</label>
-                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.prioritas} onChange={(e) => setActiveFilters({...activeFilters, prioritas: e.target.value})}>
+                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.prioritas} onChange={(e) => setActiveFilters({ ...activeFilters, prioritas: e.target.value })}>
                   <option value="">Semua Prioritas</option>
                   {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
                 </select>
               </div>
               <div className="space-y-2">
                 <label className="text-xs font-normal text-[#7E8299] uppercase tracking-wider">Lokasi</label>
-                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.lokasi} onChange={(e) => setActiveFilters({...activeFilters, lokasi: e.target.value})}>
+                <select className="w-full px-4 py-2.5 bg-[#F9F9F9] border-transparent rounded-lg text-sm font-light outline-none focus:bg-white focus:border-[#0095E8]/20 transition-all" value={activeFilters.lokasi} onChange={(e) => setActiveFilters({ ...activeFilters, lokasi: e.target.value })}>
                   <option value="">Semua Lokasi</option>
                   {locations.map(l => <option key={l.id} value={l.label}>{l.label}</option>)}
                 </select>
@@ -1880,7 +1888,7 @@ const MonitoringAset = () => {
             </thead>
             <tbody className="divide-y divide-[#F1F1F4]">
               {loading ? (
-                [1,2,3,4,5].map(i => <tr key={i} className="animate-pulse"><td colSpan="5" className="px-6 py-8"><div className="h-4 bg-slate-100 rounded w-full"></div></td></tr>)
+                [1, 2, 3, 4, 5].map(i => <tr key={i} className="animate-pulse"><td colSpan="5" className="px-6 py-8"><div className="h-4 bg-slate-100 rounded w-full"></div></td></tr>)
               ) : paginatedAssets.length === 0 ? (
                 <tr><td colSpan="5" className="px-6 py-20 text-center text-[#A1A5B7] text-sm font-light">Data aset tidak ditemukan.</td></tr>
               ) : (
@@ -1908,8 +1916,13 @@ const MonitoringAset = () => {
                             <p className={`text-sm font-black tabular-nums ${liveTime <= 604800 ? 'text-red-600' : (asset.is_running ? 'text-[#0095E8]' : 'text-slate-700')}`}>
                               {formatTime(liveTime)}
                             </p>
+                            {liveTime >= 86400 && (
+                              <p className="text-[10px] text-slate-400 font-bold mb-0.5">
+                                {Math.floor(liveTime / 86400)} Hari
+                              </p>
+                            )}
                             <p className="text-[9px] text-[#A1A5B7] font-bold uppercase tracking-wider">
-                               {asset.is_running ? `RUNNING - ${asset.operatorName || asset.operatorFirstName || 'SYS'}` : 'STANDBY'}
+                              {asset.is_running ? `RUNNING - ${asset.operatorName || asset.operatorFirstName || 'SYS'}` : 'STANDBY'}
                             </p>
                           </div>
                         </div>
@@ -1924,7 +1937,7 @@ const MonitoringAset = () => {
                       <td className="px-6 py-5 text-right">
                         <div className="flex justify-end gap-2" onClick={e => e.stopPropagation()}>
                           <button className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-[#0095E8] hover:border-[#0095E8]/30 rounded-lg transition-all" onClick={() => { setSelectedAsset(asset); fetchAssetLogs(asset.id); }}>
-                             <Maximize2 size={14} />
+                            <Maximize2 size={14} />
                           </button>
                           {hasPerm('aset_register', 'Edit') && (
                             <button onClick={() => openEditModal(asset)} className="p-2 bg-white border border-[#F1F1F4] text-[#A1A5B7] hover:text-[#0095E8] hover:border-[#0095E8]/30 rounded-lg transition-all"><Edit2 size={14} /></button>
@@ -1970,10 +1983,15 @@ const MonitoringAset = () => {
                     <h3 className="text-[64px] font-black leading-none tracking-tighter tabular-nums mb-4">
                       {formatTime(timeLeft)}
                     </h3>
+                    {timeLeft >= 86400 && (
+                      <p className="text-[16px] font-bold text-white/70 mb-4">
+                        {Math.floor(timeLeft / 86400)} Hari
+                      </p>
+                    )}
                     <div className="flex items-center gap-4">
-                       <div className={`px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest ${selectedAsset.is_running ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/40'}`}>
-                          {selectedAsset.is_running ? `Operational - Started by ${selectedAsset.operatorName || selectedAsset.operatorFirstName || 'System'}` : 'Standby Mode'}
-                       </div>
+                      <div className={`px-6 py-2 rounded-xl text-[12px] font-black uppercase tracking-widest ${selectedAsset.is_running ? 'bg-green-500/20 text-green-400' : 'bg-white/10 text-white/40'}`}>
+                        {selectedAsset.is_running ? `Operational - Started by ${selectedAsset.operatorName || selectedAsset.operatorFirstName || 'System'}` : 'Standby Mode'}
+                      </div>
                     </div>
                   </div>
 
@@ -2002,7 +2020,7 @@ const MonitoringAset = () => {
                       <Zap size={16} className="text-[#0095E8]" />
                       <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Hubungan Aset & Sinkronisasi Timer</h4>
                     </div>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <p className="text-[10px] font-black text-[#A1A5B7] uppercase tracking-wider">Aset Induk</p>
@@ -2064,37 +2082,37 @@ const MonitoringAset = () => {
 
                   {/* PC Detail: Team Notes */}
                   <div className="space-y-4">
-                     <div className="flex items-center gap-2">
-                        <MessageSquare size={16} className="text-amber-500" />
-                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Catatan Khusus Tim</h4>
-                     </div>
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {assetLogs.filter(l => l.action === 'NOTE').slice(0, 6).map((note, idx) => (
-                          <div key={idx} className="p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
-                             <div className="flex justify-between items-center mb-1">
-                                <span className="text-[10px] font-black text-amber-700">{note.firstName} {note.lastName}</span>
-                                <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
-                             </div>
-                             <p className="text-[12px] text-slate-600 italic">"{note.details}"</p>
-                             {note.photos && safeParseJSON(note.photos).length > 0 && (
-                               <div className="grid grid-cols-4 gap-2 mt-3">
-                                  {safeParseJSON(note.photos).map((img, i) => (
-                                    <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => setZoomedImage(img)} />
-                                  ))}
-                               </div>
-                             )}
+                    <div className="flex items-center gap-2">
+                      <MessageSquare size={16} className="text-amber-500" />
+                      <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Catatan Khusus Tim</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {assetLogs.filter(l => l.action === 'NOTE').slice(0, 6).map((note, idx) => (
+                        <div key={idx} className="p-4 bg-amber-50/50 border border-amber-100 rounded-2xl">
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="text-[10px] font-black text-amber-700">{note.firstName} {note.lastName}</span>
+                            <span className="text-[10px] text-slate-400">{formatDateTime(note.created_at).date}</span>
                           </div>
-                        ))}
-                        {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
-                          <div className="col-span-2 py-6 text-center text-slate-300 text-xs font-bold">Tidak ada catatan tim.</div>
-                        )}
-                      </div>
-                   </div>
+                          <p className="text-[12px] text-slate-600 italic">"{note.details}"</p>
+                          {note.photos && safeParseJSON(note.photos).length > 0 && (
+                            <div className="grid grid-cols-4 gap-2 mt-3">
+                              {safeParseJSON(note.photos).map((img, i) => (
+                                <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-slate-100 cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                      {assetLogs.filter(l => l.action === 'NOTE').length === 0 && (
+                        <div className="col-span-2 py-6 text-center text-slate-300 text-xs font-bold">Tidak ada catatan tim.</div>
+                      )}
+                    </div>
+                  </div>
 
-                   {/* Dashboard Analytics Section */}
-                   <AssetAnalyticsDashboard data={specificAssetAnalytics} />
+                  {/* Dashboard Analytics Section */}
+                  <AssetAnalyticsDashboard data={specificAssetAnalytics} />
 
-                   {/* Logs Section */}
+                  {/* Logs Section */}
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -2105,10 +2123,9 @@ const MonitoringAset = () => {
                     <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
                       {assetLogs.map((log, idx) => (
                         <div key={idx} className="p-4 bg-white border border-[#F1F1F4] rounded-xl flex items-start gap-4">
-                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${
-                            log.action === 'STATUS_CHANGE' ? 'bg-blue-50 text-blue-500' : 
-                            log.action === 'NOTE' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'
-                          }`}>
+                          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${log.action === 'STATUS_CHANGE' ? 'bg-blue-50 text-blue-500' :
+                              log.action === 'NOTE' ? 'bg-amber-50 text-amber-500' : 'bg-slate-50 text-slate-400'
+                            }`}>
                             {log.action === 'STATUS_CHANGE' ? <Power size={14} /> : <MessageSquare size={14} />}
                           </div>
                           <div className="flex-1">
@@ -2125,50 +2142,50 @@ const MonitoringAset = () => {
                 </div>
 
                 <div className="lg:col-span-4 space-y-8">
-                   <div>
-                     <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider mb-4">Media & Lampiran</h4>
-                     <div className="grid grid-cols-2 gap-3">
-                       {safeParseJSON(selectedAsset.lampiran).map((img, idx) => (
-                         <img key={idx} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
-                       ))}
-                     </div>
-                   </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider mb-4">Media & Lampiran</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                      {safeParseJSON(selectedAsset.lampiran).map((img, idx) => (
+                        <img key={idx} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-xl border border-[#F1F1F4] cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                      ))}
+                    </div>
+                  </div>
 
-                   <div>
-                      <div className="flex items-center justify-between mb-4">
-                        <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Maintenance</h4>
-                        <Settings size={14} className="text-amber-500" />
-                      </div>
-                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-                         {maintLogs.length === 0 ? (
-                           <p className="text-[11px] text-slate-400 italic">Belum ada data maintenance.</p>
-                         ) : (
-                           maintLogs.map((log, idx) => (
-                             <div key={idx} className="p-4 bg-slate-50 rounded-2xl space-y-2">
-                                <div className="flex justify-between items-start">
-                                   <span className="text-[10px] font-black text-[#181C32] uppercase">{log.reason}</span>
-                                   <span className="text-[9px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
-                                </div>
-                                <p className="text-[11px] text-slate-600 leading-relaxed">{log.actions_taken}</p>
-                                <div className="flex items-center gap-1.5 py-1 px-2 bg-blue-50/50 rounded-lg w-fit">
-                                   <Clock size={10} className="text-blue-500" />
-                                   <span className="text-[9px] font-black text-blue-600 uppercase">
-                                      {Math.floor(log.old_remaining_seconds / 3600)}h → {Math.floor(log.new_remaining_seconds / 3600)}h
-                                   </span>
-                                </div>
-                                <p className="text-[9px] font-bold text-[#0095E8]">PIC: {log.responsible_person}</p>
-                                {log.photos && safeParseJSON(log.photos).length > 0 && (
-                                  <div className="grid grid-cols-4 gap-2 mt-2">
-                                     {safeParseJSON(log.photos).map((img, i) => (
-                                       <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-lg cursor-zoom-in" onClick={() => setZoomedImage(img)} />
-                                     ))}
-                                  </div>
-                                )}
-                             </div>
-                           ))
-                         )}
-                      </div>
-                   </div>
+                  <div>
+                    <div className="flex items-center justify-between mb-4">
+                      <h4 className="text-xs font-bold text-[#181C32] uppercase tracking-wider">Riwayat Maintenance</h4>
+                      <Settings size={14} className="text-amber-500" />
+                    </div>
+                    <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                      {maintLogs.length === 0 ? (
+                        <p className="text-[11px] text-slate-400 italic">Belum ada data maintenance.</p>
+                      ) : (
+                        maintLogs.map((log, idx) => (
+                          <div key={idx} className="p-4 bg-slate-50 rounded-2xl space-y-2">
+                            <div className="flex justify-between items-start">
+                              <span className="text-[10px] font-black text-[#181C32] uppercase">{log.reason}</span>
+                              <span className="text-[9px] text-slate-400 font-bold">{formatDateTime(log.created_at).date}</span>
+                            </div>
+                            <p className="text-[11px] text-slate-600 leading-relaxed">{log.actions_taken}</p>
+                            <div className="flex items-center gap-1.5 py-1 px-2 bg-blue-50/50 rounded-lg w-fit">
+                              <Clock size={10} className="text-blue-500" />
+                              <span className="text-[9px] font-black text-blue-600 uppercase">
+                                {Math.floor(log.old_remaining_seconds / 3600)}h → {Math.floor(log.new_remaining_seconds / 3600)}h
+                              </span>
+                            </div>
+                            <p className="text-[9px] font-bold text-[#0095E8]">PIC: {log.responsible_person}</p>
+                            {log.photos && safeParseJSON(log.photos).length > 0 && (
+                              <div className="grid grid-cols-4 gap-2 mt-2">
+                                {safeParseJSON(log.photos).map((img, i) => (
+                                  <img key={i} src={getImageUrl(img)} className="w-full aspect-square object-cover rounded-lg cursor-zoom-in" onClick={() => setZoomedImage(img)} />
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -2176,338 +2193,336 @@ const MonitoringAset = () => {
         )}
       </AnimatePresence>
 
-       {/* Edit Asset Modal (Universal) */}
-       <AnimatePresence>
-         {isEditModalOpen && (
-           <div className="fixed inset-0 z-[4000] flex items-center justify-center p-0 md:p-4 overflow-hidden">
-             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
-             <motion.div 
-               initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
-               animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
-               exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
-               className={`relative bg-white w-full ${isMobile ? 'h-[92vh] rounded-t-[40px] mt-auto' : 'max-w-2xl max-h-[90vh] rounded-[32px]'} flex flex-col shadow-2xl`}
-             >
-                {/* Modal Header */}
-                <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between shrink-0">
-                  <div>
-                    <h3 className="text-xl font-black text-slate-800">Edit Data Aset</h3>
-                    <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{editingAsset?.nama_mesin}</p>
-                  </div>
-                  <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400"><X size={20} /></button>
+      {/* Edit Asset Modal (Universal) */}
+      <AnimatePresence>
+        {isEditModalOpen && (
+          <div className="fixed inset-0 z-[4000] flex items-center justify-center p-0 md:p-4 overflow-hidden">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsEditModalOpen(false)} />
+            <motion.div
+              initial={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+              animate={isMobile ? { y: 0 } : { scale: 1, opacity: 1 }}
+              exit={isMobile ? { y: '100%' } : { scale: 0.9, opacity: 0 }}
+              className={`relative bg-white w-full ${isMobile ? 'h-[92vh] rounded-t-[40px] mt-auto' : 'max-w-2xl max-h-[90vh] rounded-[32px]'} flex flex-col shadow-2xl`}
+            >
+              {/* Modal Header */}
+              <div className="px-8 py-6 border-b border-slate-50 flex items-center justify-between shrink-0">
+                <div>
+                  <h3 className="text-xl font-black text-slate-800">Edit Data Aset</h3>
+                  <p className="text-[12px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">{editingAsset?.nama_mesin}</p>
                 </div>
+                <button onClick={() => setIsEditModalOpen(false)} className="w-10 h-10 bg-slate-50 rounded-full flex items-center justify-center text-slate-400"><X size={20} /></button>
+              </div>
 
-                {/* Modal Body */}
-                <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
-                  <form onSubmit={handleUpdate} className="space-y-6">
-                    {/* Basic Info Grid */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nama Mesin</label>
-                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.nama_mesin} onChange={e => setEditFormData({...editFormData, nama_mesin: e.target.value})} required />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Brand</label>
-                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.brand} onChange={e => setEditFormData({...editFormData, brand: e.target.value})} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Model / Tipe</label>
-                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.model_tipe} onChange={e => setEditFormData({...editFormData, model_tipe: e.target.value})} />
-                      </div>
-                      <div className="space-y-1.5">
-                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Serial Number</label>
-                        <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.serial_number} onChange={e => setEditFormData({...editFormData, serial_number: e.target.value})} />
-                      </div>
+              {/* Modal Body */}
+              <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
+                <form onSubmit={handleUpdate} className="space-y-6">
+                  {/* Basic Info Grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Nama Mesin</label>
+                      <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.nama_mesin} onChange={e => setEditFormData({ ...editFormData, nama_mesin: e.target.value })} required />
                     </div>
-
-                    {/* Metadata Selection */}
-                    <div className="space-y-6 pt-4 border-t border-slate-50">
-                      {/* Lokasi */}
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Lokasi Aset</label>
-                        <div className="flex gap-2">
-                          <select className="flex-1 p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.lokasi} onChange={e => setEditFormData({...editFormData, lokasi: e.target.value})}>
-                            <option value="">Pilih Lokasi</option>
-                            {locations.map(loc => <option key={loc.id} value={loc.label}>{loc.label}</option>)}
-                          </select>
-                          <button type="button" onClick={() => setShowNewLocInput(!showNewLocInput)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl"><Plus size={20} /></button>
-                        </div>
-                        {showNewLocInput && (
-                          <div className="flex gap-2 animate-in slide-in-from-top-2">
-                            <input className="flex-1 p-4 bg-white border border-blue-100 rounded-2xl text-sm outline-none" placeholder="Label lokasi baru..." value={newLocLabel} onChange={e => setNewLocLabel(e.target.value)} />
-                            <button type="button" onClick={handleAddNewLoc} className="px-6 bg-blue-600 text-white rounded-2xl text-xs font-bold">Simpan</button>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Status & Prioritas */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Status Aset</label>
-                          <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.status} onChange={e => setEditFormData({...editFormData, status: e.target.value})}>
-                            {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
-                          </select>
-                        </div>
-                        <div className="space-y-2">
-                          <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prioritas</label>
-                          <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.prioritas} onChange={e => setEditFormData({...editFormData, prioritas: e.target.value})}>
-                            {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Aset Induk */}
-                      <div className="space-y-2">
-                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Aset Induk (Opsional)</label>
-                        {assets.some(a => a.parent_id === editingAsset?.id) ? (
-                          <div className="p-4 bg-slate-100 rounded-2xl text-[12px] text-slate-500 font-bold italic leading-relaxed">
-                            * Unit ini adalah Aset Induk bagi unit lain dan tidak dapat memiliki induk.
-                          </div>
-                        ) : (
-                          <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none cursor-pointer" value={editFormData.parent_id || ''} onChange={e => setEditFormData({...editFormData, parent_id: e.target.value ? parseInt(e.target.value) : null})}>
-                            <option value="">Tanpa Induk (Mandiri)</option>
-                            {assets.filter(a => a.id !== editingAsset?.id && !a.parent_id).map(a => (
-                              <option key={a.id} value={a.id}>{a.nama_mesin} ({a.brand || 'No Brand'})</option>
-                            ))}
-                          </select>
-                        )}
-                      </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Brand</label>
+                      <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.brand} onChange={e => setEditFormData({ ...editFormData, brand: e.target.value })} />
                     </div>
-
-                    {/* Maintenance Interval */}
-                    <div className="p-6 bg-blue-50/50 rounded-[24px] space-y-4">
-                       <div className="flex items-center gap-2">
-                         <Clock size={16} className="text-blue-500" />
-                         <span className="text-[11px] font-black text-blue-700 uppercase">Interval Maintenance</span>
-                       </div>
-                       <div className="grid grid-cols-2 gap-4">
-                         <div className="space-y-1">
-                           <label className="text-[9px] font-bold text-blue-400 ml-1">Hari</label>
-                           <input type="number" className="w-full p-4 bg-white border-none rounded-2xl text-sm outline-none" value={maintInput.days} onChange={e => handleMaintenanceInput('days', e.target.value)} />
-                         </div>
-                         <div className="space-y-1">
-                           <label className="text-[9px] font-bold text-blue-400 ml-1">Jam</label>
-                           <input type="number" className="w-full p-4 bg-white border-none rounded-2xl text-sm outline-none" value={maintInput.hours} onChange={e => handleMaintenanceInput('hours', e.target.value)} />
-                         </div>
-                       </div>
-                       <p className="text-[10px] text-blue-400 font-medium italic">Total: {editFormData.maintenance_hours} jam operasional.</p>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Model / Tipe</label>
+                      <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.model_tipe} onChange={e => setEditFormData({ ...editFormData, model_tipe: e.target.value })} />
                     </div>
-
-                    {/* Photos Upload Section */}
-                    <div className="space-y-3">
-                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Dokumentasi Aset ({editFormData.lampiran.length}/5)</label>
-                       <div className="flex flex-wrap gap-3">
-                          {editFormData.lampiran.map((img, idx) => (
-                            <div key={idx} className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
-                              <img src={getImageUrl(img)} className="w-full h-full object-cover" />
-                              <button type="button" onClick={() => setEditFormData({...editFormData, lampiran: editFormData.lampiran.filter((_, i) => i !== idx)})} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={12} /></button>
-                            </div>
-                          ))}
-                          {editFormData.lampiran.length < 5 && (
-                            <label className="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 transition-all">
-                              <Camera size={24} />
-                              <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
-                            </label>
-                          )}
-                       </div>
+                    <div className="space-y-1.5">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Serial Number</label>
+                      <input className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm focus:ring-2 focus:ring-blue-100 outline-none" value={editFormData.serial_number} onChange={e => setEditFormData({ ...editFormData, serial_number: e.target.value })} />
                     </div>
+                  </div>
 
-                    {/* Catatan Section */}
+                  {/* Metadata Selection */}
+                  <div className="space-y-6 pt-4 border-t border-slate-50">
+                    {/* Lokasi */}
                     <div className="space-y-2">
-                       <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catatan Tambahan</label>
-                       <textarea className="w-full p-5 bg-slate-50 border-none rounded-3xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none min-h-[100px]" value={editFormData.catatan} onChange={e => setEditFormData({...editFormData, catatan: e.target.value})} placeholder="Informasi tambahan tentang unit ini..." />
-                    </div>
-                  </form>
-                </div>
-
-                {/* Modal Footer */}
-                <div className="px-8 py-6 border-t border-slate-50 flex gap-4 shrink-0">
-                  <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[14px]">Batal</button>
-                  <button type="button" onClick={handleUpdate} disabled={isUpdating} className="flex-1 py-4 bg-[#0095E8] text-white rounded-2xl font-black text-[14px] shadow-xl shadow-blue-100 flex items-center justify-center gap-2">
-                    {isUpdating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 size={18} />}
-                    <span>Simpan Perubahan</span>
-                  </button>
-                </div>
-             </motion.div>
-           </div>
-         )}
-       </AnimatePresence>
-
-        {/* Selection Checkbox Modal (PC) */}
-        <AnimatePresence>
-          {toggleSelectModal.show && (
-            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })} />
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="relative bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl"
-              >
-                <div className="text-center mb-6">
-                  <div className={`w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
-                     <Power size={28} />
-                  </div>
-                  <h3 className="text-[18px] font-black text-slate-800 leading-tight">Kontrol Multi-Aset</h3>
-                  <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Pilih unit yang ingin di{toggleSelectModal.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}</p>
-                </div>
-
-                <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 mb-6 custom-scrollbar">
-                  {toggleSelectModal.connectedAssets.map(ast => {
-                    const isParent = !ast.parent_id;
-                    const isChecked = toggleSelectModal.selectedIds.includes(ast.id);
-                    return (
-                      <div 
-                        key={ast.id} 
-                        onClick={() => {
-                          const alreadySelected = toggleSelectModal.selectedIds.includes(ast.id);
-                          const newIds = alreadySelected 
-                            ? toggleSelectModal.selectedIds.filter(id => id !== ast.id)
-                            : [...toggleSelectModal.selectedIds, ast.id];
-                          setToggleSelectModal(prev => ({ ...prev, selectedIds: newIds }));
-                        }}
-                        className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                          isChecked 
-                            ? 'bg-[#F1FAFF] border-[#0095E8]/30 shadow-sm' 
-                            : 'bg-slate-50/50 border-slate-100'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3">
-                          <input 
-                            type="checkbox" 
-                            checked={isChecked}
-                            readOnly
-                            className="w-4 h-4 rounded text-[#0095E8] border-slate-300 focus:ring-[#0095E8]"
-                          />
-                          <div>
-                            <p className="text-[13px] font-black text-slate-800 leading-tight">{ast.nama_mesin}</p>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{isParent ? 'Aset Induk' : 'Aset Anak'}</span>
-                          </div>
-                        </div>
-                        <span className={`text-[10px] font-black uppercase ${ast.is_running ? 'text-green-500' : 'text-slate-400'}`}>
-                          {ast.is_running ? 'ON' : 'OFF'}
-                        </span>
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Lokasi Aset</label>
+                      <div className="flex gap-2">
+                        <select className="flex-1 p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.lokasi} onChange={e => setEditFormData({ ...editFormData, lokasi: e.target.value })}>
+                          <option value="">Pilih Lokasi</option>
+                          {locations.map(loc => <option key={loc.id} value={loc.label}>{loc.label}</option>)}
+                        </select>
+                        <button type="button" onClick={() => setShowNewLocInput(!showNewLocInput)} className="p-4 bg-blue-50 text-blue-600 rounded-2xl"><Plus size={20} /></button>
                       </div>
-                    );
-                  })}
-                </div>
+                      {showNewLocInput && (
+                        <div className="flex gap-2 animate-in slide-in-from-top-2">
+                          <input className="flex-1 p-4 bg-white border border-blue-100 rounded-2xl text-sm outline-none" placeholder="Label lokasi baru..." value={newLocLabel} onChange={e => setNewLocLabel(e.target.value)} />
+                          <button type="button" onClick={handleAddNewLoc} className="px-6 bg-blue-600 text-white rounded-2xl text-xs font-bold">Simpan</button>
+                        </div>
+                      )}
+                    </div>
 
-                <p className="text-[11px] text-slate-400 font-bold italic text-center mb-6 leading-normal">
-                  * Unit yang tidak dicentang tidak akan berubah statusnya.
-                </p>
+                    {/* Status & Prioritas */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Status Aset</label>
+                        <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.status} onChange={e => setEditFormData({ ...editFormData, status: e.target.value })}>
+                          {statuses.map(s => <option key={s.id} value={s.label}>{s.label}</option>)}
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Prioritas</label>
+                        <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none" value={editFormData.prioritas} onChange={e => setEditFormData({ ...editFormData, prioritas: e.target.value })}>
+                          {priorities.map(p => <option key={p.id} value={p.label}>{p.label}</option>)}
+                        </select>
+                      </div>
+                    </div>
 
-                <div className="grid grid-cols-2 gap-3">
-                  <button 
-                    onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })}
-                    className="py-3.5 bg-slate-50 text-slate-500 rounded-2xl font-black text-[13px]"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={() => {
-                      if (toggleSelectModal.selectedIds.length === 0) {
-                        showError('Mohon pilih minimal 1 unit');
-                        return;
-                      }
-                      setToggleConfirm({
-                        show: true,
-                        assetId: toggleSelectModal.assetId,
-                        action: toggleSelectModal.action,
-                        selectedIds: toggleSelectModal.selectedIds
-                      });
-                      setToggleSelectModal(prev => ({ ...prev, show: false }));
-                    }}
-                    className={`py-3.5 text-white rounded-2xl font-black text-[13px] shadow-lg ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
-                  >
-                    Lanjut
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
-        {/* Local Confirmation Modal for Toggle */}
-        <AnimatePresence>
-          {toggleConfirm.show && (
-            <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })} />
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
-                className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
-              >
-                <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${toggleConfirm.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
-                   <Power size={40} />
-                </div>
-                <h3 className="text-[20px] font-black text-slate-800 mb-2">{toggleConfirm.action} Mesin?</h3>
-                <p className="text-[13px] text-slate-500 font-medium mb-6 leading-relaxed">
-                  Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit berikut sekarang?
-                </p>
-
-                {toggleConfirm.selectedIds && toggleConfirm.selectedIds.length > 0 && (
-                  <div className="mb-6 p-4 bg-slate-50 rounded-2xl text-left border border-slate-100 max-h-[120px] overflow-y-auto custom-scrollbar">
-                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Unit yang akan di{toggleConfirm.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}:</span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {toggleConfirm.selectedIds.map(sid => {
-                        const targetAsset = assets.find(a => a.id === sid);
-                        return (
-                          <span key={sid} className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm border ${
-                            toggleConfirm.action === 'Mematikan' 
-                              ? 'bg-red-50 text-red-700 border-red-100' 
-                              : 'bg-blue-50 text-blue-700 border-blue-100'
-                          }`}>
-                            {targetAsset?.nama_mesin || 'Aset'}
-                          </span>
-                        );
-                      })}
+                    {/* Aset Induk */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Aset Induk (Opsional)</label>
+                      {assets.some(a => a.parent_id === editingAsset?.id) ? (
+                        <div className="p-4 bg-slate-100 rounded-2xl text-[12px] text-slate-500 font-bold italic leading-relaxed">
+                          * Unit ini adalah Aset Induk bagi unit lain dan tidak dapat memiliki induk.
+                        </div>
+                      ) : (
+                        <select className="w-full p-4 bg-slate-50 border-none rounded-2xl text-sm outline-none cursor-pointer" value={editFormData.parent_id || ''} onChange={e => setEditFormData({ ...editFormData, parent_id: e.target.value ? parseInt(e.target.value) : null })}>
+                          <option value="">Tanpa Induk (Mandiri)</option>
+                          {assets.filter(a => a.id !== editingAsset?.id && !a.parent_id).map(a => (
+                            <option key={a.id} value={a.id}>{a.nama_mesin} ({a.brand || 'No Brand'})</option>
+                          ))}
+                        </select>
+                      )}
                     </div>
                   </div>
-                )}
 
-                <div className="grid grid-cols-2 gap-4">
-                  <button 
-                    onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })}
-                    className="py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[15px]"
-                  >
-                    Batal
-                  </button>
-                  <button 
-                    onClick={executeToggleStatus}
-                    className={`py-4 text-white rounded-2xl font-black text-[15px] shadow-lg ${toggleConfirm.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
-                  >
-                    Ya, Yakin
-                  </button>
-                </div>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+                  {/* Maintenance Interval */}
+                  <div className="p-6 bg-blue-50/50 rounded-[24px] space-y-4">
+                    <div className="flex items-center gap-2">
+                      <Clock size={16} className="text-blue-500" />
+                      <span className="text-[11px] font-black text-blue-700 uppercase">Interval Maintenance</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-blue-400 ml-1">Hari</label>
+                        <input type="number" className="w-full p-4 bg-white border-none rounded-2xl text-sm outline-none" value={maintInput.days} onChange={e => handleMaintenanceInput('days', e.target.value)} />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[9px] font-bold text-blue-400 ml-1">Jam</label>
+                        <input type="number" className="w-full p-4 bg-white border-none rounded-2xl text-sm outline-none" value={maintInput.hours} onChange={e => handleMaintenanceInput('hours', e.target.value)} />
+                      </div>
+                    </div>
+                    <p className="text-[10px] text-blue-400 font-medium italic">Total: {editFormData.maintenance_hours} jam operasional.</p>
+                  </div>
 
-        {/* Global Image Zoom Modal */}
-        <AnimatePresence>
-          {zoomedImage && (
-            <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10">
-              <motion.div 
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                className="absolute inset-0 bg-black/90 backdrop-blur-xl"
-                onClick={() => setZoomedImage(null)}
-              />
-              <motion.div 
-                initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
-                className="relative max-w-full max-h-full flex items-center justify-center"
-              >
-                <img 
-                  src={getImageUrl(zoomedImage)} 
-                  className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl" 
-                  alt="Zoomed View"
-                />
-                <button 
-                  onClick={() => setZoomedImage(null)}
-                  className="absolute -top-12 right-0 md:-right-12 md:top-0 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all"
-                >
-                  <X size={24} />
+                  {/* Photos Upload Section */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Dokumentasi Aset ({editFormData.lampiran.length}/5)</label>
+                    <div className="flex flex-wrap gap-3">
+                      {editFormData.lampiran.map((img, idx) => (
+                        <div key={idx} className="relative w-20 h-20 rounded-2xl overflow-hidden border border-slate-100 shadow-sm">
+                          <img src={getImageUrl(img)} className="w-full h-full object-cover" />
+                          <button type="button" onClick={() => setEditFormData({ ...editFormData, lampiran: editFormData.lampiran.filter((_, i) => i !== idx) })} className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg"><X size={12} /></button>
+                        </div>
+                      ))}
+                      {editFormData.lampiran.length < 5 && (
+                        <label className="w-20 h-20 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center text-slate-400 cursor-pointer hover:bg-slate-100 transition-all">
+                          <Camera size={24} />
+                          <input type="file" multiple accept="image/*" className="hidden" onChange={handleFileChange} />
+                        </label>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Catatan Section */}
+                  <div className="space-y-2">
+                    <label className="text-[10px] font-black text-slate-400 uppercase ml-1">Catatan Tambahan</label>
+                    <textarea className="w-full p-5 bg-slate-50 border-none rounded-3xl text-sm focus:bg-white focus:ring-2 focus:ring-blue-100 outline-none min-h-[100px]" value={editFormData.catatan} onChange={e => setEditFormData({ ...editFormData, catatan: e.target.value })} placeholder="Informasi tambahan tentang unit ini..." />
+                  </div>
+                </form>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="px-8 py-6 border-t border-slate-50 flex gap-4 shrink-0">
+                <button type="button" onClick={() => setIsEditModalOpen(false)} className="flex-1 py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[14px]">Batal</button>
+                <button type="button" onClick={handleUpdate} disabled={isUpdating} className="flex-1 py-4 bg-[#0095E8] text-white rounded-2xl font-black text-[14px] shadow-xl shadow-blue-100 flex items-center justify-center gap-2">
+                  {isUpdating ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <CheckCircle2 size={18} />}
+                  <span>Simpan Perubahan</span>
                 </button>
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Selection Checkbox Modal (PC) */}
+      <AnimatePresence>
+        {toggleSelectModal.show && (
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })} />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-white w-full max-w-sm rounded-[32px] p-6 shadow-2xl"
+            >
+              <div className="text-center mb-6">
+                <div className={`w-14 h-14 rounded-full mx-auto mb-4 flex items-center justify-center ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
+                  <Power size={28} />
+                </div>
+                <h3 className="text-[18px] font-black text-slate-800 leading-tight">Kontrol Multi-Aset</h3>
+                <p className="text-[11px] text-slate-400 font-bold mt-1 uppercase tracking-wider">Pilih unit yang ingin di{toggleSelectModal.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}</p>
+              </div>
+
+              <div className="space-y-2.5 max-h-[220px] overflow-y-auto pr-1 mb-6 custom-scrollbar">
+                {toggleSelectModal.connectedAssets.map(ast => {
+                  const isParent = !ast.parent_id;
+                  const isChecked = toggleSelectModal.selectedIds.includes(ast.id);
+                  return (
+                    <div
+                      key={ast.id}
+                      onClick={() => {
+                        const alreadySelected = toggleSelectModal.selectedIds.includes(ast.id);
+                        const newIds = alreadySelected
+                          ? toggleSelectModal.selectedIds.filter(id => id !== ast.id)
+                          : [...toggleSelectModal.selectedIds, ast.id];
+                        setToggleSelectModal(prev => ({ ...prev, selectedIds: newIds }));
+                      }}
+                      className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${isChecked
+                          ? 'bg-[#F1FAFF] border-[#0095E8]/30 shadow-sm'
+                          : 'bg-slate-50/50 border-slate-100'
+                        }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="checkbox"
+                          checked={isChecked}
+                          readOnly
+                          className="w-4 h-4 rounded text-[#0095E8] border-slate-300 focus:ring-[#0095E8]"
+                        />
+                        <div>
+                          <p className="text-[13px] font-black text-slate-800 leading-tight">{ast.nama_mesin}</p>
+                          <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">{isParent ? 'Aset Induk' : 'Aset Anak'}</span>
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-black uppercase ${ast.is_running ? 'text-green-500' : 'text-slate-400'}`}>
+                        {ast.is_running ? 'ON' : 'OFF'}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <p className="text-[11px] text-slate-400 font-bold italic text-center mb-6 leading-normal">
+                * Unit yang tidak dicentang tidak akan berubah statusnya.
+              </p>
+
+              <div className="grid grid-cols-2 gap-3">
+                <button
+                  onClick={() => setToggleSelectModal({ show: false, assetId: null, action: '', connectedAssets: [], selectedIds: [] })}
+                  className="py-3.5 bg-slate-50 text-slate-500 rounded-2xl font-black text-[13px]"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={() => {
+                    if (toggleSelectModal.selectedIds.length === 0) {
+                      showError('Mohon pilih minimal 1 unit');
+                      return;
+                    }
+                    setToggleConfirm({
+                      show: true,
+                      assetId: toggleSelectModal.assetId,
+                      action: toggleSelectModal.action,
+                      selectedIds: toggleSelectModal.selectedIds
+                    });
+                    setToggleSelectModal(prev => ({ ...prev, show: false }));
+                  }}
+                  className={`py-3.5 text-white rounded-2xl font-black text-[13px] shadow-lg ${toggleSelectModal.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
+                >
+                  Lanjut
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Local Confirmation Modal for Toggle */}
+      <AnimatePresence>
+        {toggleConfirm.show && (
+          <div className="fixed inset-0 z-[5000] flex items-center justify-center p-6">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })} />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative bg-white w-full max-w-sm rounded-[32px] p-8 shadow-2xl text-center"
+            >
+              <div className={`w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center ${toggleConfirm.action === 'Mematikan' ? 'bg-red-50 text-red-500' : 'bg-blue-50 text-[#0095E8]'}`}>
+                <Power size={40} />
+              </div>
+              <h3 className="text-[20px] font-black text-slate-800 mb-2">{toggleConfirm.action} Mesin?</h3>
+              <p className="text-[13px] text-slate-500 font-medium mb-6 leading-relaxed">
+                Apakah Anda yakin ingin <strong>{toggleConfirm.action.toLowerCase()}</strong> unit berikut sekarang?
+              </p>
+
+              {toggleConfirm.selectedIds && toggleConfirm.selectedIds.length > 0 && (
+                <div className="mb-6 p-4 bg-slate-50 rounded-2xl text-left border border-slate-100 max-h-[120px] overflow-y-auto custom-scrollbar">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-2">Unit yang akan di{toggleConfirm.action.toLowerCase() === 'mematikan' ? 'matikan' : 'nyalakan'}:</span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {toggleConfirm.selectedIds.map(sid => {
+                      const targetAsset = assets.find(a => a.id === sid);
+                      return (
+                        <span key={sid} className={`px-2.5 py-1 rounded-xl text-[10px] font-black uppercase shadow-sm border ${toggleConfirm.action === 'Mematikan'
+                            ? 'bg-red-50 text-red-700 border-red-100'
+                            : 'bg-blue-50 text-blue-700 border-blue-100'
+                          }`}>
+                          {targetAsset?.nama_mesin || 'Aset'}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  onClick={() => setToggleConfirm({ show: false, assetId: null, action: '', selectedIds: null })}
+                  className="py-4 bg-slate-50 text-slate-500 rounded-2xl font-black text-[15px]"
+                >
+                  Batal
+                </button>
+                <button
+                  onClick={executeToggleStatus}
+                  className={`py-4 text-white rounded-2xl font-black text-[15px] shadow-lg ${toggleConfirm.action === 'Mematikan' ? 'bg-red-500 shadow-red-100' : 'bg-[#0095E8] shadow-blue-100'}`}
+                >
+                  Ya, Yakin
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Global Image Zoom Modal */}
+      <AnimatePresence>
+        {zoomedImage && (
+          <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 md:p-10">
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/90 backdrop-blur-xl"
+              onClick={() => setZoomedImage(null)}
+            />
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+              className="relative max-w-full max-h-full flex items-center justify-center"
+            >
+              <img
+                src={getImageUrl(zoomedImage)}
+                className="max-w-full max-h-[90vh] object-contain rounded-2xl shadow-2xl"
+                alt="Zoomed View"
+              />
+              <button
+                onClick={() => setZoomedImage(null)}
+                className="absolute -top-12 right-0 md:-right-12 md:top-0 w-10 h-10 bg-white/10 hover:bg-white/20 text-white rounded-full flex items-center justify-center transition-all"
+              >
+                <X size={24} />
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         .no-scrollbar::-webkit-scrollbar { display: none; }

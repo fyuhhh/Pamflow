@@ -77,6 +77,8 @@ router.get('/department-tasks/:id/monitor', authMiddleware, deptTaskCtrl.monitor
 // Push Notification Routes
 router.post('/push/subscribe', authMiddleware, pushController.subscribe);
 router.post('/push/unsubscribe', authMiddleware, pushController.unsubscribe);
+router.post('/push/register-fcm', authMiddleware, pushController.registerFCM);
+router.post('/push/unregister-fcm', authMiddleware, pushController.unregisterFCM);
 router.post('/push/test', authMiddleware, pushController.testPush);
 
 module.exports = router;

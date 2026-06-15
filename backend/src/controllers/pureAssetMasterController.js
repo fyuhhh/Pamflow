@@ -237,7 +237,7 @@ exports.deleteCondition = async (req, res) => {
 // DEPARTMENTS
 exports.getDepartments = async (req, res) => {
   try {
-    const departments = await knex('departments').select('*').orderBy('name', 'asc');
+    const departments = await knex('pa_departments').select('*').orderBy('name', 'asc');
     res.json(departments);
   } catch (error) {
     res.status(500).json({ message: 'Error fetching departments', error: error.message });
@@ -251,7 +251,7 @@ exports.createDepartment = async (req, res) => {
 
     if (!dept_id) {
       // Auto-generate DEP-001 etc
-      const lastDept = await knex('departments').orderBy('id', 'desc').first();
+      const lastDept = await knex('pa_departments').orderBy('id', 'desc').first();
       let nextNum = 1;
       if (lastDept && lastDept.dept_id) {
         const match = lastDept.dept_id.match(/DEP-(\d+)/);
@@ -262,14 +262,14 @@ exports.createDepartment = async (req, res) => {
       dept_id = `DEP-${String(nextNum).padStart(3, '0')}`;
     }
 
-    const [id] = await knex('departments').insert({
+    const [id] = await knex('pa_departments').insert({
       name,
       dept_id,
       company_id,
       status: 'Aktif'
     });
     
-    const newDept = await knex('departments').where({ id }).first();
+    const newDept = await knex('pa_departments').where({ id }).first();
     res.status(201).json(newDept);
   } catch (error) {
     res.status(500).json({ message: 'Error creating department', error: error.message });
@@ -279,7 +279,7 @@ exports.createDepartment = async (req, res) => {
 exports.updateDepartment = async (req, res) => {
   try {
     const { name } = req.body;
-    await knex('departments').where({ id: req.params.id }).update({ name });
+    await knex('pa_departments').where({ id: req.params.id }).update({ name });
     res.json({ message: 'Department updated successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error updating department', error: error.message });
@@ -288,7 +288,7 @@ exports.updateDepartment = async (req, res) => {
 
 exports.deleteDepartment = async (req, res) => {
   try {
-    const item = await knex('departments').where({ id: req.params.id }).first();
+    const item = await knex('pa_departments').where({ id: req.params.id }).first();
     if (!item) return res.status(404).json({ message: 'Department not found' });
 
     // Backup to Recycle Bin
@@ -300,7 +300,7 @@ exports.deleteDepartment = async (req, res) => {
       payload: JSON.stringify(item)
     });
 
-    await knex('departments').where({ id: req.params.id }).del();
+    await knex('pa_departments').where({ id: req.params.id }).del();
     res.json({ message: 'Department deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting department', error: error.message });
@@ -345,7 +345,7 @@ exports.restoreRecycleItem = async (req, res) => {
     } else if (item.item_type === 'asset') {
       await knex('pa_assets').insert(payload);
     } else if (item.item_type === 'department') {
-      await knex('departments').insert(payload);
+      await knex('pa_departments').insert(payload);
     } else if (item.item_type === 'condition') {
       await knex('pa_conditions').insert(payload);
     }

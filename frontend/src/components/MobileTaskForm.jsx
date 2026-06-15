@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, Camera, X, Check } from 'lucide-react';
+import { ArrowLeft, ChevronLeft, Camera, X, Check } from 'lucide-react';
 import { getImageUrl } from '../utils/imageUrl';
+
 
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
 import { authFetch } from '../services/api';
@@ -10,8 +11,12 @@ import { useModal } from '../context/ModalContext';
 
 const MobileTaskForm = () => {
   const navigate = useNavigate();
-  const { taskId } = useParams();
+  const params = useParams();
   const location = useLocation();
+  const pathParts = location.pathname.split('/');
+  // URL format: /demo/mobile/task/123/form
+  const taskId = params.taskId || pathParts[pathParts.length - 2];
+
   const queryParams = new URLSearchParams(location.search);
   const deptTaskId = queryParams.get('dept_task_id');
 
@@ -252,13 +257,10 @@ const MobileTaskForm = () => {
       });
 
       if (response.ok) {
-        success('Berhasil', 'Laporan berhasil dikirim');
-        setTimeout(() => {
-          navigate(`/demo/mobile/task/${finalTaskId}`, {
-            state: { formSubmitted: true },
-            replace: true
-          });
-        }, 1500);
+        navigate(`/demo/mobile/task/${finalTaskId}`, {
+          state: { formSubmitted: true },
+          replace: true
+        });
       } else {
         throw new Error('Gagal mengirim laporan');
       }
@@ -275,13 +277,10 @@ const MobileTaskForm = () => {
           }
         });
 
-        success('Berhasil', 'Tersimpan (Mode Offline)');
-        setTimeout(() => {
-          navigate(`/demo/mobile/task/${finalTaskId}`, {
-            state: { formSubmitted: true },
-            replace: true
-          });
-        }, 1500);
+        navigate(`/demo/mobile/task/${finalTaskId}`, {
+          state: { formSubmitted: true },
+          replace: true
+        });
         return;
       }
 
@@ -292,42 +291,123 @@ const MobileTaskForm = () => {
   };
 
 
+  const getAuditSummary = () => {
+    const baik = [];
+    const rusak = [];
+
+    details.forEach((field, index) => {
+      const fieldKey = field.id || index;
+      const value = formData[fieldKey];
+      if (value === undefined || value === null || value === '') return;
+
+      const displayName = field.nama_detail || `Item ${index + 1}`;
+      const valStr = String(value).toLowerCase().trim();
+
+      if (valStr === 'baik' || valStr === 'ok' || valStr === 'normal') {
+        baik.push(displayName);
+      } else if (valStr === 'rusak' || valStr === 'bermasalah' || valStr === 'tidak baik' || valStr === 'kritis') {
+        rusak.push(displayName);
+      }
+    });
+
+    return { baik, rusak };
+  };
+
   const renderConfirmModal = () => {
     if (!showConfirm) return null;
 
+    const { baik, rusak } = getAuditSummary();
+    const hasSummary = baik.length > 0 || rusak.length > 0;
+
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center transition-opacity" style={{ backgroundColor: 'rgba(0, 0, 0, 0.4)' }}>
-        <div className="bg-white rounded-2xl p-8 max-w-[90%] w-full shadow-lg mx-6 animate-slide-up">
-          <div className="w-14 h-14 rounded-full bg-[#FFF9E6] flex items-center justify-center mb-6">
-            <div className="w-10 h-10 rounded-full border-[3px] border-[#FFF2CC] flex items-center justify-center">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FFC700" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+        <div className="bg-white rounded-3xl w-full max-w-[360px] shadow-2xl overflow-hidden border border-slate-100 flex flex-col">
+          {/* Header */}
+          <div className="bg-gradient-to-r from-[#181C32] to-[#2D3155] px-6 py-5 text-white flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><path d="M12 9v4"></path><path d="M12 17h.01"></path></svg>
+            </div>
+            <div>
+              <h3 className="text-[16px] font-extrabold tracking-tight">Kirim Laporan Audit</h3>
+              <p className="text-[11px] text-gray-400">Verifikasi ringkasan kondisi item</p>
             </div>
           </div>
 
-          <h3 className="text-xl font-medium text-[#181C32] mb-3">
-            Kirim Laporan
-          </h3>
-          <p className="text-[14px] leading-relaxed text-[#7E8299] mb-8">
-            Apakah Anda yakin ingin mengirim laporan tugas ini? Pastikan data yang diisi sudah benar karena data tidak dapat diubah setelah dikirim.
-          </p>
+          {/* Body */}
+          <div className="p-6 flex-1 overflow-y-auto max-h-[60vh] space-y-4">
+            {hasSummary ? (
+              <div className="space-y-3">
+                <p className="text-[12px] font-bold text-slate-400 uppercase tracking-wider">Ringkasan Temuan</p>
+                <div className="max-h-[220px] overflow-y-auto bg-slate-50 rounded-2xl border border-slate-100 p-4 space-y-4 divide-y divide-slate-100/80">
+                  {/* Rusak Section */}
+                  {rusak.length > 0 && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-1.5 text-rose-500 font-bold text-[12px] uppercase tracking-wide">
+                        <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
+                        <span>Bermasalah / Rusak ({rusak.length})</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5 pl-3">
+                        {rusak.map((name, i) => (
+                          <div key={i} className="flex items-start gap-2 text-[12px] text-slate-700 font-semibold leading-tight">
+                            <span className="text-rose-500 mt-0.5 shrink-0">✕</span>
+                            <span>{name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-          <div className="flex gap-4">
+                  {/* Baik Section */}
+                  {baik.length > 0 && (
+                    <div className="space-y-2 pt-3 first:pt-0">
+                      <div className="flex items-center gap-1.5 text-emerald-500 font-bold text-[12px] uppercase tracking-wide">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                        <span>Kondisi Baik ({baik.length})</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5 pl-3">
+                        {baik.map((name, i) => (
+                          <div key={i} className="flex items-start gap-2 text-[12px] text-slate-600 font-medium leading-tight">
+                            <span className="text-emerald-500 mt-0.5 shrink-0">✓</span>
+                            <span>{name}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : (
+              <p className="text-[13px] leading-relaxed text-slate-500 font-medium">
+                Apakah Anda yakin ingin mengirim laporan tugas ini? Pastikan data yang diisi sudah benar.
+              </p>
+            )}
+
+            <div className="bg-amber-50 border border-amber-200/40 p-3.5 rounded-2xl flex items-start gap-3">
+              <svg width="18" height="18" className="text-amber-500 shrink-0 mt-0.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <p className="text-[11px] text-amber-700 leading-relaxed font-semibold">
+                Laporan tidak dapat diubah kembali setelah dikirimkan.
+              </p>
+            </div>
+          </div>
+
+          {/* Footer Actions */}
+          <div className="border-t border-slate-100 bg-slate-50/50 p-5 flex gap-3">
+            <button
+              type="button"
+              onClick={() => setShowConfirm(false)}
+              className="flex-1 py-3 bg-white border border-slate-200 text-slate-500 rounded-xl text-[13px] font-bold active:scale-95 transition-all hover:bg-slate-50"
+            >
+              Periksa Kembali
+            </button>
             <button
               type="button"
               onClick={() => {
                 setShowConfirm(false);
                 handleSubmit();
               }}
-              className="flex-1 py-3 bg-[#0095E8] rounded-xl text-[14px] font-bold text-white hover:bg-[#0084CC] transition-colors active:scale-95"
+              className="flex-1 py-3 bg-[#0095E8] text-white rounded-xl text-[13px] font-extrabold active:scale-95 transition-all shadow-md shadow-blue-500/20 hover:bg-[#0084CC]"
             >
-              Lanjut
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowConfirm(false)}
-              className="flex-1 py-3 bg-white border border-[#E4E6EF] rounded-xl text-[14px] font-bold text-[#005499] hover:bg-gray-50 transition-colors active:scale-95"
-            >
-              Cek Kembali
+              Yakin, Kirim
             </button>
           </div>
         </div>
@@ -359,13 +439,16 @@ const MobileTaskForm = () => {
   if (isReviewing) {
     return (
       <div className="bg-white font-sans flex flex-col relative pb-32">
-        <header className="sticky top-0 bg-white z-40 px-6 py-4 flex items-center justify-between border-b border-slate-50"
-          style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
-          <div className="flex items-center gap-4">
-            <button onClick={() => setIsReviewing(false)} className="p-1 -ml-1">
-              <ArrowLeft size={24} className="text-slate-800" />
+        <header className="sticky top-0 bg-white z-40 px-6 pb-4 pt-8 flex items-center justify-between border-b border-slate-200 shadow-sm"
+          style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setIsReviewing(false)} 
+              className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+            >
+              <ChevronLeft size={20} />
             </button>
-            <h1 className="text-lg font-bold text-slate-800">Review</h1>
+            <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Review</h1>
           </div>
           <button
             onClick={() => setIsReviewing(false)}
@@ -451,12 +534,15 @@ const MobileTaskForm = () => {
   return (
     <div className="bg-white font-sans flex flex-col relative pb-32">
       {/* Header */}
-      <header className="sticky top-0 bg-white z-40 px-6 py-4 flex items-center gap-4 border-b border-slate-50"
-        style={{ paddingTop: 'calc(16px + env(safe-area-inset-top))' }}>
-        <button onClick={() => navigate(-1)} className="p-1 -ml-1">
-          <ArrowLeft size={24} className="text-slate-800" />
+      <header className="sticky top-0 bg-white z-40 px-6 pb-4 pt-8 flex items-center gap-3 border-b border-slate-200 shadow-sm"
+        style={{ paddingTop: 'calc(20px + env(safe-area-inset-top))' }}>
+        <button 
+          onClick={() => navigate(-1)} 
+          className="w-10 h-10 bg-white border border-slate-200 text-slate-400 rounded-xl flex items-center justify-center shadow-sm hover:text-slate-600 transition-colors shrink-0"
+        >
+          <ChevronLeft size={20} />
         </button>
-        <h1 className="text-lg font-bold text-slate-800">Form Tugas</h1>
+        <h1 className="text-[18px] font-semibold text-slate-800 leading-tight">Form Tugas</h1>
       </header>
 
       {/* Form Content */}

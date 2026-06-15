@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell, HelpCircle, Info, Clock, ChevronRight, X, Phone, FileText, CheckCircle2, PlayCircle, AlertCircle, Activity, PieChart, Package, Database, Lock, ClipboardList, CheckSquare, History, ShieldCheck, Zap, Droplets, FileBarChart, Wrench, FileClock, User, QrCode } from 'lucide-react';
+import { Bell, HelpCircle, Info, Clock, ChevronRight, X, Phone, FileText, CheckCircle2, PlayCircle, AlertCircle, Activity, PieChart, Package, Database, Lock, ClipboardList, CheckSquare, History, ShieldCheck, Zap, Droplets, FileBarChart, Wrench, FileClock, User, QrCode, ClipboardCheck } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { authFetch } from '../services/api';
 import { getSocket } from '../services/socket';
@@ -24,11 +24,13 @@ const MobileHome = () => {
   const [loadingToday, setLoadingToday] = useState(true);
   const [showHelpModal, setShowHelpModal] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [approvalCount, setApprovalCount] = useState(0);
+  const [checklistWOCount, setChecklistWOCount] = useState(0);
   const [taskStats, setTaskStats] = useState({
-    terbuka: 0, berlangsung: 0,
+    terbuka: 0, berlangsung: 0, menungguApproval: 0,
     terbukaTepat: 0, terbukaLambat: 0,
     berlangsungTepat: 0, berlangsungLambat: 0,
-    selesaiTepat: 0, selesaiLambat: 0,
+    selesaiTepat: 0, selesaiLambat: 0
   });
   const [deptRequests, setDeptRequests] = useState([]);
   const [loadingRequests, setLoadingRequests] = useState(true);
@@ -44,10 +46,7 @@ const MobileHome = () => {
     if (socket) {
       const handleRefresh = () => {
         calculateUnreadNotifications();
-        fetchTaskStats();
-        fetchDeptRequests();
-        fetchTodayTasks();
-        fetchDeptTasks();
+        fetchAllData();
       };
 
       socket.on('task-created', handleRefresh);
@@ -68,12 +67,22 @@ const MobileHome = () => {
 
   const calculateUnreadNotifications = async () => {
     try {
-      const [tasksRes, deptRes] = await Promise.all([
+      const urls = [
         authFetch(`/api/tasks?agent_id=${user.id}&departemen=${user.department}&company_id=${user.company_id}`),
         authFetch(`/api/department-tasks?departemen_tujuan=${encodeURIComponent(user.department)}&company_id=${user.company_id}`)
-      ]);
+      ];
+
+      // Add pending approvals request
+      urls.push(authFetch(`/api/tasks/pending-approval?company_id=${user.company_id}&departemen=${encodeURIComponent(user.department || '')}`));
+
+      // Add checklist history request
+      urls.push(authFetch(`/api/checklist-sessions?company_id=${user.company_id}&dept_name=${encodeURIComponent(user.department || '')}`));
+
+      const [tasksRes, deptRes, pendingRes, checklistRes] = await Promise.all(urls);
 
       let unread = 0;
+      let approvals = 0;
+      let woNeeded = 0;
       const saved = localStorage.getItem('pamflow_read_tasks');
       const readIds = saved ? JSON.parse(saved) : [];
 
@@ -87,6 +96,20 @@ const MobileHome = () => {
         unread += deptTasks.filter(dt => dt.status === 'Menunggu Pengerjaan' && !readIds.includes(`dept-${dt.id}`)).length;
       }
 
+      if (pendingRes.ok) {
+        const pendingTasks = await pendingRes.json();
+        approvals = pendingTasks.length;
+        unread += approvals; // Add pending approvals count to unreadCount for the bell icon
+      }
+
+      if (checklistRes.ok) {
+        const checklists = await checklistRes.json();
+        woNeeded = checklists.filter(s => s.broken_count > 0 && !s.wo_id).length;
+        unread += woNeeded;
+      }
+
+      setApprovalCount(approvals);
+      setChecklistWOCount(woNeeded);
       setUnreadCount(unread);
     } catch (error) {
       console.error('Error calculating unread:', error);
@@ -102,7 +125,7 @@ const MobileHome = () => {
       const tasks = await response.json();
       const now = new Date();
 
-      let terbuka = 0, berlangsung = 0;
+      let terbuka = 0, berlangsung = 0, menungguApproval = 0;
       let terbukaTepat = 0, terbukaLambat = 0;
       let berlangsungTepat = 0, berlangsungLambat = 0;
       let selesaiTepat = 0, selesaiLambat = 0;
@@ -120,9 +143,11 @@ const MobileHome = () => {
           berlangsung++;
           if (isLateNow) berlangsungLambat++;
           else berlangsungTepat++;
+        } else if (task.progres === 'Menunggu Approval') {
+          menungguApproval++;
         } else if (task.progres === 'Selesai') {
           if (!deadline) {
-            selesaiTepat++; 
+            selesaiTepat++;
           } else if (aktual && aktual <= deadline) {
             selesaiTepat++;
           } else {
@@ -132,7 +157,7 @@ const MobileHome = () => {
       });
 
       setTaskStats({
-        terbuka, berlangsung,
+        terbuka, berlangsung, menungguApproval,
         terbukaTepat, terbukaLambat,
         berlangsungTepat, berlangsungLambat,
         selesaiTepat, selesaiLambat,
@@ -163,6 +188,23 @@ const MobileHome = () => {
     }
   }, [user?.department]);
 
+  const hasMobileMenu = (menuId) => {
+    // If it's a super admin, they can see everything
+    if (user?.role?.toLowerCase() === 'super admin') return true;
+
+    // Check if the user has specific mobile_menus defined
+    if (user?.permissions?.mobile_menus) {
+      return user.permissions.mobile_menus.includes(menuId);
+    }
+
+    // Default fallback for existing users without mobile_menus defined
+    // We allow basic menus, or maybe nothing if we want strict control. 
+    // To satisfy the "super admin sets it" rule strictly, if it's undefined, we return false.
+    // However, to not break existing apps entirely, we can allow basic ones or just return false.
+    // We will return false so the admin MUST set it.
+    return false;
+  };
+
   const fetchAllData = async () => {
     try {
       setLoadingTasks(true);
@@ -170,7 +212,7 @@ const MobileHome = () => {
       setLoadingToday(true);
 
       const dept = user?.department || '';
-      
+
       const [deptTasksRes, deptReqRes, todayTasksRes] = await Promise.all([
         authFetch(`/api/tasks?departemen=${encodeURIComponent(dept)}&company_id=${user.company_id}`),
         authFetch(`/api/department-tasks?departemen_tujuan=${encodeURIComponent(dept)}&company_id=${user.company_id}`),
@@ -258,7 +300,7 @@ const MobileHome = () => {
     hidden: { opacity: 0 },
     show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
-  
+
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
@@ -274,6 +316,7 @@ const MobileHome = () => {
   const formattedDate = currentTime.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
   const userRole = user?.role?.toUpperCase() || 'STAF';
   const userDept = user?.department || 'Umum';
+  const isEngineering = userDept.toLowerCase().includes('engineering');
   const companyName = user?.company_name || 'PamFlow Workspace';
   const canApprove = user?.can_approve === 1 || user?.can_approve === true;
 
@@ -295,9 +338,9 @@ const MobileHome = () => {
 
   return (
     <div className="bg-[#F5F8FA] min-h-screen font-sans flex flex-col relative overflow-x-hidden pb-10">
-      
+
       {/* Top Header Section */}
-      <div 
+      <div
         className="px-6 flex items-center justify-between sticky top-0 z-30 transition-all pt-6 pb-4 bg-[#F5F8FA]/90 backdrop-blur-md"
         style={{ paddingTop: 'calc(24px + env(safe-area-inset-top))' }}
       >
@@ -306,14 +349,14 @@ const MobileHome = () => {
           <h2 className="text-[18px] font-black text-slate-800 tracking-tight">{firstName}</h2>
         </motion.div>
         <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-3">
-          <motion.button 
+          <motion.button
             whileTap={{ scale: 0.95 }}
             onClick={() => setShowHelpModal(true)}
             className="w-10 h-10 bg-white border border-slate-200 rounded-full flex items-center justify-center text-slate-500 shadow-sm hover:bg-slate-50 transition-colors"
           >
             <Phone size={18} />
           </motion.button>
-          <motion.div 
+          <motion.div
             whileTap={{ scale: 0.95 }}
             onClick={() => navigate('/demo/mobile/notifications')}
             className="relative cursor-pointer"
@@ -331,13 +374,13 @@ const MobileHome = () => {
       </div>
 
       <motion.div variants={containerVariants} initial="hidden" animate="show" className="px-5 flex-1 z-10">
-        
+
         {/* Ringkasan Performa Widget (PamFlow Original Theme) */}
         <motion.div variants={itemVariants} className="bg-gradient-to-br from-[#0095E8] to-[#283593] rounded-[28px] p-6 mb-8 shadow-[0_12px_32px_rgba(0,149,232,0.2)] relative overflow-hidden text-white mt-2">
           {/* Decorative shapes */}
           <div className="absolute -top-16 -right-16 w-48 h-48 bg-white opacity-10 rounded-full blur-2xl"></div>
           <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-white opacity-5 rounded-full blur-xl"></div>
-          
+
           <div className="relative z-10">
             <div className="flex items-center justify-between mb-5">
               <h3 className="text-white/90 text-[13px] font-black tracking-widest uppercase flex items-center gap-2">
@@ -366,7 +409,7 @@ const MobileHome = () => {
                   )}
                 </div>
               </div>
-              
+
               <div className="pl-4 border-l border-white/20">
                 <p className="text-white/70 text-[10px] font-black mb-1 uppercase tracking-widest">Berlangsung</p>
                 <div className="flex items-end gap-2">
@@ -381,86 +424,84 @@ const MobileHome = () => {
         </motion.div>
 
         {/* Dynamic Grid Menu - The Neatly Separated Module Grid */}
-        <motion.div variants={itemVariants} className="grid grid-cols-4 gap-y-7 gap-x-2">
-          
-          {/* Item: Mulai Checklist */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/checklist')}>
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-8 h-8 bg-[#0095E8]/10 rounded-full -mr-4 -mt-4"></div>
-              <ClipboardList size={26} className="text-[#0095E8] relative z-10" />
+        <motion.div variants={itemVariants} className="grid grid-cols-4 gap-y-6 gap-x-2 mb-8">
+
+          {/* Item: Checklist Harian */}
+          {hasMobileMenu('checklist_harian') && (
+            <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/checklist')}>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+                <ClipboardCheck size={26} className="text-[#0095E8] relative z-10" />
+              </div>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Checklist<br />Operasional</span>
             </div>
-            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Mulai<br/>Checklist</span>
-          </div>
+          )}
 
           {/* Item: Riwayat Checklist */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/checklist-riwayat')}>
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-8 h-8 bg-[#50CD89]/10 rounded-full -mr-4 -mt-4"></div>
-              <History size={26} className="text-[#50CD89] relative z-10" />
+          {hasMobileMenu('riwayat_checklist') && (
+            <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/checklist-riwayat')}>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative">
+                <History size={26} className="text-[#50CD89] relative z-10" />
+                {checklistWOCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#F1416C] text-white text-[9px] font-extrabold w-[18px] h-[18px] flex items-center justify-center rounded-full border border-white shadow-sm z-20 animate-slow-pulse">
+                    {checklistWOCount}
+                  </span>
+                )}
+              </div>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Riwayat<br />Checklist</span>
             </div>
-            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Riwayat<br/>Checklist</span>
-          </div>
+          )}
 
           {/* Item: Daftar Tugas */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/tasks')}>
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative group-active:bg-slate-50 transition-colors overflow-hidden">
-              <div className="absolute top-0 right-0 w-8 h-8 bg-[#FFC700]/10 rounded-full -mr-4 -mt-4"></div>
-              <FileText size={26} className="text-[#FFC700] relative z-10" />
-              {(unreadCount > 0 || taskStats.terbuka > 0) && (
-                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#F1416C] rounded-full border-2 border-white z-20"></span>
-              )}
+          {hasMobileMenu('daftar_tugas') && (
+            <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/tasks')}>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative group-active:bg-slate-50 transition-colors">
+                <FileText size={26} className="text-[#FFC700] relative z-10" />
+                {(taskStats.terbuka > 0 || taskStats.menungguApproval > 0) ? (
+                  <span className={`absolute -top-1 -right-1 text-white text-[9px] font-extrabold px-1.5 min-w-[18px] h-[18px] flex items-center justify-center rounded-full border border-white shadow-sm z-20 animate-slow-pulse ${taskStats.terbuka > 0 ? 'bg-[#F1416C]' : 'bg-[#FFC700]'}`}>
+                    {taskStats.terbuka + taskStats.menungguApproval}
+                  </span>
+                ) : unreadCount > 0 ? (
+                  <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-[#F1416C] rounded-full border-2 border-white z-20"></span>
+                ) : null}
+              </div>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Daftar<br />Tugas</span>
             </div>
-            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Daftar<br/>Tugas</span>
-          </div>
+          )}
 
           {/* Item: Catat Listrik */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/utility-listrik')}>
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-8 h-8 bg-[#7239EA]/10 rounded-full -mr-4 -mt-4"></div>
-              <Zap size={26} className="text-[#7239EA] relative z-10" />
+          {hasMobileMenu('catat_listrik') && (
+            <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/utility-listrik')}>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
+                <Zap size={26} className="text-[#7239EA] relative z-10" />
+              </div>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Catat<br />Listrik</span>
             </div>
-            <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Catat<br/>Listrik</span>
-          </div>
+          )}
 
           {/* Item: Monitoring Aset (Conditional) */}
-          {(user?.role?.toLowerCase() === 'super admin' || user?.permissions?.['aset_menu']?.includes('Lihat')) && (
+          {hasMobileMenu('pengoperasian_aset') && (
             <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/aset')}>
               <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-8 h-8 bg-[#1E88E5]/10 rounded-full -mr-4 -mt-4"></div>
                 <Package size={26} className="text-[#1E88E5] relative z-10" />
               </div>
-              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Monitoring<br/>Aset</span>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Pengoperasian<br />Aset</span>
             </div>
           )}
 
           {/* Item: Approval (Conditional) */}
-          {canApprove && (
+          {hasMobileMenu('persetujuan_dokumen') && canApprove && (
             <div className="flex flex-col items-center gap-2 cursor-pointer group" onClick={() => handleMenuClick('/demo/mobile/approvals')}>
-              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative overflow-hidden">
-                <div className="absolute top-0 right-0 w-8 h-8 bg-[#F1416C]/10 rounded-full -mr-4 -mt-4"></div>
+              <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] group-active:bg-slate-50 transition-colors relative">
                 <ShieldCheck size={26} className="text-[#F1416C] relative z-10" />
+                {approvalCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#F1416C] text-white text-[9px] font-extrabold w-[18px] h-[18px] flex items-center justify-center rounded-full border border-white shadow-sm z-20 animate-slow-pulse">
+                    {approvalCount}
+                  </span>
+                )}
               </div>
-              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Persetujuan<br/>Dokumen</span>
+              <span className="text-slate-600 text-[10px] font-bold text-center leading-tight">Persetujuan<br />Dokumen</span>
             </div>
           )}
-
-          {/* Item: Catat Air (Disabled) */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer opacity-60" onClick={() => handleMenuClick('Modul Catat Air sedang dikembangkan.')}>
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-8 h-8 bg-[#00BCD4]/10 rounded-full -mr-4 -mt-4"></div>
-              <Droplets size={26} className="text-[#00BCD4] relative z-10" />
-            </div>
-            <span className="text-slate-400 text-[10px] font-bold text-center leading-tight">Catat<br/>Air</span>
-          </div>
-
-          {/* Item: Laporan (Disabled/Coming Soon) */}
-          <div className="flex flex-col items-center gap-2 cursor-pointer opacity-60" onClick={() => handleMenuClick('Modul Laporan sedang dikembangkan.')}>
-            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 shadow-[0_4px_16px_rgba(0,0,0,0.04)] relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-8 h-8 bg-[#FF9800]/10 rounded-full -mr-4 -mt-4"></div>
-              <FileBarChart size={26} className="text-[#FF9800] relative z-10" />
-            </div>
-            <span className="text-slate-400 text-[10px] font-bold text-center leading-tight">Laporan<br/>Performa</span>
-          </div>
 
         </motion.div>
 
@@ -468,7 +509,7 @@ const MobileHome = () => {
         <motion.div variants={itemVariants} className="mt-10 mb-4">
           <div className="flex items-center justify-between mb-5">
             <h3 className="text-[16px] font-black text-slate-800 tracking-tight">Tugas Aktif Anda</h3>
-            <button 
+            <button
               onClick={() => handleMenuClick('/demo/mobile/tasks')}
               className="text-[#0095E8] text-[12px] font-bold flex items-center gap-0.5 hover:text-[#0084CC] transition-colors"
             >
@@ -493,19 +534,18 @@ const MobileHome = () => {
               </div>
             ) : (
               [...sortedTodayTasks, ...sortedDeptTasks].slice(0, 3).map(task => (
-                <motion.div 
-                  key={task.id} 
+                <motion.div
+                  key={task.id}
                   whileTap={{ scale: 0.98 }}
                   onClick={() => handleMenuClick(`/demo/mobile/task/${task.id}`)}
                   className="bg-white rounded-3xl p-5 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-slate-100 cursor-pointer overflow-hidden relative group"
                 >
                   <div className="flex justify-between items-start mb-3 relative z-10">
                     <div className="flex flex-wrap gap-2">
-                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${
-                        task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C] border-[#F1416C]/20' : 
-                        task.urgensi === 'Sedang' ? 'bg-[#FFF8DD] text-[#FFC700] border-[#FFC700]/20' :
-                        'bg-[#F1FAFF] text-[#0095E8] border-[#0095E8]/20'
-                      }`}>
+                      <span className={`text-[10px] font-black px-2.5 py-1 rounded-lg border uppercase tracking-wider ${task.urgensi === 'Kritis' ? 'bg-[#FFF5F8] text-[#F1416C] border-[#F1416C]/20' :
+                          task.urgensi === 'Sedang' ? 'bg-[#FFF8DD] text-[#FFC700] border-[#FFC700]/20' :
+                            'bg-[#F1FAFF] text-[#0095E8] border-[#0095E8]/20'
+                        }`}>
                         {task.urgensi || 'Normal'}
                       </span>
                       {task.jenis_tugas === 'wo' ? (
@@ -526,9 +566,8 @@ const MobileHome = () => {
                         {task.tanggal_selesai ? new Date(task.tanggal_selesai).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' }) : '-'}
                       </span>
                     </div>
-                    <span className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider ${
-                      task.progres === 'Berlangsung' || task.progres === 'Menunggu Material' ? 'bg-[#FFF8DD] text-[#FFC700]' : 'bg-[#F1FAFF] text-[#0095E8]'
-                    }`}>
+                    <span className={`text-[10px] font-black px-2.5 py-1.5 rounded-lg uppercase tracking-wider ${task.progres === 'Berlangsung' || task.progres === 'Menunggu Material' ? 'bg-[#FFF8DD] text-[#FFC700]' : 'bg-[#F1FAFF] text-[#0095E8]'
+                      }`}>
                       {task.progres === 'Menunggu Material' ? 'Cek Material' : (task.progres || 'Terbuka')}
                     </span>
                   </div>
@@ -543,15 +582,15 @@ const MobileHome = () => {
       <AnimatePresence>
         {showHelpModal && (
           <div className="fixed inset-0 z-[100] flex items-end justify-center">
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
               onClick={() => setShowHelpModal(false)}
             />
-            
-            <motion.div 
+
+            <motion.div
               variants={modalVariants}
               initial="hidden"
               animate="visible"
@@ -562,7 +601,7 @@ const MobileHome = () => {
               <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6" />
               <div className="flex items-center justify-between mb-8">
                 <h3 className="text-[20px] font-black text-slate-800">Hubungi Bantuan</h3>
-                <button 
+                <button
                   onClick={() => setShowHelpModal(false)}
                   className="p-2 bg-slate-50 rounded-full text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition-colors"
                 >
@@ -571,10 +610,10 @@ const MobileHome = () => {
               </div>
 
               <div className="space-y-3">
-                <motion.a 
+                <motion.a
                   whileTap={{ scale: 0.96 }}
-                  href="https://wa.me/62800000000000" 
-                  target="_blank" 
+                  href="https://wa.me/62800000000000"
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center justify-between p-4 bg-[#F2FBF5] border border-[#25D366]/20 rounded-2xl"
                 >
@@ -601,6 +640,19 @@ const MobileHome = () => {
         .no-scrollbar {
           -ms-overflow-style: none;
           scrollbar-width: none;
+        }
+        @keyframes slow-pulse {
+          0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.08);
+            opacity: 0.55;
+          }
+        }
+        .animate-slow-pulse {
+          animation: slow-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
         }
       `}</style>
     </div>
